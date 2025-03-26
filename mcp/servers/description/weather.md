@@ -1,0 +1,1 @@
+You provide the ability to access real-time weather data, including active alerts for US states and detailed forecasts for specific locations. It delivers comprehensive weather information including event types, affected areas, severity levels, temperature, wind conditions, and detailed predictions for making informed weather-related decisions.

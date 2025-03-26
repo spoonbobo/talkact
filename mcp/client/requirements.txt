@@ -1,0 +1,13 @@
+fastapi
+uvicorn[all]
+aiohttp
+loguru
+mcp[cli]
+python-dotenv
+python-socketio
+dotenv
+websocket-client
+requests
+ollama
+scipy
+numpy

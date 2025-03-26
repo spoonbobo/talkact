@@ -1,0 +1,112 @@
+"use client";
+
+import React from "react";
+import { Box, Icon, Tabs, Container, Heading } from "@chakra-ui/react";
+import { motion } from "framer-motion";
+import { FiServer, FiBook } from "react-icons/fi";
+import { FaBookOpen } from "react-icons/fa";
+import { useTranslations } from "next-intl";
+import { useSession } from "next-auth/react";
+import Loading from "@/components/loading";
+
+const MotionBox = motion(Box);
+
+export default function LearnPage() {
+  const t = useTranslations("Learn");
+  const { data: session } = useSession();
+
+  if (!session) {
+    return <Loading />;
+  }
+
+  // Define tabs with placeholder components
+  const tabsToRender = [
+    {
+      id: "kb",
+      label: t("knowledge_base"),
+      icon: FaBookOpen,
+      component: <div>Knowledge Base Content</div>,
+    },
+    {
+      id: "mcp",
+      label: t("mcp_explorer"),
+      icon: FiServer,
+      component: <div>MCP Explorer Content</div>,
+    },
+  ];
+
+  return (
+    <Container
+      maxW="1400px"
+      px={{ base: 4, md: 6, lg: 8 }}
+      py={4}
+      height="100%"
+      position="relative"
+      overflow="hidden"
+    >
+      <MotionBox
+        width="100%"
+        height="100%"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        display="flex"
+        flexDirection="column"
+        overflow="hidden"
+        position="relative"
+      >
+        <Heading size="lg" mb={6} display="flex" alignItems="center">
+          <Icon as={FiBook} mr={3} color="blue.500" />
+          {t("learn")}
+        </Heading>
+
+        <Tabs.Root
+          defaultValue="mcp"
+          variant="line"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "calc(100% - 80px)",
+            overflow: "hidden",
+          }}
+        >
+          <Tabs.List>
+            {tabsToRender.map((tab) => (
+              <Tabs.Trigger key={tab.id} value={tab.id}>
+                <Icon as={tab.icon} mr={2} />
+                {tab.label}
+              </Tabs.Trigger>
+            ))}
+          </Tabs.List>
+
+          <Box flex="1" position="relative" overflow="hidden" width="100%">
+            {tabsToRender.map((tab) => (
+              <Tabs.Content
+                key={tab.id}
+                value={tab.id}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  padding: "8px 0",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  height: "100%",
+                  width:
+                    "calc(100% - 6px)" /* Subtract scrollbar width to prevent layout shift */,
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "rgba(0,0,0,0.1) transparent",
+                  msOverflowStyle: "-ms-autohiding-scrollbar",
+                }}
+              >
+                {tab.component}
+              </Tabs.Content>
+            ))}
+          </Box>
+        </Tabs.Root>
+      </MotionBox>
+    </Container>
+  );
+}
