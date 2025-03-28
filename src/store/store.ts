@@ -1,15 +1,23 @@
 // src/store/store.js
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage'; // defaults to localStorage for web
-import rootReducer from './reducers';
+import chatReducer from './features/chatSlice';
+import userReducer from './features/userSlice';
 import { socketMiddleware } from './middleware/socketMiddleware';
 
-// Configure persist settings
+// Combine all reducers
+const rootReducer = combineReducers({
+    chat: chatReducer,
+    user: userReducer,
+    // Add other reducers here
+});
+
+// Configure persist settings for root reducer
 const persistConfig = {
     key: 'root',
     storage,
-    blacklist: ['chat'], // Don't persist chat state
+    whitelist: ['chat', 'user'], // Persist both chat and user state
 };
 
 // Create a persisted reducer
@@ -20,7 +28,9 @@ export const store = configureStore({
     reducer: persistedReducer,
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
-            serializableCheck: false,
+            serializableCheck: {
+                ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+            },
         }).concat(socketMiddleware),
 });
 

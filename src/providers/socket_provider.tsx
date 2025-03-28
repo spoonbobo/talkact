@@ -14,21 +14,21 @@ export default function SocketProvider({ children }: { children: React.ReactNode
   useEffect(() => {
     // Initialize socket when session is available and socket is not already connected
     if (session && !isSocketConnected) {
-      const user: User = {
+      const user = {
         id: 1, // You might want to get this from your session
         username: session?.user?.name || "",
         email: session?.user?.email || "",
-        created_at: new Date(),
-        updated_at: new Date(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         active_rooms: [],
         archived_rooms: [],
         avatar: session?.user?.image || "",
       };
-      
+
       // Dispatch action to initialize socket
       dispatch({ type: 'chat/initializeSocket', payload: user });
     }
-    
+
     // Clean up function for when the provider unmounts or session changes
     return () => {
       // Only disconnect if the session is gone (user logged out)

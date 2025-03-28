@@ -5,7 +5,8 @@ import {
     setSocketConnected,
     addMessage,
     updateRoom,
-    setSelectedRoom
+    setSelectedRoom,
+    setUnreadCount
 } from '../features/chatSlice';
 import { IMessage } from '@/types/chat';
 
@@ -21,35 +22,53 @@ export const socketMiddleware: Middleware = store => next => action => {
         // @ts-ignore
         const user: User = action.payload;
 
-        // Only create a new socket if one doesn't exist
-        if (!socketClient) {
-            socketClient = new ChatSocketClient(user);
-
-            // Set up event listeners
-            socketClient.onConnect(() => {
-                dispatch(setSocketConnected(true));
-                console.log('Socket connected successfully');
-            });
-
-            socketClient.onDisconnect(() => {
-                dispatch(setSocketConnected(false));
-                console.log('Socket disconnected');
-            });
-
-            socketClient.onMessage((message: IMessage) => {
-                console.log("message", message);
-                dispatch(addMessage({ roomId: message.room_id, message }));
-                console.log(`Message received in room ${message.room_id}:`, message);
-            });
-
-            socketClient.onRoomUpdate((room) => {
-                dispatch(updateRoom(room));
-                console.log('Room updated:', room);
-            });
-
-            // Initialize the connection
-            socketClient.initialize();
+        // Clean up existing socket if needed
+        if (socketClient) {
+            socketClient.disconnect();
+            socketClient = null;
         }
+
+        // Create a new socket client
+        socketClient = new ChatSocketClient(user);
+
+        // Set up event listeners
+        socketClient.onConnect(() => {
+            dispatch(setSocketConnected(true));
+            console.log('Socket connected successfully');
+        });
+
+        socketClient.onDisconnect(() => {
+            dispatch(setSocketConnected(false));
+            console.log('Socket disconnected');
+        });
+
+        socketClient.onMessage((message: IMessage) => {
+            console.log("MIDDLEWARE: Message received from socket:", message);
+
+            if (message && message.room_id) {
+                console.log(`MIDDLEWARE: Dispatching message to room ${message.room_id}`);
+                dispatch(addMessage({ roomId: message.room_id, message }));
+
+                // If this is not the currently selected room, update unread count
+                const state = getState();
+                if (state.chat.selectedRoomId !== message.room_id) {
+                    dispatch(setUnreadCount({
+                        roomId: message.room_id,
+                        count: (state.chat.unreadCounts[message.room_id] || 0) + 1
+                    }));
+                }
+            } else {
+                console.error("MIDDLEWARE: Invalid message format received:", message);
+            }
+        });
+
+        socketClient.onRoomUpdate((room) => {
+            dispatch(updateRoom(room));
+            console.log('Room updated:', room);
+        });
+
+        // Initialize the connection
+        socketClient.initialize();
 
         return next(action);
     }

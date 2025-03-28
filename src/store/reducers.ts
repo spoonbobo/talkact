@@ -2,6 +2,7 @@
 import { combineReducers } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
 import chatReducer from './features/chatSlice';
+import userReducer from './features/userSlice';
 
 // Example slice
 const exampleSlice = createSlice({
@@ -27,6 +28,7 @@ export const { increment, decrement, incrementByAmount } = exampleSlice.actions;
 const rootReducer = combineReducers({
   example: exampleSlice.reducer,
   chat: chatReducer,
+  user: userReducer,
 });
 
 export default rootReducer;

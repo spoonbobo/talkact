@@ -11,6 +11,9 @@ import { AuthProvider } from "@/providers/auth_provider";
 import SocketProvider from "@/providers/socket_provider";
 import Navbar from "@/components/navbar";
 import { Toaster } from "@/components/ui/toaster";
+import { defaultSystem } from "@chakra-ui/react"
+import { ColorModeProvider } from "@/components/ui/color-mode"
+
 
 export default function Providers({
   children,
@@ -20,7 +23,7 @@ export default function Providers({
   session: any;
 }) {
   const [navExpanded, setNavExpanded] = React.useState(false);
-  
+
   // Function to handle navbar expansion state
   const handleNavExpansion = (expanded: boolean) => {
     setNavExpanded(expanded);
@@ -32,49 +35,55 @@ export default function Providers({
         <PersistGate loading={null} persistor={persistor}>
           <SocketProvider>
             <ChakraProvider>
-              <Toaster />
-              <Flex direction="row" minH="100vh" position="relative">
-                <Navbar onExpansionChange={handleNavExpansion} />
-                <Box
-                  as="main"
-                  flex="1"
-                  ml="70px"
-                  transition="margin-left 0.4s cubic-bezier(0.22, 1, 0.36, 1)"
-                  overflow="hidden"
-                  display="flex"
-                  flexDirection="column"
-                  height="calc(100vh - 64px)" // Assuming header is 64px
-                  position="relative"
-                >
+              {/* @ts-ignore */}
+              <ColorModeProvider value={defaultSystem}>
+                <Toaster />
+                <Flex direction="row" minH="100vh" position="relative" bg="bg.subtle">
+                  <Navbar onExpansionChange={handleNavExpansion} />
                   <Box
-                    position="absolute"
-                    top="0"
-                    left="0"
-                    right="0"
-                    bottom="0"
-                    background="linear-gradient(to right, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05) 50%)"
-                    backdropFilter={navExpanded ? "blur(6px)" : "blur(0px)"}
-                    zIndex="5"
-                    pointerEvents="none"
-                    opacity={navExpanded ? 1 : 0}
-                    transform={navExpanded ? "translateX(0)" : "translateX(-10px)"}
-                    transition="opacity 0.4s ease, transform 0.4s ease, backdrop-filter 0.4s ease"
-                  />
-                  <Container
-                    maxW="container.xl"
-                    py={4}
-                    height="100%"
+                    as="main"
+                    flex="1"
+                    ml="70px"
+                    transition="margin-left 0.4s cubic-bezier(0.22, 1, 0.36, 1)"
                     overflow="hidden"
                     display="flex"
                     flexDirection="column"
+                    height="calc(100vh - 64px)" // Assuming header is 64px
                     position="relative"
-                    zIndex="1"
                   >
-                    {children}
-                  </Container>
-                </Box>
-                {/* <Footer /> */}
-              </Flex>
+                    <Box
+                      position="absolute"
+                      top="0"
+                      left="0"
+                      right="0"
+                      bottom="0"
+                      background={{
+                        base: "linear-gradient(to right, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02) 50%)",
+                        _dark: "linear-gradient(to right, rgba(30, 30, 30, 0.3), rgba(15, 15, 15, 0.1) 50%)"
+                      }}
+                      backdropFilter={navExpanded ? "blur(12px)" : "blur(0px)"}
+                      zIndex="5"
+                      pointerEvents="none"
+                      opacity={navExpanded ? 1 : 0}
+                      transform={navExpanded ? "translateX(0)" : "translateX(-10px)"}
+                      transition="opacity 0.4s ease, transform 0.4s ease, backdrop-filter 0.4s ease"
+                    />
+                    <Container
+                      maxW="container.xl"
+                      py={4}
+                      height="100%"
+                      overflow="hidden"
+                      display="flex"
+                      flexDirection="column"
+                      position="relative"
+                      zIndex="1"
+                    >
+                      {children}
+                    </Container>
+                  </Box>
+                  {/* <Footer /> */}
+                </Flex>
+              </ColorModeProvider>
             </ChakraProvider>
           </SocketProvider>
         </PersistGate>

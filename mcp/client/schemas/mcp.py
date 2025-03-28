@@ -46,3 +46,14 @@ class MCPResponse(BaseModel):
     tools_called: List[MCPToolCall] = Field(default_factory=list)
     is_tool_call: bool = Field(default=False)
     conversation: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+
+
+
+
+class MCPSummon(BaseModel):
+    room_id: str | int
+    created_at: str
+    query: str
+    client_host: str | None = None

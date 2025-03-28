@@ -27,7 +27,7 @@ export default function RootLayout({
   session: any;
 }>) {
   return (
-    <html>
+    <html suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

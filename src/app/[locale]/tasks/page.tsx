@@ -20,6 +20,7 @@ import { useCallback, useRef, useState, useEffect } from "react";
 import { ITask } from "@/types/task";
 import Loading from "@/components/loading";
 import { useSession } from "next-auth/react";
+import { useColorModeValue } from "@/components/ui/color-mode";
 
 const MotionBox = motion(Box);
 
@@ -41,6 +42,35 @@ export default function TasksPage() {
   const isDragging = useRef(false);
   const startY = useRef(0);
   const startHeight = useRef(0);
+
+  // Dark mode adaptive colors
+  const bgSubtle = useColorModeValue("bg.subtle", "gray.800");
+  const textColor = useColorModeValue("gray.600", "gray.400");
+  const textColorStrong = useColorModeValue("gray.700", "gray.300");
+  const textColorHeading = useColorModeValue("gray.800", "gray.100");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const hoverBg = useColorModeValue("bg.subtle", "gray.700");
+  const tableBg = useColorModeValue("white", "gray.900");
+  const tableHeaderBg = useColorModeValue("bg.subtle", "gray.800");
+  const errorBg = useColorModeValue("red.50", "red.900");
+  const errorText = useColorModeValue("red.500", "red.300");
+  const emptyBg = useColorModeValue("bg.subtle", "gray.800");
+  const paginationBg = useColorModeValue("gray.200", "gray.700");
+  const paginationDisabledBg = useColorModeValue("gray.100", "gray.800");
+  const paginationColor = useColorModeValue("gray.700", "gray.300");
+  const paginationDisabledColor = useColorModeValue("gray.400", "gray.600");
+  const approveButtonBg = useColorModeValue("green.50", "green.900");
+  const approveButtonColor = useColorModeValue("green.600", "green.300");
+  const approveButtonHoverBg = useColorModeValue("green.100", "green.800");
+  const approveButtonActiveBg = useColorModeValue("green.200", "green.700");
+  const denyButtonBg = useColorModeValue("red.50", "red.900");
+  const denyButtonColor = useColorModeValue("red.600", "red.300");
+  const denyButtonHoverBg = useColorModeValue("red.100", "red.800");
+  const denyButtonActiveBg = useColorModeValue("red.200", "red.700");
+  const refreshButtonBg = useColorModeValue("bg.subtle", "gray.700");
+  const refreshButtonColor = useColorModeValue("gray.600", "gray.400");
+  const refreshButtonHoverBg = useColorModeValue("gray.100", "gray.600");
+  const refreshButtonActiveBg = useColorModeValue("gray.200", "gray.500");
 
   const statusOptions = createListCollection({
     items: [
@@ -133,13 +163,14 @@ export default function TasksPage() {
   const TaskMetadata = () => (
     <Flex direction="column" gap={4}>
       <Box width="100%">
-        <Text fontSize={{ base: "sm", md: "md" }} color="gray.600" mb={1}>
+        <Text fontSize={{ base: "sm", md: "md" }} color={textColor} mb={1}>
           {t("summarization")}
         </Text>
         <Text
           fontSize={{ base: "sm", md: "md" }}
           fontWeight="medium"
           whiteSpace="pre-wrap"
+          color={textColorStrong}
         >
           {t("no_task_selected")}
         </Text>
@@ -147,22 +178,22 @@ export default function TasksPage() {
 
       <Flex direction="row" wrap="wrap" gap={4}>
         <Box>
-          <Text fontSize="xs" color="gray.500">
+          <Text fontSize="xs" color={textColor}>
             {t("created")}
           </Text>
-          <Text fontSize="sm">N/A</Text>
+          <Text fontSize="sm" color={textColorStrong}>N/A</Text>
         </Box>
         <Box>
-          <Text fontSize="xs" color="gray.500">
+          <Text fontSize="xs" color={textColor}>
             {t("started")}
           </Text>
-          <Text fontSize="sm">N/A</Text>
+          <Text fontSize="sm" color={textColorStrong}>N/A</Text>
         </Box>
         <Box>
-          <Text fontSize="xs" color="gray.500">
+          <Text fontSize="xs" color={textColor}>
             {t("completed")}
           </Text>
-          <Text fontSize="sm">N/A</Text>
+          <Text fontSize="sm" color={textColorStrong}>N/A</Text>
         </Box>
       </Flex>
     </Flex>
@@ -172,28 +203,30 @@ export default function TasksPage() {
   const TaskSidebar = () => (
     <Box
       width="180px"
-      bg="gray.50"
+      bg={bgSubtle}
       p={4}
       borderRadius="md"
       height="fit-content"
+      borderWidth="1px"
+      borderColor={borderColor}
     >
       <Flex direction="column" gap={3}>
         <Flex justify="space-between" align="center">
-          <Text fontSize="xs" fontWeight="medium" color="gray.600">
+          <Text fontSize="xs" fontWeight="medium" color={textColor}>
             {t("status")}
           </Text>
           <Flex align="center">
-            <Text fontSize="xs" color="gray.500">
+            <Text fontSize="xs" color={textColor}>
               {t("no_task_selected")}
             </Text>
           </Flex>
         </Flex>
 
         <Box mb={2}>
-          <Text fontSize="xs" color="gray.500">
+          <Text fontSize="xs" color={textColor}>
             {t("task_id")}
           </Text>
-          <Text fontSize="sm" fontWeight="medium" color="gray.700">
+          <Text fontSize="sm" fontWeight="medium" color={textColorStrong}>
             -
           </Text>
         </Box>
@@ -204,12 +237,12 @@ export default function TasksPage() {
             py={2}
             px={3}
             borderRadius="md"
-            bg="green.50"
-            color="green.600"
+            bg={approveButtonBg}
+            color={approveButtonColor}
             fontWeight="medium"
             fontSize="sm"
-            _hover={{ bg: "green.100" }}
-            _active={{ bg: "green.200" }}
+            _hover={{ bg: approveButtonHoverBg }}
+            _active={{ bg: approveButtonActiveBg }}
             _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
           >
             {t("approve")}
@@ -220,12 +253,12 @@ export default function TasksPage() {
             py={2}
             px={3}
             borderRadius="md"
-            bg="red.50"
-            color="red.600"
+            bg={denyButtonBg}
+            color={denyButtonColor}
             fontWeight="medium"
             fontSize="sm"
-            _hover={{ bg: "red.100" }}
-            _active={{ bg: "red.200" }}
+            _hover={{ bg: denyButtonHoverBg }}
+            _active={{ bg: denyButtonActiveBg }}
             _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
           >
             {t("deny")}
@@ -236,12 +269,12 @@ export default function TasksPage() {
             py={2}
             px={3}
             borderRadius="md"
-            bg="gray.100"
-            color="gray.600"
+            bg={refreshButtonBg}
+            color={refreshButtonColor}
             fontWeight="medium"
             fontSize="sm"
-            _hover={{ bg: "gray.200" }}
-            _active={{ bg: "gray.300" }}
+            _hover={{ bg: refreshButtonHoverBg }}
+            _active={{ bg: refreshButtonActiveBg }}
             _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
           >
             <Flex align="center" justify="center">
@@ -274,7 +307,7 @@ export default function TasksPage() {
         overflow="hidden"
         position="relative"
       >
-        <Heading size="lg" mb={6} display="flex" alignItems="center">
+        <Heading size="lg" mb={6} display="flex" alignItems="center" color={textColorHeading}>
           <Icon as={FaTasks} mr={3} color="blue.500" />
           {t("tasks")}
         </Heading>
@@ -301,14 +334,15 @@ export default function TasksPage() {
               flexDirection={{ base: "column", md: "row" }}
               gap={2}
             >
-              <Text fontSize="xl" fontWeight="bold" textAlign="left">
+              <Text fontSize="xl" fontWeight="bold" textAlign="left" color={textColorHeading}>
                 {t("task_history")}
               </Text>
               <Flex gap={2} alignItems="center" flexWrap="wrap">
-                <Text fontSize="sm">{t("status")}:</Text>
+                <Text fontSize="sm" color={textColor}>{t("status")}:</Text>
                 <Select.Root
                   size="sm"
                   width="150px"
+                  color={textColor}
                   collection={statusOptions}
                   defaultValue={["all"]}
                 >
@@ -325,7 +359,7 @@ export default function TasksPage() {
                     <Select.Positioner>
                       <Select.Content>
                         {statusOptions.items.map((option) => (
-                          <Select.Item item={option} key={option.value}>
+                          <Select.Item color={textColor} item={option} key={option.value}>
                             {option.label}
                             <Select.ItemIndicator />
                           </Select.Item>
@@ -342,19 +376,19 @@ export default function TasksPage() {
                 <Spinner size="lg" color="blue.500" />
               </Flex>
             ) : error ? (
-              <Box p={5} textAlign="center" bg="red.50" borderRadius="md">
-                <Text color="red.500">{t("error")}</Text>
+              <Box p={5} textAlign="center" bg={errorBg} borderRadius="md">
+                <Text color={errorText}>{t("error")}</Text>
               </Box>
             ) : tasks.length === 0 ? (
-              <Box p={5} textAlign="center" bg="gray.50" borderRadius="md">
-                <Text color="gray.600">{t("no_tasks_found")}</Text>
+              <Box p={5} textAlign="center" bg={emptyBg} borderRadius="md" borderWidth="1px" borderColor={borderColor}>
+                <Text color={textColor}>{t("no_tasks_found")}</Text>
               </Box>
             ) : (
               <>
                 <Box overflowX="auto" width="100%">
                   <Table.Root variant="outline" size="md" colorScheme="gray">
                     <Table.Header
-                      bg="gray.50"
+                      bg={tableHeaderBg}
                       position="sticky"
                       top={0}
                       zIndex={1}
@@ -363,18 +397,21 @@ export default function TasksPage() {
                         <Table.ColumnHeader
                           fontWeight="semibold"
                           width={{ base: "20%", md: "10%" }}
+                          color={textColorHeading}
                         >
                           {t("id")}
                         </Table.ColumnHeader>
                         <Table.ColumnHeader
                           fontWeight="semibold"
                           width={{ base: "25%", md: "15%" }}
+                          color={textColorHeading}
                         >
                           {t("role")}
                         </Table.ColumnHeader>
                         <Table.ColumnHeader
                           fontWeight="semibold"
                           width={{ base: "55%", md: "45%" }}
+                          color={textColorHeading}
                         >
                           {t("summarization")}
                         </Table.ColumnHeader>
@@ -382,6 +419,7 @@ export default function TasksPage() {
                           fontWeight="semibold"
                           width="20%"
                           display={{ base: "none", md: "table-cell" }}
+                          color={textColorHeading}
                         >
                           {t("created_at")}
                         </Table.ColumnHeader>
@@ -389,6 +427,7 @@ export default function TasksPage() {
                           fontWeight="semibold"
                           width="10%"
                           textAlign="center"
+                          color={textColorHeading}
                         >
                           {t("status")}
                         </Table.ColumnHeader>
@@ -399,21 +438,23 @@ export default function TasksPage() {
                         <Table.Row
                           key={task.id}
                           cursor="pointer"
-                          _hover={{ bg: "gray.50" }}
+                          _hover={{ bg: hoverBg }}
                         >
                           <Table.Cell
                             fontWeight="medium"
                             fontSize={{ base: "xs", md: "sm" }}
+                            color={textColorStrong}
                           >
                             {task.id}
                           </Table.Cell>
-                          <Table.Cell fontSize={{ base: "xs", md: "sm" }}>
+                          <Table.Cell fontSize={{ base: "xs", md: "sm" }} color={textColorStrong}>
                             {task.task_id}
                           </Table.Cell>
                           <Table.Cell>
                             <Box
                               title={task.task_summarization || ""}
                               fontSize={{ base: "xs", md: "sm" }}
+                              color={textColorStrong}
                             >
                               {truncateText(task.task_summarization || "", 100)}
                             </Box>
@@ -421,6 +462,7 @@ export default function TasksPage() {
                           <Table.Cell
                             fontSize={{ base: "xs", md: "sm" }}
                             display={{ base: "none", md: "table-cell" }}
+                            color={textColorStrong}
                           >
                             {formatDate(task.created_at)}
                           </Table.Cell>
@@ -441,7 +483,7 @@ export default function TasksPage() {
                   gap={3}
                 >
                   <Flex alignItems="center" gap={2}>
-                    <Text fontSize="sm">{t("rows_per_page")}:</Text>
+                    <Text fontSize="sm" color={textColor}>{t("rows_per_page")}:</Text>
                     <Select.Root
                       size="sm"
                       width="120px"
@@ -478,10 +520,10 @@ export default function TasksPage() {
                       px={2}
                       py={1}
                       borderRadius="md"
-                      bg={currentPage === 1 ? "gray.100" : "gray.200"}
-                      color={currentPage === 1 ? "gray.400" : "gray.700"}
+                      bg={currentPage === 1 ? paginationDisabledBg : paginationBg}
+                      color={currentPage === 1 ? paginationDisabledColor : paginationColor}
                       _hover={{
-                        bg: currentPage === 1 ? "gray.100" : "gray.300",
+                        bg: currentPage === 1 ? paginationDisabledBg : refreshButtonHoverBg,
                       }}
                       aria-disabled={currentPage === 1}
                       pointerEvents={currentPage === 1 ? "none" : "auto"}
@@ -493,10 +535,10 @@ export default function TasksPage() {
                       px={2}
                       py={1}
                       borderRadius="md"
-                      bg={currentPage === 1 ? "gray.100" : "gray.200"}
-                      color={currentPage === 1 ? "gray.400" : "gray.700"}
+                      bg={currentPage === 1 ? paginationDisabledBg : paginationBg}
+                      color={currentPage === 1 ? paginationDisabledColor : paginationColor}
                       _hover={{
-                        bg: currentPage === 1 ? "gray.100" : "gray.300",
+                        bg: currentPage === 1 ? paginationDisabledBg : refreshButtonHoverBg,
                       }}
                       aria-disabled={currentPage === 1}
                       pointerEvents={currentPage === 1 ? "none" : "auto"}
@@ -504,7 +546,7 @@ export default function TasksPage() {
                       ‹
                     </Box>
 
-                    <Text mx={2} fontSize="sm">
+                    <Text mx={2} fontSize="sm" color={textColor}>
                       {t("page")} {currentPage} {t("of")} {totalPages || 1}
                     </Text>
 
@@ -515,19 +557,19 @@ export default function TasksPage() {
                       borderRadius="md"
                       bg={
                         currentPage === totalPages || totalPages === 0
-                          ? "gray.100"
-                          : "gray.200"
+                          ? paginationDisabledBg
+                          : paginationBg
                       }
                       color={
                         currentPage === totalPages || totalPages === 0
-                          ? "gray.400"
-                          : "gray.700"
+                          ? paginationDisabledColor
+                          : paginationColor
                       }
                       _hover={{
                         bg:
                           currentPage === totalPages || totalPages === 0
-                            ? "gray.100"
-                            : "gray.300",
+                            ? paginationDisabledBg
+                            : refreshButtonHoverBg,
                       }}
                       _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
                       aria-disabled={
@@ -548,19 +590,19 @@ export default function TasksPage() {
                       borderRadius="md"
                       bg={
                         currentPage === totalPages || totalPages === 0
-                          ? "gray.100"
-                          : "gray.200"
+                          ? paginationDisabledBg
+                          : paginationBg
                       }
                       color={
                         currentPage === totalPages || totalPages === 0
-                          ? "gray.400"
-                          : "gray.700"
+                          ? paginationDisabledColor
+                          : paginationColor
                       }
                       _hover={{
                         bg:
                           currentPage === totalPages || totalPages === 0
-                            ? "gray.100"
-                            : "gray.300",
+                            ? paginationDisabledBg
+                            : refreshButtonHoverBg,
                       }}
                       _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
                       aria-disabled={
@@ -576,7 +618,7 @@ export default function TasksPage() {
                     </Box>
                   </Flex>
 
-                  <Text fontSize="sm" color="gray.600">
+                  <Text fontSize="sm" color={textColor}>
                     {t("showing")}{" "}
                     {tasks.length > 0
                       ? (currentPage - 1) * itemsPerPage + 1
@@ -614,10 +656,12 @@ export default function TasksPage() {
             height={`${100 - topHeight}%`}
             overflow="auto"
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            bg="white"
+            bg={bgSubtle}
             borderRadius="md"
             boxShadow="sm"
             p={4}
+            borderWidth="1px"
+            borderColor={borderColor}
           >
             <Flex width="100%" height="100%">
               <Box flex="1" mr={4} height="100%">
@@ -666,7 +710,7 @@ export default function TasksPage() {
                         <Text
                           fontSize={{ base: "sm", md: "md" }}
                           whiteSpace="pre-wrap"
-                          color="gray.700"
+                          color={textColorStrong}
                         >
                           {t("no_task_selected")}
                         </Text>
@@ -685,7 +729,7 @@ export default function TasksPage() {
                           delay: 0.1,
                         }}
                       >
-                        <Text color="gray.600">{t("no_task_selected")}</Text>
+                        <Text color={textColor}>{t("no_task_selected")}</Text>
                       </MotionBox>
                     </Tabs.Content>
 
@@ -703,7 +747,7 @@ export default function TasksPage() {
                       >
                         <Text
                           fontSize={{ base: "sm", md: "md" }}
-                          color="gray.600"
+                          color={textColor}
                         >
                           {t("no_task_selected")}
                         </Text>

@@ -115,8 +115,8 @@ services:
   # # main application services
   kakashi-chat_server:
     build:
-      context: .
-      dockerfile: server/chat_server/Dockerfile.chat_server
+      context: server/chat_server
+      dockerfile: Dockerfile.chat_server
     container_name: kakashi-chat_server
     ports:
       - "3001:3001"

@@ -1,11 +1,22 @@
 "use client";
-import { Spinner, Center, Heading, Box } from "@chakra-ui/react";
+import { Spinner, Center, Heading, Box, Text, VStack } from "@chakra-ui/react";
 import { useTranslations } from "next-intl";
 
-export default function Loading() {
+interface LoadingProps {
+  message?: string;
+  description?: string;
+  fullHeight?: boolean;
+}
+
+export default function Loading({
+  message,
+  description,
+  fullHeight = true
+}: LoadingProps) {
   const t = useTranslations("Loading");
+
   return (
-    <Box height="100vh" position="relative">
+    <Box height={fullHeight ? "100vh" : "100%"} position="relative">
       <Spinner
         size="xl"
         color="blue.500"
@@ -14,9 +25,14 @@ export default function Loading() {
         left={4}
       />
       <Center height="100%" flexDirection="column">
-        <Heading size="lg" mt={4} color="gray.700">
-          {t("load")}
-        </Heading>
+        <VStack>
+          <Heading size="lg" mt={4} color="gray.700">
+            {message || t("load")}
+          </Heading>
+          {description && (
+            <Text color="gray.600">{description}</Text>
+          )}
+        </VStack>
       </Center>
     </Box>
   );

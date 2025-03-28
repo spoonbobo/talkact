@@ -8,12 +8,22 @@ import { FaBookOpen } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import Loading from "@/components/loading";
+import { useColorModeValue } from "@/components/ui/color-mode";
+import { MCPResourceExplorer } from "@/components/mcp_explorer";
+import { KnowledgeBase } from "@/components/knowledge_base";
 
 const MotionBox = motion(Box);
 
 export default function LearnPage() {
   const t = useTranslations("Learn");
   const { data: session } = useSession();
+
+  // Dark mode adaptive colors
+  const textColorHeading = useColorModeValue("gray.800", "gray.100");
+  const bgSubtle = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const scrollbarColor = useColorModeValue("rgba(0,0,0,0.1)", "rgba(255,255,255,0.1)");
+  const tabContentBg = useColorModeValue("white", "gray.800");
 
   if (!session) {
     return <Loading />;
@@ -25,13 +35,13 @@ export default function LearnPage() {
       id: "kb",
       label: t("knowledge_base"),
       icon: FaBookOpen,
-      component: <div>Knowledge Base Content</div>,
+      component: <KnowledgeBase />,
     },
     {
       id: "mcp",
       label: t("mcp_explorer"),
       icon: FiServer,
-      component: <div>MCP Explorer Content</div>,
+      component: <MCPResourceExplorer />,
     },
   ];
 
@@ -55,7 +65,7 @@ export default function LearnPage() {
         overflow="hidden"
         position="relative"
       >
-        <Heading size="lg" mb={6} display="flex" alignItems="center">
+        <Heading size="lg" mb={6} display="flex" alignItems="center" color={textColorHeading}>
           <Icon as={FiBook} mr={3} color="blue.500" />
           {t("learn")}
         </Heading>
@@ -79,7 +89,17 @@ export default function LearnPage() {
             ))}
           </Tabs.List>
 
-          <Box flex="1" position="relative" overflow="hidden" width="100%">
+          <Box
+            flex="1"
+            position="relative"
+            overflow="hidden"
+            width="100%"
+            bg={bgSubtle}
+            borderWidth="1px"
+            borderColor={borderColor}
+            borderRadius="md"
+            mt={2}
+          >
             {tabsToRender.map((tab) => (
               <Tabs.Content
                 key={tab.id}
@@ -97,8 +117,9 @@ export default function LearnPage() {
                   width:
                     "calc(100% - 6px)" /* Subtract scrollbar width to prevent layout shift */,
                   scrollbarWidth: "thin",
-                  scrollbarColor: "rgba(0,0,0,0.1) transparent",
+                  scrollbarColor: `${scrollbarColor} transparent`,
                   msOverflowStyle: "-ms-autohiding-scrollbar",
+                  background: tabContentBg,
                 }}
               >
                 {tab.component}

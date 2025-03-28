@@ -1,10 +1,10 @@
 import { IChatRoom } from "./chat";
 
 export interface User {
-    id: number;
+    user_id: string;
     username: string;
     email: string;
-    // password: string;
+    password: string;
     created_at: Date;
     updated_at: Date;
     active_rooms: IChatRoom[];

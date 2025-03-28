@@ -14,6 +14,8 @@ import {
   FaSignInAlt,
 } from "react-icons/fa";
 import { toaster } from "./ui/toaster";
+import { useColorModeValue } from "@/components/ui/color-mode";
+import { useParams } from "next/navigation";
 
 const NavBar = ({ onExpansionChange }: { onExpansionChange?: (expanded: boolean) => void }) => {
   const isMobile = useBreakpointValue({ base: true, md: false });
@@ -30,8 +32,8 @@ const NavBar = ({ onExpansionChange }: { onExpansionChange?: (expanded: boolean)
   };
 
   return (
-    <NavBarContainer 
-      isMobile={isMobile} 
+    <NavBarContainer
+      isMobile={isMobile}
       isExpanded={isExpanded}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -54,20 +56,25 @@ const NavBarContainer = ({
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 }) => {
+  const bgColor = useColorModeValue("bg.subtle", "gray.800");
+  const borderColor = useColorModeValue("gray.100", "gray.700");
+  const shadowColor = useColorModeValue("rgba(0,0,0,0.06)", "rgba(0,0,0,0.3)");
+
   return (
     <div
       className={`
         fixed top-0 left-0 z-10 flex flex-col items-center justify-start
         ${isExpanded ? 'w-[260px]' : 'w-[60px]'}
         ${isMobile ? 'h-auto' : 'h-screen'}
-        px-3 py-4 bg-white/95 backdrop-blur-xl
-        shadow-[0_3px_20px_rgba(0,0,0,0.06)]
-        border-r border-gray-100
-        ${isMobile ? 'border-b' : ''}
+        px-3 py-4 backdrop-blur-xl
         transition-all duration-400 ease-out
         overflow-hidden
       `}
       style={{
+        backgroundColor: bgColor,
+        borderRight: `1px solid ${borderColor}`,
+        boxShadow: `0 3px 20px ${shadowColor}`,
+        borderBottom: isMobile ? `1px solid ${borderColor}` : 'none',
         transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
         transitionDelay: "0.1s"
       }}
@@ -122,22 +129,36 @@ const NavIconButton = ({
   mb?: number | string;
 }) => {
   const t = useTranslations("Navbar");
-  
+  const tooltipBg = useColorModeValue("gray.800", "gray.200");
+  const tooltipColor = useColorModeValue("white", "gray.800");
+  const textColor = useColorModeValue("gray.600", "gray.300");
+  const textColorDisabled = useColorModeValue("gray.300", "gray.600");
+  const iconHoverBg = useColorModeValue("blue.50", "blue.900");
+
   return (
     <div className={`relative w-full ${mb ? `mb-${mb}` : 'mb-12'}`}>
       {!isExpanded && (
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[110%] bg-gray-800 text-white text-xs px-3 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-10 shadow-lg">
+        <div
+          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[110%] text-xs px-3 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap z-10 shadow-lg"
+          style={{
+            backgroundColor: tooltipBg,
+            color: tooltipColor
+          }}
+        >
           {tooltipContent}
         </div>
       )}
-      
+
       <button
         className={`
           group flex items-center w-full p-3 rounded-xl transition-all duration-300 ease-in-out focus:outline-none
-          ${disabled 
-            ? 'cursor-not-allowed opacity-50 text-gray-300' 
-            : `cursor-pointer ${color ? `text-${color}` : 'text-gray-600'} hover:bg-gray-50 hover:scale-105 hover:shadow-md active:bg-gray-100 active:scale-95`}
+          ${disabled
+            ? 'cursor-not-allowed opacity-50'
+            : 'cursor-pointer hover:scale-105 hover:shadow-md active:scale-95'}
         `}
+        style={{
+          color: disabled ? textColorDisabled : color || textColor
+        }}
         onClick={disabled ? undefined : onClick}
       >
         <Link
@@ -145,21 +166,34 @@ const NavIconButton = ({
           onClick={disabled ? (e) => e.preventDefault() : undefined}
           className={`flex items-center w-full ${disabled ? 'pointer-events-none' : ''}`}
         >
-          <div className="w-14 h-14 flex justify-center items-center flex-shrink-0 rounded-full hover:bg-blue-50 transition-all duration-200">
-            {typeof icon === 'function' ? 
+          <div
+            className="w-14 h-14 flex justify-center items-center flex-shrink-0 rounded-full transition-all duration-200"
+            style={{
+              backgroundColor: 'transparent',
               // @ts-ignore
-              icon() : 
-              <span className="text-2xl transition-all duration-300 group-hover:text-blue-500">
-                <Icon as={icon} boxSize={7} />
+              '&:hover': {
+                backgroundColor: iconHoverBg
+              }
+            }}
+          >
+            {typeof icon === 'function' ?
+              // @ts-ignore
+              icon() :
+              <span className="text-2xl transition-all duration-300">
+                <Icon
+                  as={icon}
+                  boxSize={7}
+                  className="group-hover:text-blue-500"
+                />
               </span>
             }
           </div>
-          
+
           <div className={`
             relative ml-4 h-6 overflow-hidden transition-all duration-500 ease-in-out
             ${isExpanded ? 'w-[120px]' : 'w-0'}
           `}>
-            <div 
+            <div
               className={`
                 absolute top-0 left-0 font-medium whitespace-nowrap
                 transition-all duration-500 ease-in-out
@@ -184,6 +218,10 @@ const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: 
   const t = useTranslations("Navbar");
   const { data: session, status } = useSession();
   const isLoggedIn = !!session;
+  const logoBgColor = useColorModeValue("gray.100", "gray.700");
+  const logoTextColor = useColorModeValue("gray.800", "gray.100");
+  const logoShadow = useColorModeValue("shadow-sm", "shadow-none");
+  const params = useParams();
 
   return (
     <div className="flex flex-col items-center w-full h-full">
@@ -194,7 +232,8 @@ const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: 
           to="/"
           icon={() => (
             <div
-              className="w-10 h-10 bg-blue-500 rounded-md flex items-center justify-center text-white font-bold shadow-md shadow-blue-200 transition-all duration-300 ease-in-out hover:scale-110 hover:shadow-lg active:scale-95"
+              className={`w-10 h-10 rounded-md flex items-center justify-center font-bold ${logoShadow} transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 border border-gray-300 dark:border-gray-600`}
+              style={{ backgroundColor: logoBgColor, color: logoTextColor }}
             >
               K
             </div>
@@ -206,82 +245,71 @@ const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: 
           mb={10}
         />
 
-        {/* Main navigation - always visible */}
-        <div className="flex flex-col w-full items-center">
-          <NavIconButton
-            to="/chat"
-            icon={FaComment}
-            label="Chat"
-            tooltipContent={t("chat")}
-            isMobile={isMobile}
-            disabled={!isLoggedIn}
-            isExpanded={isExpanded}
-          />
+        {/* Main navigation - only visible when logged in */}
+        {isLoggedIn && (
+          <div className="flex flex-col w-full items-center">
+            <NavIconButton
+              to="/chat"
+              icon={FaComment}
+              label="Chat"
+              tooltipContent={t("chat")}
+              isMobile={isMobile}
+              isExpanded={isExpanded}
+            />
 
-          <NavIconButton
-            to="/tasks"
-            icon={FaTasks}
-            label="Tasks"
-            tooltipContent={t("tasks")}
-            isMobile={isMobile}
-            disabled={!isLoggedIn}
-            isExpanded={isExpanded}
-          />
+            <NavIconButton
+              to="/tasks"
+              icon={FaTasks}
+              label="Tasks"
+              tooltipContent={t("tasks")}
+              isMobile={isMobile}
+              isExpanded={isExpanded}
+            />
 
-          <NavIconButton
-            to="/dashboard"
-            icon={FaChartLine}
-            label="Dashboard"
-            tooltipContent={t("dashboard")}
-            isMobile={isMobile}
-            disabled={!isLoggedIn}
-            isExpanded={isExpanded}
-          />
+            <NavIconButton
+              to="/dashboard"
+              icon={FaChartLine}
+              label="Dashboard"
+              tooltipContent={t("dashboard")}
+              isMobile={isMobile}
+              isExpanded={isExpanded}
+            />
 
-          <NavIconButton
-            to="/learn"
-            icon={FaBook}
-            label="Learn"
-            tooltipContent={t("learn")}
-            isMobile={isMobile}
-            disabled={!isLoggedIn}
-            isExpanded={isExpanded}
-          />
-        </div>
+            <NavIconButton
+              to="/learn"
+              icon={FaBook}
+              label="Learn"
+              tooltipContent={t("learn")}
+              isMobile={isMobile}
+              isExpanded={isExpanded}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Bottom section with settings and sign out - always visible */}
+      {/* Bottom section with settings and sign out */}
       <div className="flex flex-col w-full mt-auto mb-4 items-center">
-        <NavIconButton
-          to="/settings"
-          icon={FaCog}
-          label="Settings"
-          tooltipContent={t("settings")}
-          isMobile={isMobile}
-          disabled={!isLoggedIn}
-          isExpanded={isExpanded}
-        />
+        {/* Settings only visible when logged in */}
+        {isLoggedIn && (
+          <NavIconButton
+            to="/settings"
+            icon={FaCog}
+            label="Settings"
+            tooltipContent={t("settings")}
+            isMobile={isMobile}
+            isExpanded={isExpanded}
+          />
+        )}
 
+        {/* Sign in/out button - always visible */}
         <NavIconButton
-          to={isLoggedIn ? "#" : "/signin"}
+          to={isLoggedIn ? `/${params.locale}/signout` : "/signin"}
           icon={isLoggedIn ? FaSignOutAlt : FaSignInAlt}
           label={isLoggedIn ? "Sign_Out" : "Sign_In"}
           color={isLoggedIn ? "red.500" : "blue.500"}
           tooltipContent={isLoggedIn ? t("signout") : t("signin")}
           isMobile={isMobile}
           isExpanded={isExpanded}
-          onClick={
-            isLoggedIn
-              ? (e) => {
-                  e.preventDefault();
-                  signOut({ callbackUrl: "/" });
-                  toaster.create({
-                    title: t("signout_success"),
-                    description: t("signout_success_description"),
-                  });
-                }
-              : undefined
-          }
         />
       </div>
     </div>

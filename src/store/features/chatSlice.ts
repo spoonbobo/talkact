@@ -1,5 +1,8 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { persistReducer } from 'redux-persist';
+import storage from 'redux-persist/lib/storage';
 import { IChatRoom, IMessage } from '@/types/chat';
+import { User } from '@/types/user';
 // import { User } from '@/types/user';
 
 interface ChatState {
@@ -9,6 +12,7 @@ interface ChatState {
     messages: Record<string, IMessage[]>; // roomId -> messages
     unreadCounts: Record<string, number>; // roomId -> count
     isLoading: boolean;
+    messagesLoaded: Record<string, boolean>; // Track which rooms have loaded messages from server
 }
 
 const initialState: ChatState = {
@@ -18,6 +22,14 @@ const initialState: ChatState = {
     messages: {},
     unreadCounts: {},
     isLoading: false,
+    messagesLoaded: {},
+};
+
+// Configure persist for chat slice
+const chatPersistConfig = {
+    key: 'chat',
+    storage,
+    whitelist: ['messages'], // Only persist messages
 };
 
 export const chatSlice = createSlice({
@@ -48,10 +60,16 @@ export const chatSlice = createSlice({
         },
         addMessage: (state, action: PayloadAction<{ roomId: string, message: IMessage }>) => {
             const { roomId, message } = action.payload;
+            console.log("REDUCER: Adding message to room:", roomId, message);
+
+            // Initialize the messages array for this room if it doesn't exist
             if (!state.messages[roomId]) {
                 state.messages[roomId] = [];
             }
+
+            // Add the message to the array
             state.messages[roomId].push(message);
+            console.log("REDUCER: Updated messages for room:", state.messages[roomId]);
 
             // Increment unread count if not the selected room
             if (state.selectedRoomId !== roomId) {
@@ -61,6 +79,7 @@ export const chatSlice = createSlice({
         setMessages: (state, action: PayloadAction<{ roomId: string, messages: IMessage[] }>) => {
             const { roomId, messages } = action.payload;
             state.messages[roomId] = messages;
+            state.messagesLoaded[roomId] = true;
         },
         setUnreadCount: (state, action: PayloadAction<{ roomId: string, count: number }>) => {
             state.unreadCounts[action.payload.roomId] = action.payload.count;
@@ -73,6 +92,13 @@ export const chatSlice = createSlice({
             // The actual socket join happens in the middleware
             const roomId = action.payload;
             // You could add any state changes needed when joining a room
+        },
+        markRoomMessagesLoaded: (state, action: PayloadAction<string>) => {
+            state.messagesLoaded[action.payload] = true;
+        },
+        initializeSocket: (state, action: PayloadAction<User>) => {
+            // This is just a placeholder action
+            // The actual socket initialization happens in the middleware
         },
     },
 });
@@ -88,6 +114,11 @@ export const {
     setUnreadCount,
     setLoading,
     joinRoom,
+    markRoomMessagesLoaded,
+    initializeSocket,
 } = chatSlice.actions;
 
-export default chatSlice.reducer;
+// Create a persisted reducer
+const persistedChatReducer = persistReducer(chatPersistConfig, chatSlice.reducer);
+
+export default persistedChatReducer;

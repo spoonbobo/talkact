@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS task (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     start_time TIMESTAMP WITH TIME ZONE,
     end_time TIMESTAMP WITH TIME ZONE,
+    assigner TEXT NOT NULL, -- replace with UUID later
+    assignee TEXT NOT NULL, -- replace with UUID later
     task_summarization TEXT NOT NULL,
     room_id TEXT,
     context JSONB,

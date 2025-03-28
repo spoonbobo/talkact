@@ -3,7 +3,7 @@ import { User } from "./user";
 // client -> server Message
 export interface IMessage {
     id: string;
-    timestamp: string;
+    created_at: string;
     sender: User;
     content: string;
     avatar: string;

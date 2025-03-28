@@ -1,9 +1,9 @@
 {
   "Navbar": {
-    "kakashi": "口先だけ",
-    "home": "ホーム",
-    "chat": "チャット",
-    "tasks": "タスク",
+    "kakashi": "光說不做",
+    "home": "主頁",
+    "chat": "聊天室",
+    "tasks": "任務",
     "dashboard": "ダッシュボード",
     "learn": "学ぶ",
     "settings": "設定",
@@ -38,7 +38,11 @@
     "email_invalid": "無効なメールアドレス",
     "password_required": "パスワードは必須です",
     "password_must_be_at_least_8_characters": "パスワードは8文字以上でなければなりません",
-    "passwords_do_not_match": "パスワードが一致しません"
+    "passwords_do_not_match": "パスワードが一致しません",
+    "profile_creation_description": "アカウントを作成したら、Kakashi を使用できます",
+    "3rd_party_login_email": "あなたのメールアドレスは第三者のログインから来ています。そのメールアドレスでアカウントを作成してください",
+    "complete_your_profile": "あなたのプロフィールを完成させてください",
+    "create_profile": "プロフィールを作成する"
   },
   "Signin": {
     "use_third_party_login": "第三者のログインを使用する",
@@ -48,6 +52,7 @@
     "password_placeholder": "パスワードを入力してください",
     "or": "または",
     "signin": "ログイン",
+    "sign_in": "ログイン",
     "username_or_email_required": "ユーザー名またはメールアドレスは必須です",
     "password_required": "パスワードは必須です",
     "dont_have_account": "アカウントをお持ちでない方は",
@@ -57,14 +62,28 @@
     "signin_success_description": "正常にログインしました"
   },
   "Home": {
-    "welcome": "こんにちは世界！",
+    "welcome": "歓迎します Kakashi へ",
     "learn_title": "学ぶ",
-    "learn_description": "Kakashi の学ぶ機能を探索",
-    "tasks_title": "タスク",
-    "tasks_description": "タスクを確認して完了",
+    "learn_description": "Kakashi の学習機能を探索する",
+    "tasks_title": "任務",
+    "tasks_description": "任務を確認し、完了する",
     "mcp_title": "MCP",
-    "mcp_description": "Kakashi の MCP 機能を探索",
-    "welcome_message": "こんにちは"
+    "mcp_description": "Kakashi の MCP 機能を探索する",
+    "welcome_message": "こんにちは",
+    "guest_welcome": "こんにちは",
+    "guest_welcome_message": "Kakashi (光說不做）はMCPサーバーを統合したプログラムで、あなたとチームの生産性を向上させます。",
+    "guest_features_title": "機能",
+
+    "guest_cta_title": "今すぐ始める",
+    "guest_cta_description": "ログインまたは登録後、Kakashi のさまざまな機能を使用できます",
+    "get_started": "体験を始める",
+    "guest_footer": "Kakashi へようこそ",
+    "feature_chat_room": "チャットルーム",
+    "feature_chat_room_desc": "リアルタイム通信専用のスペースです。",
+    "feature_task_management": "タスク管理",
+    "feature_task_management_desc": "タスクを効率的に整理し、追跡します。",
+    "feature_learn": "学ぶ",
+    "feature_learn_desc": "スキルを向上させるためのリソースとチュートリアルにアクセスします。"
   },
   "Footer": {
     "privacy_policy": "プライバシーポリシー",
@@ -84,7 +103,13 @@
     "create": "作成",
     "cancel": "キャンセル",
     "creating": "作成中...",
-    "please_select_a_room": "チャットルームを選択してください"
+    "please_select_a_room": "チャットルームを選択してください",
+    "mention_someone": "誰かをメンションする",
+    "no_users_found": "ユーザーが見つかりません",
+    "task_log": "日誌",
+    "switch_to_task_view": "日誌に切り替え",
+    "switch_to_room_view": "チャットルームに切り替え",
+    "task_log_empty": "タスク日誌がありません"
   },
   "Tasks": {
     "tasks": "タスク",
@@ -120,7 +145,24 @@
   "Learn": {
     "learn": "学ぶ",
     "mcp_explorer": "MCP 探索器",
-    "knowledge_base": "知識庫"
+    "knowledge_base": "知識庫",
+    "mcp": {
+      "servers": "サーバー",
+      "search_servers_and_tools": "サーバーとツールを検索",
+      "error_loading_servers": "サーバーの読み込みに失敗しました",
+      "parameter": "パラメータ",
+      "type": "タイプ",
+      "required": "必須",
+      "optional": "オプション",
+      "available_servers": "利用可能なサーバー",
+      "show_details": "詳細を表示",
+      "hide_details": "詳細を非表示"
+    },
+    "kb": {
+      "document_categories": "ドキュメントカテゴリ",
+      "upload_document": "ドキュメントをアップロード",
+      "search_placeholder": "ドキュメントを検索"
+    }
   },
   "Settings": {
     "settings": "設定",

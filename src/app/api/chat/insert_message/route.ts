@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { IMessage } from '@/types/chat';
-import { User } from '@/types/user';
 
 const randomUserId = "550e8400-e29b-41d4-a716-446655440000";
 
@@ -10,7 +9,7 @@ export async function POST(request: Request) {
         const message: IMessage = await request.json();
         await db('messages').insert({
             id: message.id,
-            timestamp: message.timestamp,
+            created_at: message.created_at,
             sender: randomUserId, // TODO: replace with real user id
             content: message.content,
             avatar: message.avatar,

@@ -122,20 +122,6 @@ async function sendRecentMessages(socket, client) {
   }
 }
 
-/*
-resp {
-  id: '1742981869884',
-  room_id: '829a2b39-27b0-4dbb-bb12-50b595def2e8',
-  sender: {
-    name: 'Season',
-    email: 'seasonluke@gmail.com',
-    image: 'https://avatars.githubusercontent.com/u/73148791?v=4'
-  },
-  content: 'aaa',
-  timestamp: '2025-03-26T09:37:49.884Z',
-  avatar: 'https://avatars.githubusercontent.com/u/73148791?v=4'
-}
-*/
 async function insertionMessageInAppDb(message) {
   const url = process.env.CLIENT_URL + "/api/chat/insert_message";
   const resp = await axios.post(url, message);

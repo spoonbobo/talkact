@@ -2,6 +2,7 @@
 
 import { Box, Text } from "@chakra-ui/react";
 import { IMessage, IChatBubbleProps } from "@/types/chat";
+import ReactMarkdown from "react-markdown";
 
 export const ChatBubble = ({
   message,
@@ -21,18 +22,20 @@ export const ChatBubble = ({
       mb={1}
       boxShadow="0 1px 2px rgba(0,0,0,0.05)"
       alignSelf={isUser ? "flex-end" : "flex-start"}
+      wordBreak="break-word"
     >
       <Box>
-        <Text fontSize="md">{message.content}</Text>
-        <Text
+        <ReactMarkdown>{message.content}</ReactMarkdown>
+        {/* <Text fontSize="md">{message.content}</Text> */}
+        {/* <Text
           fontSize="xs"
           opacity="0.7"
           mt={1}
           textAlign="right"
           color={isUser ? "whiteAlpha.800" : "gray.500"}
         >
-          {message.timestamp}
-        </Text>
+          {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </Text> */}
       </Box>
     </Box>
   );

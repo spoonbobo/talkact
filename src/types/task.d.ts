@@ -18,6 +18,8 @@ export interface ITask {
     created_at: string;
     start_time: string;
     end_time: string;
+    assigner: UUID;
+    assignee: UUID;
     task_summarization: string;
     room_id: string;
     context: IContextItem[];

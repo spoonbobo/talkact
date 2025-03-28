@@ -6,21 +6,7 @@ import requests
 from loguru import logger
 from typing import Dict, Any, Optional
 
-from schemas.mcp import MCPAccess, MCPResponse
-
-"""
-class Message(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    sender: str
-    text: str
-    timestamp: str = Field(default_factory=lambda: str(datetime.now()))
-
-class MCPAccess(BaseModel):
-    room_id: str
-    query: str
-    history: List[str]
-
-"""
+from schemas.mcp import MCPResponse
 
 class AppClient:
     """Client for connecting to chat rooms and sending messages."""
@@ -90,9 +76,10 @@ class AppClient:
         """
         message_data = {
             "id": response.id,
-            "text": response.text,
+            "room_id": response.room_id,
             "sender": response.sender,
-            "timestamp": response.timestamp
+            "content": response.text,
+            "created_at": response.created_at
         }
         
         logger.info(f"Sending message to room {self.room_id}: {message_data}")

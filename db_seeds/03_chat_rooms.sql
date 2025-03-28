@@ -11,9 +11,9 @@ CREATE TABLE IF NOT EXISTS chat_rooms (
 -- Create the messages table
 CREATE TABLE IF NOT EXISTS messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    room_id UUID REFERENCES chat_rooms(id),
-    sender UUID REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    room_id UUID, -- Removed REFERENCES chat_rooms(id)
+    sender UUID, -- Removed REFERENCES users(id)
     content TEXT NOT NULL,
     avatar TEXT
 );

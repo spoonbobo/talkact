@@ -1,6 +1,10 @@
 import dotenv
 from contextlib import AsyncExitStack
-from typing import List, Dict
+from typing import Dict, SupportsIndex
+from datetime import datetime
+import asyncio
+import httpx
+import uuid
 import os
 
 dotenv.load_dotenv()
@@ -10,10 +14,11 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.types import Tool as mcp_tool
 from mcp.client.stdio import stdio_client
 
+from schemas.mcp import MCPSummon
 from schemas.mcp import MCPAccess, MCPResponse, MCPToolCall, MCPTool, MCPServer, MCPApproval
 from service.bypasser import Bypasser
 
-class MCPClientManager:
+class MCPClient:
     """
     A MCP client manager that contains connections to mcp servers
     """
@@ -23,6 +28,7 @@ class MCPClientManager:
         self.exit_stack = {server: AsyncExitStack() for server in self.servers}
         self.ollama_client = Client(host=os.getenv("OLLAMA_API_BASE_URL"))
         self.ollama_model = os.getenv("OLLAMA_MODEL", "")
+        self.queue = asyncio.Queue()
 
 
     async def connect_to_servers(self) -> None:
@@ -63,38 +69,53 @@ class MCPClientManager:
                 }
             }
         }
-        return ollama_tool
+        return ollama_tool  
+
+    async def receive_summon(
+        self, 
+        summon: MCPSummon, 
+    ) -> None:
+        await self.queue.put(summon)
 
     async def respond(
         self, 
-        access: MCPAccess, 
-    ) -> MCPResponse:
-        messages = access.history
-        query = access.text.replace("@agent", "")
+        summon: MCPSummon, 
+    ) -> None:
+        client_url = f"http://{summon.client_host}:3000"
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{client_url}/api/chat/get_messages", 
+                json={"roomId": summon.room_id, "limit": 100}
+            )
+            messages = response.json()
+            print(messages)
+        
+        
+        query = summon.query
+        query = query.replace("@agent", "")
         query = [{"role": "user", "content": query}]
-        conversions = [
+
+        conversations = [
             {
-                "role": "assistant" if msg.sender == access.mentioned_agent else "user",
-                "content": msg.text,
+                "role": "assistant" if msg["sender"] == "agent" else "user",
+                "content": msg["content"]
             }
             for msg in messages
         ]
-
-        byp_mcp_server = await self.bypasser.bypass(conversions, query[0]["content"])
+        
+        byp_mcp_server = await self.bypasser.bypass(conversations, query[0]["content"])
         server = self.servers[byp_mcp_server]
         server_description = self.bypasser.server_descriptions_dict[byp_mcp_server]
 
         tools = await server.list_tools()
         tools = tools.tools
-        logger.info(f"Tools: {tools}")
         ollama_tools = [self.convert_mcp_tool_desc_to_ollama_tool(tool) for tool in tools]
         descriptions = [tool["function"]["description"] for tool in ollama_tools]
-        logger.info(f"Ollama tools: {ollama_tools}")
 
 
         llm_response = self.ollama_client.chat(
             model=self.ollama_model,
-            messages=[{"role": "system", "content": server_description}] + conversions + query,
+            messages=[{"role": "system", "content": server_description}] + conversations + query,
             tools=ollama_tools,
         )
         
@@ -107,7 +128,7 @@ class MCPClientManager:
                 "tool_name": tool_call.function.name,
                 "args": tool_call.function.arguments,
                 "mcp_server": byp_mcp_server,
-                "room_id": access.room_id,
+                "room_id": summon.room_id,
             }
             for tool_call in tool_calls
         ]
@@ -121,23 +142,27 @@ Available tools: {[tool.name for tool in tools]}
 Server purpose: {server_description}"""
         }
         
-        logger.info(f"Summarize query: {summarize_query}")
-        
         summarization = self.ollama_client.chat(
             model=self.ollama_model,
-            messages=conversions + [summarize_query],
+            messages=conversations + [summarize_query],
         )
 
-        logger.info(f"Tools called: {tools_called}")
-        response = MCPResponse(
-            sender=access.mentioned_agent,
-            text=",".join(descriptions),
-            summarization=summarization.message.content, # type: ignore
-            is_tool_call=True,
-            tools_called=[MCPToolCall(**tool_call) for tool_call in tools_called],
-            conversation=conversions + query,
-        )
-        return response
+        task_id = uuid.uuid4()
+        task = {
+            "task_id": task_id,
+            "created_at": datetime.now().isoformat(),
+            "start_time": None,
+            "end_time": None,
+            "assigner": None,
+            "assignee": None,
+            "task_summarization": summarization.message.content,
+            "room_id": summon.room_id,
+            "context": tools_called,
+            "tools_called": tools_called,
+            "status": "pending",
+            "result": ""
+        }
+        
 
     async def call_tool(
         self, 

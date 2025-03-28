@@ -6,10 +6,12 @@ load_dotenv()
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
+
 from api.mcp.routes import router as mcp_router
-from service.mcp_client import MCPClientManager
+from service.mcp_client import MCPClient
 from service.bypasser import Bypasser
 
 @asynccontextmanager
@@ -19,22 +21,24 @@ async def lifespan(app: FastAPI):
     mcp_servers = mcp_servers["mcpServers"]
     bypasser = Bypasser(mcp_servers)
 
-    mcp_client_manager = MCPClientManager(mcp_servers, bypasser)
-    await mcp_client_manager.connect_to_servers()
-
-    # Log network information for debugging
-    # hostname = socket.gethostname()
-    # local_ip = socket.gethostbyname(hostname)
-    # logger.info(f"Server hostname: {hostname}")
-    # logger.info(f"Server local IP: {local_ip}")
-
+    mcp_client = MCPClient(mcp_servers, bypasser)
+    
+    await mcp_client.connect_to_servers()
     logger.info("Connected to MCP client")
 
-    app.state.mcp_client_manager = mcp_client_manager
+    app.state.mcp_client = mcp_client
     yield
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(mcp_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 if __name__ == "__main__":
     # Add hostname and port info to the log

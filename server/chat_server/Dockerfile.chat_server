@@ -1,16 +1,27 @@
-FROM node:23.7-alpine
+# Use a stable Node.js version (Alpine-based for small size)
+FROM node:20-alpine
+
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Install build tools and dependencies for node-gyp and native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    libpq-dev
+
+# Copy only package.json and package-lock.json to leverage Docker caching
 COPY package*.json ./
+
+# Install dependencies
 RUN npm install
 
-# Copy application source code
-COPY server/chat_server/server.js ./
+# Copy the application source code
+COPY . .
 
 # Expose the application port
 EXPOSE 3001
 
-# Command to run the application
+# Command to start the application
 CMD ["node", "server.js"]
-

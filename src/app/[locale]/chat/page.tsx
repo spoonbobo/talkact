@@ -1,5 +1,8 @@
 "use client";
 
+// TODO: only load messages from db for first launch
+// in later, fetch unread messages from db
+
 import {
   Box,
   Text,
@@ -7,53 +10,135 @@ import {
   Icon,
   Container,
   Heading,
-  Input,
-  Avatar,
-  VStack,
-  Badge,
-  AvatarGroup,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaComments, FaPlus, FaPaperPlane, FaUsers } from "react-icons/fa";
+import { FaComments, FaUsers, FaExchangeAlt, FaTasks } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { IMessage, IChatRoom, IChatRoomUpdate } from "@/types/chat";
+import { IMessage, IChatRoom } from "@/types/chat";
 import { User } from "@/types/user";
-import { ChatBubble } from "@/components/chat/bubble";
 import { useSession } from "next-auth/react";
 import Loading from "@/components/loading";
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { 
-  setRooms, 
-  setSelectedRoom, 
+import {
+  setRooms,
+  setSelectedRoom,
   setLoading,
-  joinRoom
+  joinRoom,
+  setMessages,
+  markRoomMessagesLoaded
 } from '@/store/features/chatSlice';
 import { v4 as uuidv4 } from 'uuid';
+import { useColorModeValue } from "@/components/ui/color-mode"
+import React from "react";
+import { ChatRoomList } from "@/components/chat/room_list";
+import { ChatMessageList } from "@/components/chat/message_list";
+import { ChatInput } from "@/components/chat/chat_input";
+import { CreateRoomForm } from "@/components/chat/create_room_form";
 
 const MotionBox = motion(Box);
+
+// Add this dummy TaskLog component
+const TaskLog = () => {
+  const t = useTranslations("Chat");
+  const bgColor = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const bgSubtle = useColorModeValue("bg.subtle", "gray.800");
+  const textColor = useColorModeValue("gray.600", "gray.400");
+  const textColorHeading = useColorModeValue("gray.800", "gray.100");
+
+  return (
+    <Box
+      height="100%"
+      width="100%"
+      bg={bgSubtle}
+      borderRadius="md"
+      borderWidth="1px"
+      borderColor={borderColor}
+      overflow="hidden"
+      display="flex"
+      flexDirection="column"
+      transition="all 0.3s ease"
+      boxShadow="sm"
+    >
+      <Flex
+        p={4}
+        borderBottomWidth="1px"
+        borderColor={borderColor}
+        bg={bgSubtle}
+        align="center"
+      >
+        <Icon as={FaTasks} color="blue.500" mr={2} />
+        <Text fontWeight="bold" color={textColorHeading}>{t("task_log")}</Text>
+      </Flex>
+
+      <Box flex="1" p={4} overflow="auto">
+        {/* Empty content for now - will be replaced later */}
+        <Text color={textColor} fontSize="sm" textAlign="center" mt={10}>
+          {t("task_log_empty")}
+        </Text>
+      </Box>
+    </Box>
+  );
+};
 
 export default function ChatPage() {
   const t = useTranslations("Chat");
   const { data: session } = useSession();
   const dispatch = useDispatch();
-  
+
   // Get chat state from Redux
-  const { 
-    rooms, 
-    selectedRoomId, 
-    messages, 
-    unreadCounts, 
-    isLoading, 
-    isSocketConnected 
+  const {
+    rooms,
+    selectedRoomId,
+    messages,
+    unreadCounts,
+    isLoading,
+    messagesLoaded
   } = useSelector((state: RootState) => state.chat);
-  
+
+  // Get messages for the selected room
+  const currentMessages = selectedRoomId ? messages[selectedRoomId] || [] : [];
+
   const [messageInput, setMessageInput] = useState<string>("");
   const [isCreatingRoom, setIsCreatingRoom] = useState<boolean>(false);
   const [newRoomName, setNewRoomName] = useState<string>("");
   const [isCreatingRoomLoading, setIsCreatingRoomLoading] = useState<boolean>(false);
+  const [isLayoutFlipped, setIsLayoutFlipped] = useState<boolean>(false);
+
+  // Add ref for message container to enable auto-scrolling
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
+  // Function to scroll to bottom
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Auto-scroll when messages change or when a room is selected
+  useEffect(() => {
+    scrollToBottom();
+  }, [currentMessages, selectedRoomId]);
+
+  // Add this new useEffect to ensure scrolling on initial load
+  useEffect(() => {
+    // This will run after the component has mounted and the DOM is ready
+    scrollToBottom();
+
+    // Add a small delay to ensure content is fully rendered
+    const timer = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Dark mode adaptive colors
+  const bgSubtle = useColorModeValue("bg.subtle", "gray.800");
+  const textColor = useColorModeValue("gray.600", "gray.400");
+  const textColorHeading = useColorModeValue("gray.800", "gray.100");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
 
   // Fetch rooms
   useEffect(() => {
@@ -74,38 +159,41 @@ export default function ChatPage() {
     }
   }, [session, dispatch]);
 
-  // Sort rooms by last_updated timestamp (most recent first)
-  const sortedRooms = [...rooms].sort((a, b) => {
-    return (
-      new Date(b.last_updated).getTime() - new Date(a.last_updated).getTime()
-    );
-  });
-
   const handleSendMessage = () => {
     if (messageInput.trim() && selectedRoomId) {
-
       const newMessage: IMessage = {
         id: uuidv4(),
         room_id: selectedRoomId,
         sender: session?.user as User,
         content: messageInput,
-        timestamp: new Date().toISOString(),
+        created_at: new Date().toISOString(),
         avatar: session?.user?.image || "",
       };
 
-      dispatch({ 
-        type: 'chat/sendMessage', 
-        payload: { message: newMessage } 
+      dispatch({
+        type: 'chat/sendMessage',
+        payload: { message: newMessage }
       });
-      
+
+      if (messageInput.includes("@agent")) {
+        triggerAgentAPI(messageInput, selectedRoomId);
+      }
+
       setMessageInput("");
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+  // Add this new function to handle the agent API call
+  const triggerAgentAPI = async (message: string, roomId: string) => {
+    try {
+      console.log("Agent mentioned, triggering API call");
+      const url = `http://${window.location.hostname}:34430/api/agent/summon`;
+      const response = await axios.post(url, { query: message, room_id: roomId, created_at: new Date().toISOString() });
+
+      console.log("Agent API response:", response.data);
+    }
+    catch (error) {
+      console.error("Error calling agent API:", error);
     }
   };
 
@@ -120,13 +208,12 @@ export default function ChatPage() {
           unread: 0,
         });
         const roomId = response.data.room_id;
-        console.log("roomId", roomId);
         setNewRoomName("");
         setIsCreatingRoom(false);
 
         // join the new room
         dispatch(joinRoom(roomId));
-        
+
         // Refresh rooms list
         const roomsResponse = await axios.get("/api/chat/get_rooms");
         dispatch(setRooms(roomsResponse.data));
@@ -138,53 +225,99 @@ export default function ChatPage() {
     }
   };
 
-  const handleKeyDownRoomName = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleCreateRoom();
-    } else if (e.key === "Escape") {
-      setIsCreatingRoom(false);
-      setNewRoomName("");
-    }
-  };
-
   // Group messages by sender for continuous messages
-  const groupedMessages = selectedRoomId 
+  const groupedMessages = selectedRoomId
     ? (messages[selectedRoomId]?.reduce(
-        (
-          acc: { sender: string; avatar: string; messages: IMessage[] }[],
-          message,
-          index
-        ) => {
-          const prevMessage = messages[selectedRoomId][index - 1];
+      (
+        acc: { sender: string; avatar: string; messages: IMessage[]; isCurrentUser: boolean }[],
+        message,
+        index
+      ) => {
+        const prevMessage = messages[selectedRoomId][index - 1];
 
-          // Check if this message is from the same sender as the previous one
-          const isContinuation =
-            prevMessage && prevMessage.sender === message.sender;
+        // Check if this message is from the current user
+        const isCurrentUser = message.sender.email === session?.user?.email;
 
-          if (isContinuation) {
-            // Add to the last group
-            acc[acc.length - 1].messages.push(message);
-          } else {
-            // Create a new group
-            acc.push({
-              sender: message.sender.username,
-              avatar: message.avatar,
-              messages: [message],
-            });
-          }
+        // Check if this message is from the same sender as the previous one
+        const isContinuation =
+          prevMessage &&
+          prevMessage.sender.email === message.sender.email;
 
-          return acc;
-        },
-        []
-      ) || [])
+        if (isContinuation) {
+          // Add to the last group
+          acc[acc.length - 1].messages.push(message);
+        } else {
+          // Create a new group
+          acc.push({
+            sender: message.sender.username,
+            avatar: message.avatar,
+            messages: [message],
+            isCurrentUser: isCurrentUser
+          });
+        }
+
+        return acc;
+      },
+      []
+    ) || [])
     : [];
 
   // Update to use selectedRoomId from Redux
   const currentRoom = rooms.find((r) => r.id === selectedRoomId);
-  
-  // Get messages for the selected room
-  const currentMessages = selectedRoomId ? messages[selectedRoomId] || [] : [];
+
+  // Fetch messages when selecting a room
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (selectedRoomId) {
+        // Check if we already have messages for this room and if they've been loaded from server
+        const hasLoadedMessages = messagesLoaded[selectedRoomId];
+
+        if (!hasLoadedMessages) {
+          try {
+            dispatch(setLoading(true));
+            const response = await axios.get(`/api/chat/get_messages?roomId=${selectedRoomId}`);
+
+            // Merge with any existing messages we might have
+            const existingMessages = messages[selectedRoomId] || [];
+            const serverMessages = response.data;
+
+            // Create a map of existing messages by ID for quick lookup
+            const existingMessageMap = new Map(
+              existingMessages.map(msg => [msg.id, msg])
+            );
+
+            // Combine messages, avoiding duplicates
+            const combinedMessages = [
+              ...existingMessages,
+              ...serverMessages.filter((msg: IMessage) => !existingMessageMap.has(msg.id))
+            ];
+
+            // Sort by created_at
+            combinedMessages.sort((a, b) =>
+              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            );
+
+            dispatch(setMessages({
+              roomId: selectedRoomId,
+              messages: combinedMessages
+            }));
+
+            dispatch(markRoomMessagesLoaded(selectedRoomId));
+          } catch (error) {
+            console.error("Error fetching messages:", error);
+          } finally {
+            dispatch(setLoading(false));
+          }
+        }
+      }
+    };
+
+    fetchMessages();
+  }, [selectedRoomId, dispatch, messages, messagesLoaded]);
+
+  const handleFlipLayout = () => {
+    setIsLayoutFlipped(!isLayoutFlipped);
+  };
 
   if (!session) {
     return <Loading />;
@@ -208,13 +341,13 @@ export default function ChatPage() {
         height="100%"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.3 }}
         display="flex"
         flexDirection="column"
         overflow="hidden"
         position="relative"
       >
-        <Heading size="lg" mb={6} display="flex" alignItems="center">
+        <Heading size="lg" mb={6} display="flex" alignItems="center" color={textColorHeading}>
           <Icon as={FaComments} mr={3} color="blue.500" />
           {t("chat")}
         </Heading>
@@ -224,195 +357,160 @@ export default function ChatPage() {
           height="calc(100% - 60px)"
           position="relative"
           overflow="hidden"
+          gap={4}
         >
-          {/* Left component - Room List */}
-          <Box
-            width="280px"
+          {/* Room List or Task Log Component with fixed width */}
+          <MotionBox
+            layout
+            initial={false}
+            animate={{
+              left: isLayoutFlipped ? "calc(100% - 300px)" : 0,
+              opacity: 1,
+              scale: 1,
+            }}
+            transition={{
+              duration: 0.5,
+              ease: "easeInOut",
+              opacity: { duration: 0.3 },
+              scale: { duration: 0.3 }
+            }}
+            position="absolute"
+            width="300px"
             height="100%"
-            overflow="auto"
-            pr={3}
-            borderRightWidth="1px"
-            borderColor="gray.200"
+            zIndex={1}
+            whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
           >
-            <Flex justifyContent="space-between" alignItems="center" mb={4}>
-              <Text fontSize="xl" fontWeight="bold" textAlign="left">
-                {t("rooms")}
-              </Text>
-              <Box
-                as="button"
-                py={2}
-                px={3}
-                borderRadius="md"
-                bg="gray.100"
-                color="gray.600"
-                fontWeight="medium"
-                fontSize="sm"
-                _hover={{ bg: "gray.200" }}
-                _active={{ bg: "gray.300" }}
-                _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-                onClick={() => setIsCreatingRoom(true)}
-                // @ts-ignore
-                disabled={isCreatingRoomLoading}
-              >
-                <Flex align="center" justify="center">
-                  <Icon as={FaPlus} mr={2} />
-                  {t("new_room")}
-                </Flex>
-              </Box>
-            </Flex>
-
-            <VStack align="stretch">
-              {sortedRooms.map((room: IChatRoom) => (
-                <Flex
-                  key={room.id}
-                  p={3}
-                  borderRadius="lg"
-                  bg={selectedRoomId === room.id ? "blue.50" : "white"}
-                  borderWidth="1px"
-                  borderColor={
-                    selectedRoomId === room.id ? "blue.300" : "gray.200"
-                  }
-                  _hover={{
-                    bg: selectedRoomId === room.id ? "blue.50" : "gray.50",
+            <AnimatePresence mode="wait" initial={false}>
+              {isLayoutFlipped ? (
+                <motion.div
+                  key="task-log"
+                  initial={{
+                    opacity: 0,
+                    scale: 0.92,
+                    filter: "blur(8px)",
+                    x: -20
                   }}
-                  cursor="pointer"
-                  onClick={() => dispatch(setSelectedRoom(room.id))}
-                  align="center"
-                  transition="all 0.2s"
+                  animate={{
+                    opacity: 1,
+                    scale: 1,
+                    filter: "blur(0px)",
+                    x: 0
+                  }}
+                  exit={{
+                    opacity: 0,
+                    scale: 0.95,
+                    filter: "blur(4px)",
+                    x: 20
+                  }}
+                  transition={{
+                    duration: 0.5,
+                    ease: "easeOut",
+                    opacity: { duration: 0.4 },
+                    scale: { duration: 0.5 },
+                    filter: { duration: 0.4 },
+                    x: { duration: 0.4 }
+                  }}
+                  style={{ height: '100%' }}
                 >
-                  <Box flex="1">
-                    <Flex justify="space-between" align="center" mb={1}>
-                      <Text fontWeight="medium" fontSize="md">
-                        {room.name}
-                      </Text>
-                      <AvatarGroup gap="0" size="xs">
-                        {room.active_users.slice(0, 3).map((user, idx) => (
-                          <Avatar.Root key={idx}>
-                            <Avatar.Fallback name={user.username} />
-                            <Avatar.Image src={user.avatar} />
-                          </Avatar.Root>
-                        ))}
-                        {room.active_users.length > 3 && (
-                          <Avatar.Root variant="solid">
-                            <Avatar.Fallback>
-                              +{room.active_users.length - 3}
-                            </Avatar.Fallback>
-                          </Avatar.Root>
-                        )}
-                      </AvatarGroup>
-                    </Flex>
+                  <TaskLog />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="chat-room-list"
+                  initial={{
+                    opacity: 0,
+                    scale: 0.92,
+                    filter: "blur(8px)",
+                    x: -20
+                  }}
+                  animate={{
+                    opacity: 1,
+                    scale: 1,
+                    filter: "blur(0px)",
+                    x: 0
+                  }}
+                  exit={{
+                    opacity: 0,
+                    scale: 0.95,
+                    filter: "blur(4px)",
+                    x: 20
+                  }}
+                  transition={{
+                    duration: 0.5,
+                    ease: "easeOut",
+                    opacity: { duration: 0.4 },
+                    scale: { duration: 0.5 },
+                    filter: { duration: 0.4 },
+                    x: { duration: 0.4 }
+                  }}
+                  style={{ height: '100%' }}
+                >
+                  <ChatRoomList
+                    rooms={rooms}
+                    selectedRoomId={selectedRoomId}
+                    unreadCounts={unreadCounts}
+                    onSelectRoom={(roomId) => dispatch(setSelectedRoom(roomId))}
+                    onCreateRoomClick={() => setIsCreatingRoom(true)}
+                    isCreatingRoomLoading={isCreatingRoomLoading}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </MotionBox>
 
-                    <Flex justify="space-between" align="center">
-                      <Text fontSize="sm" color="gray.600" maxW="160px">
-                        {new Date(room.last_updated).toLocaleString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </Text>
-                      {unreadCounts[room.id] > 0 && (
-                        <Badge
-                          borderRadius="full"
-                          colorScheme="blue"
-                          fontSize="xs"
-                          px={2}
-                        >
-                          {unreadCounts[room.id]}
-                        </Badge>
-                      )}
-                    </Flex>
-                  </Box>
-                </Flex>
-              ))}
-            </VStack>
-          </Box>
-
-          {/* Right component - Chat Interface */}
-          <Box
-            flex="1"
+          {/* Chat Interface Component */}
+          <MotionBox
+            layout
+            initial={false}
+            animate={{
+              left: isLayoutFlipped ? 0 : "300px",
+              width: isLayoutFlipped ? "calc(100% - 300px - 1rem)" : "calc(100% - 300px - 1rem)",
+              opacity: 1,
+              scale: 1,
+            }}
+            transition={{
+              duration: 0.5,
+              ease: "easeInOut",
+              opacity: { duration: 0.3 },
+              scale: { duration: 0.3 }
+            }}
+            position="absolute"
             height="100%"
             overflow="hidden"
-            bg="white"
+            bg={bgSubtle}
             borderRadius="md"
             display="flex"
             flexDirection="column"
+            borderWidth="1px"
+            borderColor={borderColor}
+            zIndex={2}
+            left={isLayoutFlipped ? 0 : "300px"}
+            width="calc(100% - 300px - 1rem)"
+            whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
           >
             {/* Chat header */}
             <Flex
               p={4}
               borderBottomWidth="1px"
-              borderColor="gray.200"
-              bg="white"
+              borderColor={borderColor}
+              bg={bgSubtle}
               align="center"
               minHeight="80px"
               width="100%"
+              position="relative"
             >
               <AnimatePresence mode="wait">
                 {isCreatingRoom ? (
-                  <motion.div
-                    key="create-room"
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    style={{ width: "100%" }}
-                  >
-                    <Flex width="100%" align="center">
-                      <Input
-                        placeholder={t("enter_room_name")}
-                        value={newRoomName}
-                        onChange={(e) => setNewRoomName(e.target.value)}
-                        onKeyDown={handleKeyDownRoomName}
-                        autoFocus
-                        mr={2}
-                        flex="1"
-                      />
-                      <Box
-                        as="button"
-                        py={2}
-                        px={4}
-                        height="40px"
-                        minWidth="80px"
-                        borderRadius="md"
-                        bg="blue.500"
-                        color="white"
-                        fontWeight="medium"
-                        fontSize="sm"
-                        _hover={{ bg: "blue.600" }}
-                        _active={{ bg: "blue.700" }}
-                        _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-                        onClick={handleCreateRoom}
-                        // @ts-ignore
-                        disabled={!newRoomName.trim() || isCreatingRoomLoading}
-                      >
-                        {isCreatingRoomLoading ? t("creating") : t("create")}
-                      </Box>
-                      <Box
-                        as="button"
-                        py={2}
-                        px={4}
-                        ml={2}
-                        height="40px"
-                        minWidth="80px"
-                        borderRadius="md"
-                        bg="gray.200"
-                        color="gray.600"
-                        fontWeight="medium"
-                        fontSize="sm"
-                        _hover={{ bg: "gray.300" }}
-                        _active={{ bg: "gray.400" }}
-                        onClick={() => {
-                          setIsCreatingRoom(false);
-                          setNewRoomName("");
-                        }}
-                        // @ts-ignore
-                        disabled={isCreatingRoomLoading}
-                      >
-                        {t("cancel")}
-                      </Box>
-                    </Flex>
-                  </motion.div>
+                  <CreateRoomForm
+                    newRoomName={newRoomName}
+                    setNewRoomName={setNewRoomName}
+                    handleCreateRoom={handleCreateRoom}
+                    handleCancel={() => {
+                      setIsCreatingRoom(false);
+                      setNewRoomName("");
+                    }}
+                    isCreatingRoomLoading={isCreatingRoomLoading}
+                  />
                 ) : (
                   <motion.div
                     key="room-info"
@@ -422,7 +520,7 @@ export default function ChatPage() {
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                   >
                     <Box ml={3}>
-                      <Text fontSize="lg" fontWeight="bold">
+                      <Text fontSize="lg" fontWeight="bold" color={textColorHeading}>
                         {currentRoom?.name || t("select_room")}
                       </Text>
                       <Flex align="center">
@@ -432,7 +530,7 @@ export default function ChatPage() {
                           boxSize={3}
                           mr={1}
                         />
-                        <Text fontSize="xs" color="gray.500">
+                        <Text fontSize="xs" color={textColor}>
                           {t("active_users")}:{" "}
                           {currentRoom?.active_users?.length || 0}
                         </Text>
@@ -441,123 +539,53 @@ export default function ChatPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Layout toggle button with text - only show when not creating a room */}
+              <AnimatePresence>
+                {!isCreatingRoom && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    style={{
+                      position: "absolute",
+                      right: "16px",
+                      top: "50%",
+                      transform: "translateY(-50%)"
+                    }}
+                  >
+                    <Text
+                      as="button"
+                      color="blue.500"
+                      fontWeight="medium"
+                      cursor="pointer"
+                      onClick={handleFlipLayout}
+                      _hover={{ color: "blue.600", textDecoration: "underline" }}
+                      transition="color 0.2s ease"
+                    >
+                      {isLayoutFlipped ? t("switch_to_room_view") : t("switch_to_task_view")}
+                    </Text>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </Flex>
 
             {/* Messages area */}
-            <Box
-              flex="1"
-              overflowY="auto"
-              p={4}
-              bg="white"
-              display="flex"
-              flexDirection="column"
-              gap={4}
-              css={{
-                "&::-webkit-scrollbar": {
-                  width: "8px",
-                },
-                "&::-webkit-scrollbar-track": {
-                  background: "#f1f1f1",
-                  borderRadius: "4px",
-                },
-                "&::-webkit-scrollbar-thumb": {
-                  background: "#c5c5c5",
-                  borderRadius: "4px",
-                },
-                "&::-webkit-scrollbar-thumb:hover": {
-                  background: "#a8a8a8",
-                },
-              }}
-            >
-              {groupedMessages.map((group, groupIndex) => (
-                <Flex
-                  key={groupIndex}
-                  gap={2}
-                  justifyContent={
-                    group.sender === "User" ? "flex-end" : "flex-start"
-                  }
-                >
-                  {group.sender !== "User" && (
-                    <Avatar.Root size="sm">
-                      <Avatar.Fallback name="AI Assistant" />
-                      <Avatar.Image src="https://bit.ly/sage-adebayo" />
-                    </Avatar.Root>
-                  )}
-
-                  <VStack
-                    align={group.sender === "User" ? "flex-end" : "flex-start"}
-                    maxWidth={group.sender === "User" ? "60%" : "70%"}
-                  >
-                    {/* User name display - only on first message */}
-                    <Text
-                      fontSize="xs"
-                      fontWeight="bold"
-                      color="gray.600"
-                      ml={group.sender === "User" ? 0 : 1}
-                      mr={group.sender === "User" ? 1 : 0}
-                      mb={0}
-                    >
-                      {group.sender === "User" ? "You" : "AI Assistant"}
-                    </Text>
-
-                    {group.messages.map(
-                      (message: IMessage, msgIndex: number) => (
-                        <ChatBubble
-                          key={message.id}
-                          message={message}
-                          isUser={group.sender === "User"}
-                          isFirstInGroup={msgIndex === 0}
-                        />
-                      )
-                    )}
-                  </VStack>
-                </Flex>
-              ))}
-            </Box>
+            <ChatMessageList
+              messageGroups={groupedMessages}
+              // @ts-ignore
+              messagesEndRef={messagesEndRef}
+            />
 
             {/* Input area */}
-            <Flex
-              p={4}
-              borderTopWidth="1px"
-              borderColor="gray.200"
-              bg="white"
-              align="center"
-            >
-              <Input
-                flex="1"
-                placeholder={!selectedRoomId ? t("please_select_a_room") : t("type_message")}
-                mr={2}
-                value={messageInput}
-                onChange={(e) => setMessageInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                borderRadius="full"
-                size="md"
-                disabled={!selectedRoomId}
-              />
-
-              <Box
-                as="button"
-                py={2}
-                px={4}
-                borderRadius="md"
-                bg="blue.500"
-                color="white"
-                fontWeight="medium"
-                fontSize="sm"
-                _hover={{ bg: "blue.600" }}
-                _active={{ bg: "blue.700" }}
-                _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-                onClick={handleSendMessage}
-                // @ts-ignore
-                disabled={!messageInput.trim() || !selectedRoomId}
-              >
-                <Flex align="center" justify="center">
-                  <Icon as={FaPaperPlane} mr={2} />
-                  {t("send")}
-                </Flex>
-              </Box>
-            </Flex>
-          </Box>
+            <ChatInput
+              messageInput={messageInput}
+              setMessageInput={setMessageInput}
+              handleSendMessage={handleSendMessage}
+              selectedRoomId={selectedRoomId}
+            />
+          </MotionBox>
         </Flex>
       </MotionBox>
     </Container>

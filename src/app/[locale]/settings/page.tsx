@@ -21,7 +21,9 @@ import { FaCog, FaGlobe, FaTrash, FaUserCircle } from "react-icons/fa";
 import { FiInfo, FiLock } from "react-icons/fi";
 import { motion } from "framer-motion";
 import Loading from "@/components/loading";
-
+import {
+  ColorModeButton, useColorMode, useColorModeValue
+} from "@/components/ui/color-mode"
 // Create motion components
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -30,20 +32,26 @@ const MotionVStack = motion(VStack);
 export default function SettingsPage() {
   const t = useTranslations("Settings");
   const { data: session } = useSession();
+  // const { colorMode } = useColorMode();
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
+  const accentColor = "blue.500";
+  // Define custom colors using useColorModeValue for dark mode support
+  const bgColor = useColorModeValue("bg.subtle", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const hoverBg = useColorModeValue("gray.50", "gray.700");
+  const textColor = useColorModeValue("gray.800", "gray.100");
+  const cardBg = useColorModeValue("white", "gray.800");
+  const dangerZoneBg = useColorModeValue("red.50", "red.900");
+  const dangerZoneBorder = useColorModeValue("red.200", "red.700");
+  const dangerZoneText = useColorModeValue("red.700", "red.200");
+  const dangerZoneHeading = useColorModeValue("red.600", "red.300");
+  const textColorHeading = useColorModeValue("gray.800", "gray.100");
   if (!session) {
     return <Loading />;
   }
-  // Define custom colors
-  const bgColor = "white";
-  const borderColor = "gray.200";
-  const hoverBg = "gray.50";
-  const accentColor = "blue.500";
-  const textColor = "gray.800";
-
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -88,7 +96,7 @@ export default function SettingsPage() {
         position="relative"
       >
         <MotionBox variants={itemVariants}>
-          <Heading size="lg" mb={6} display="flex" alignItems="center">
+          <Heading size="lg" mb={6} display="flex" alignItems="center" color={textColorHeading}>
             <Icon as={FaCog} mr={3} color={accentColor} />
             {t("settings")}
           </Heading>
@@ -149,7 +157,7 @@ export default function SettingsPage() {
           {/* Main content */}
           <MotionBox
             flex={1}
-            bg={bgColor}
+            bg={cardBg}
             borderRadius="md"
             borderWidth="1px"
             borderColor={borderColor}
@@ -202,6 +210,7 @@ export default function SettingsPage() {
                         />
                       </Text>
                       <Input
+                        color={textColor}
                         placeholder={t("your_display_name")}
                         maxW="400px"
                         defaultValue={session?.user?.name || ""}
@@ -224,6 +233,7 @@ export default function SettingsPage() {
                         />
                       </Text>
                       <Input
+                        color={textColor}
                         placeholder={t("your_email")}
                         maxW="400px"
                         defaultValue={session?.user?.email || ""}
@@ -240,9 +250,17 @@ export default function SettingsPage() {
                         {t("bio")}
                       </Text>
                       <Input
+                        color={textColor}
                         placeholder={t("tell_us_about_yourself")}
                         maxW="400px"
                       />
+                    </Box>
+
+                    <Box>
+                      <Text fontWeight="medium" mb={1} color={textColor}>
+                        {t("theme")}
+                      </Text>
+                      <ColorModeButton />
                     </Box>
                   </VStack>
                 </Box>
@@ -254,18 +272,18 @@ export default function SettingsPage() {
                   <Box
                     p={4}
                     borderWidth="1px"
-                    borderColor="red.200"
+                    borderColor={dangerZoneBorder}
                     borderRadius="md"
-                    bg="red.50"
+                    bg={dangerZoneBg}
                     mb={6}
                   >
                     <HStack align="flex-start">
                       <Icon as={FiInfo} color="red.500" boxSize={5} mt={0.5} />
                       <Box>
-                        <Heading size="sm" color="red.600" mb={1}>
+                        <Heading size="sm" color={dangerZoneHeading} mb={1}>
                           {t("delete_all_rooms")}
                         </Heading>
-                        <Text color="red.700" fontSize="sm">
+                        <Text color={dangerZoneText} fontSize="sm">
                           {t("delete_all_rooms_warning")}
                         </Text>
                         <Box
