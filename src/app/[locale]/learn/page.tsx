@@ -9,10 +9,10 @@ import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import Loading from "@/components/loading";
 import { useColorModeValue } from "@/components/ui/color-mode";
-import { MCPResourceExplorer } from "@/components/mcp_explorer";
-import { KnowledgeBase } from "@/components/knowledge_base";
+import { KnowledgeBase } from "@/components/learn/kb/knowledge_base";
+import { MCPResourceExplorer } from "@/components/learn/mcp_explorer";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 export default function LearnPage() {
   const t = useTranslations("Learn");
@@ -71,7 +71,7 @@ export default function LearnPage() {
         </Heading>
 
         <Tabs.Root
-          defaultValue="mcp"
+          defaultValue="kb"
           variant="line"
           style={{
             display: "flex",

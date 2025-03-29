@@ -1,4 +1,13 @@
 {
+    "HomePage": {
+      "title": "안녕 세상!",
+      "about": "소개 페이지로 이동",
+      "home": "홈",
+      "how_it_works": "작동 방식",
+      "features": "기능",
+      "pricing": "가격",
+      "create_account": "계정 만들기"
+    },
     "Navbar": {
       "kakashi": "카카시",
       "home": "홈",
@@ -13,7 +22,8 @@
       "signin": "로그인",
       "sign_in": "로그인",
       "signout_success": "로그아웃 성공",
-      "signout_success_description": "성공적으로 로그아웃되었습니다"
+      "signout_success_description": "성공적으로 로그아웃되었습니다",
+      "admin_panel": "관리자 패널"
     },
     "Signup": {
       "signup": "회원가입",
@@ -30,7 +40,7 @@
       "agree_to_terms": "이용약관에 동의합니다",
       "terms_and_conditions": "이용약관",
       "create_account": "계정 만들기",
-      "login": "로그인",
+      "signin": "로그인",
       "show": "표시",
       "hide": "숨기기",
       "username_required": "사용자 이름이 필요합니다",
@@ -38,33 +48,52 @@
       "email_invalid": "유효하지 않은 이메일입니다",
       "password_required": "비밀번호가 필요합니다",
       "password_must_be_at_least_8_characters": "비밀번호는 최소 8자 이상이어야 합니다",
-      "passwords_do_not_match": "비밀번호가 일치하지 않습니다"
+      "passwords_do_not_match": "비밀번호가 일치하지 않습니다",
+      "profile_creation_description": "계정을 만든 후 카카시를 사용할 수 있습니다",
+      "3rd_party_login_email": "이메일은 제3자 로그인에서 왔습니다. 해당 이메일로 계정을 만들어주세요",
+      "complete_your_profile": "프로필을 완성해주세요",
+      "create_profile": "프로필 만들기"
     },
     "Signin": {
-      "use_third_party_login": "제3자 로그인 사용",
+      "signin": "로그인",
       "username_or_email": "사용자 이름 또는 이메일",
       "username_or_email_placeholder": "사용자 이름 또는 이메일을 입력하세요",
       "password": "비밀번호",
       "password_placeholder": "비밀번호를 입력하세요",
       "or": "또는",
-      "signin": "로그인",
+      "sign_in": "로그인",
       "username_or_email_required": "사용자 이름 또는 이메일이 필요합니다",
       "password_required": "비밀번호가 필요합니다",
       "dont_have_account": "계정이 없으신가요?",
       "create_account": "계정 만들기",
       "signup": "회원가입",
+      "use_third_party_login": "제3자 로그인 사용",
       "signin_success": "로그인 성공",
       "signin_success_description": "성공적으로 로그인되었습니다"
     },
     "Home": {
-      "welcome": "안녕하세요!",
+      "welcome": "카카시에 오신 것을 환영합니다",
       "learn_title": "학습",
       "learn_description": "카카시의 학습 기능 탐색",
       "tasks_title": "태스크",
       "tasks_description": "태스크 확인 및 완료",
       "mcp_title": "MCP",
       "mcp_description": "카카시의 MCP 기능 탐색",
-      "welcome_message": "안녕하세요"
+      "welcome_message": "안녕하세요",
+      "guest_welcome": "안녕하세요",
+      "guest_welcome_message": "카카시는 MCP 서버를 통합하여 당신과 팀의 생산성을 향상시키는 프로그램입니다.",
+      "guest_features_title": "기능",
+      "guest_cta_title": "지금 시작하기",
+      "guest_cta_description": "로그인 또는 등록 후 카카시의 다양한 기능을 사용할 수 있습니다",
+      "get_started": "시작하기",
+      "guest_footer": "Passwordless 로그인 모드만 지원합니다",
+      "feature_chat_room": "채팅방",
+      "feature_chat_room_desc": "실시간 통신을 위한 전용 공간입니다.",
+      "feature_task_management": "태스크 관리",
+      "feature_task_management_desc": "효율적으로 태스크를 구성하고 추적합니다.",
+      "feature_learn": "학습",
+      "feature_learn_desc": "기술 향상을 위한 리소스와 튜토리얼에 접근합니다.",
+      "announcement": "카카시 공지사항"
     },
     "Footer": {
       "privacy_policy": "개인정보 처리방침",
@@ -86,7 +115,11 @@
       "creating": "생성 중...",
       "please_select_a_room": "채팅방을 선택해주세요",
       "mention_someone": "누군가를 언급하기",
-      "no_users_found": "사용자를 찾을 수 없습니다"
+      "no_users_found": "사용자를 찾을 수 없습니다",
+      "task_log": "태스크 로그",
+      "switch_to_task_view": "태스크 로그로 전환",
+      "switch_to_room_view": "채팅방으로 전환",
+      "task_log_empty": "태스크 로그 없음"
     },
     "Tasks": {
       "tasks": "태스크",
@@ -117,7 +150,28 @@
       "error": "오류",
       "created": "생성됨",
       "started": "시작됨",
-      "completed": "완료됨"
+      "completed": "완료됨",
+      "assigner": "할당자",
+      "assignee": "담당자",
+      "id": "ID",
+      "created_at": "생성 시간",
+      "rows_per_page": "페이지당 행 수",
+      "of": "중",
+      "page": "페이지",
+      "showing": "표시 중",
+      "no_logs_available": "사용 가능한 로그 없음",
+      "no_arguments_found": "인수를 찾을 수 없음",
+      "save_changes": "변경사항 저장",
+      "reset_all": "모두 재설정",
+      "edit_arguments": "인수 편집",
+      "task_details": "태스크 세부 정보",
+      "summary": "태스크 요약",
+      "tools_called": "호출된 도구",
+      "start_time": "시작 시간",
+      "end_time": "종료 시간",
+      "close": "닫기",
+      "edit": "편집",
+      "no_mcp_tool_calls": "MCP 도구 호출 없음"
     },
     "Learn": {
       "learn": "학습",
@@ -141,6 +195,37 @@
         "search_placeholder": "문서 검색"
       }
     },
+    "AdminPanel": {
+      "admin_panel": "관리자 패널",
+      "users": "사용자",
+      "user_management": "사용자 관리",
+      "user_list": "사용자 목록",
+      "username": "사용자 이름",
+      "email": "이메일",
+      "user_id": "사용자 ID",
+      "created_at": "생성 시간",
+      "role": "역할",
+      "search_users": "사용자 검색",
+      "create_user": "사용자 생성",
+      "rows_per_page": "페이지당 행 수",
+      "of": "중",
+      "page": "페이지",
+      "showing": "표시 중",
+      "details": "세부 정보",
+      "activity": "활동",
+      "permissions": "권한",
+      "select_user_to_view_details": "세부 정보를 볼 사용자 선택",
+      "select_user_to_view_activity": "활동을 볼 사용자 선택",
+      "select_user_to_view_permissions": "권한을 볼 사용자 선택",
+      "recent_activity": "최근 활동",
+      "user_permissions": "사용자 권한",
+      "admin_access": "관리자 접근",
+      "can_manage_tasks": "태스크 관리 가능",
+      "updated_at": "업데이트 시간",
+      "cancel": "취소",
+      "leave_blank_to_use_email_prefix": "이메일 접두사를 사용하려면 비워두세요",
+      "create_new_user": "새 사용자 생성"
+    },
     "Settings": {
       "settings": "설정",
       "language": "언어",
@@ -158,6 +243,17 @@
       "managed_by_provider": "제공자에 의해 관리됩니다"
     },
     "Loading": {
+      "loading": "로딩 중...",
       "load": "로딩 중..."
+    },
+    "Auth": {
+      "signout_success": "로그아웃 성공",
+      "signout_success_description": "성공적으로 로그아웃되었습니다",
+      "signout_error": "로그아웃 오류",
+      "signout_error_description": "로그아웃 실패",
+      "signing_out": "로그아웃 중...",
+      "please_wait_while_we_sign_you_out": "로그아웃 중입니다. 시간이 오래 걸리면 나중에 다시 시도하세요.",
+      "loading_authentication": "인증 로딩 중...",
+      "please_wait_while_we_verify_your_account": "계정을 확인하는 중입니다. 시간이 오래 걸리면 나중에 다시 시도하세요."
     }
-  }
+}

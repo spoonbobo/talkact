@@ -17,17 +17,17 @@ import {
 } from "@chakra-ui/react";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
-import { FaCog, FaGlobe, FaTrash, FaUserCircle } from "react-icons/fa";
+import { FaCog, FaGlobe, FaTrash, FaUserCircle, FaDatabase } from "react-icons/fa";
 import { FiInfo, FiLock } from "react-icons/fi";
 import { motion } from "framer-motion";
 import Loading from "@/components/loading";
 import {
-  ColorModeButton, useColorMode, useColorModeValue
+  ColorModeButton, useColorModeValue
 } from "@/components/ui/color-mode"
 // Create motion components
-const MotionBox = motion(Box);
-const MotionFlex = motion(Flex);
-const MotionVStack = motion(VStack);
+const MotionBox = motion.create(Box);
+const MotionFlex = motion.create(Flex);
+const MotionVStack = motion.create(VStack);
 
 export default function SettingsPage() {
   const t = useTranslations("Settings");
@@ -118,10 +118,11 @@ export default function SettingsPage() {
           >
             {[
               { icon: FaUserCircle, label: t("general"), id: 0 },
+              { icon: FaDatabase, label: t("system"), id: 1 },
               {
                 icon: FaTrash,
                 label: t("danger_zone"),
-                id: 1,
+                id: 2,
                 color: "red.500",
               },
             ].map((item) => (
@@ -170,12 +171,13 @@ export default function SettingsPage() {
             <Flex justifyContent="space-between" alignItems="center" mb={4}>
               <Heading size="md" color={textColor}>
                 {activeTab === 0 && t("general")}
-                {activeTab === 1 && (
+                {activeTab === 1 && t("system")}
+                {activeTab === 2 && (
                   <Text color="red.500">{t("danger_zone")}</Text>
                 )}
               </Heading>
 
-              {activeTab !== 1 && (
+              {activeTab !== 2 && (
                 <Box
                   as="button"
                   py={2}
@@ -198,7 +200,7 @@ export default function SettingsPage() {
               {/* General Settings */}
               {activeTab === 0 && (
                 <Box>
-                  <VStack align="stretch">
+                  <VStack align="stretch" gap={4}>
                     <Box>
                       <Text fontWeight="medium" mb={1} color={textColor}>
                         {t("display_name")}
@@ -266,8 +268,122 @@ export default function SettingsPage() {
                 </Box>
               )}
 
-              {/* Danger Zone */}
+              {/* System Settings */}
               {activeTab === 1 && (
+                <Box>
+                  <VStack align="stretch" gap={4}>
+                    <Box p={4} borderWidth="1px" borderRadius="md" borderColor={borderColor}>
+                      <Heading size="sm" mb={2}>{t("api_configuration")}</Heading>
+                      <Text color={textColor} mb={3}>
+                        {t("api_configuration_description")}
+                      </Text>
+
+                      <Box>
+                        <Text fontWeight="medium" mb={1} color={textColor}>
+                          {t("api_key")}
+                        </Text>
+                        <Input
+                          color={textColor}
+                          placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx"
+                          maxW="400px"
+                          type="password"
+                          bg={useColorModeValue("white", "gray.700")}
+                          borderColor={borderColor}
+                          _hover={{ borderColor: useColorModeValue("gray.300", "gray.600") }}
+                          _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 1px var(--chakra-colors-blue-500)" }}
+                        />
+                      </Box>
+                    </Box>
+
+                    <Box p={4} borderWidth="1px" borderRadius="md" borderColor={borderColor}>
+                      <Heading size="sm" mb={2} color={textColorHeading}>{t("mcp_integration")}</Heading>
+                      <Text color={textColor} mb={3}>
+                        {t("mcp_integration_description")}
+                      </Text>
+
+                      <VStack align="stretch" gap={4}>
+                        <Box>
+                          <Text fontWeight="medium" mb={1} color={textColor}>
+                            {t("mcp_endpoint")}
+                          </Text>
+                          <Input
+                            color={textColor}
+                            placeholder="https://api.example.com/mcp"
+                            maxW="400px"
+                            bg={useColorModeValue("white", "gray.700")}
+                            borderColor={borderColor}
+                            _hover={{ borderColor: useColorModeValue("gray.300", "gray.600") }}
+                            _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 1px var(--chakra-colors-blue-500)" }}
+                          />
+                        </Box>
+
+                        <Box>
+                          <Text fontWeight="medium" mb={1} color={textColor}>
+                            {t("mcp_api_key")}
+                          </Text>
+                          <Input
+                            color={textColor}
+                            placeholder="mcp-xxxxxxxxxxxxxxxxxxxxxxxx"
+                            maxW="400px"
+                            type="password"
+                            bg={useColorModeValue("white", "gray.700")}
+                            borderColor={borderColor}
+                            _hover={{ borderColor: useColorModeValue("gray.300", "gray.600") }}
+                            _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 1px var(--chakra-colors-blue-500)" }}
+                          />
+                        </Box>
+
+                        <Box>
+                          <Text fontWeight="medium" mb={1} color={textColor}>
+                            {t("mcp_version")}
+                          </Text>
+                          <Input
+                            color={textColor}
+                            placeholder="v1"
+                            maxW="400px"
+                            bg={useColorModeValue("white", "gray.700")}
+                            borderColor={borderColor}
+                            _hover={{ borderColor: useColorModeValue("gray.300", "gray.600") }}
+                            _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 1px var(--chakra-colors-blue-500)" }}
+                          />
+                        </Box>
+
+                        <Box
+                          p={3}
+                          borderRadius="md"
+                          bg={useColorModeValue("blue.50", "blue.900")}
+                          color={useColorModeValue("blue.600", "blue.200")}
+                          fontSize="sm"
+                        >
+                          <Flex align="center">
+                            <Icon as={FiInfo} mr={2} />
+                            <Text>{t("mcp_info_message")}</Text>
+                          </Flex>
+                        </Box>
+
+                        <Box
+                          as="button"
+                          py={2}
+                          px={4}
+                          borderRadius="md"
+                          bg={useColorModeValue("blue.500", "blue.500")}
+                          color="white"
+                          fontWeight="medium"
+                          fontSize="sm"
+                          alignSelf="flex-start"
+                          _hover={{ bg: useColorModeValue("blue.600", "blue.400") }}
+                          _active={{ bg: useColorModeValue("blue.700", "blue.300") }}
+                        >
+                          {t("test_connection")}
+                        </Box>
+                      </VStack>
+                    </Box>
+                  </VStack>
+                </Box>
+              )}
+
+              {/* Danger Zone */}
+              {activeTab === 2 && (
                 <Box>
                   <Box
                     p={4}

@@ -9,11 +9,11 @@ import { RootState } from "@/store/store";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Box, Heading, Icon, Container } from "@chakra-ui/react";
-import { FaHome } from "react-icons/fa";
+import { Box, Heading, Icon, Container, Center, Text, VStack } from "@chakra-ui/react";
+import { FaHome, FaTools } from "react-icons/fa";
 import { useColorModeValue } from "@/components/ui/color-mode";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 export default function DashboardPage() {
   const { data: session } = useSession();
@@ -25,6 +25,8 @@ export default function DashboardPage() {
 
   // Color mode values
   const textColorHeading = useColorModeValue("gray.800", "gray.100");
+  const textColor = useColorModeValue("gray.600", "gray.400");
+  const bgColor = useColorModeValue("gray.50", "gray.800");
 
   // If user data is available, log it
   useEffect(() => {
@@ -69,17 +71,28 @@ export default function DashboardPage() {
           {t("dashboard")}
         </Heading>
 
-        <div className="p-4">
-          {currentUser && (
-            <div className="mb-4">
-              <h2 className="text-xl mb-2">Welcome, {currentUser.username || currentUser.email}</h2>
-              <p>Email: {currentUser.email}</p>
-              {/* Display other user information as needed */}
-            </div>
-          )}
-
-          <ColorModeButton />
-        </div>
+        <Center
+          p={8}
+          bg={bgColor}
+          borderRadius="lg"
+          boxShadow="sm"
+          height="calc(100vh - 200px)"
+          borderWidth="1px"
+          borderColor={useColorModeValue("gray.200", "gray.700")}
+        >
+          <VStack gap={6}>
+            <Icon as={FaTools} fontSize="6xl" color="blue.400" />
+            <Text fontSize="2xl" fontWeight="bold" color={textColorHeading}>
+              {t("under_development")}
+            </Text>
+            <Text color={textColor} textAlign="center" maxW="md">
+              {t("dashboard_coming_soon")}
+            </Text>
+            <Box pt={4}>
+              <ColorModeButton />
+            </Box>
+          </VStack>
+        </Center>
       </MotionBox>
     </Container>
   );

@@ -17,7 +17,7 @@ export default function ThirdPartyLoginRedirect() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const dispatch = useDispatch();
-    const t = useTranslations('auth'); // Adjust namespace as needed
+    const t = useTranslations('Auth'); // Adjust namespace as needed
     const params = useParams();
     const locale = params.locale as string;
 

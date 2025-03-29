@@ -14,10 +14,11 @@ interface MessageGroup {
 
 interface ChatMessageListProps {
     messageGroups: MessageGroup[];
-    messagesEndRef: React.RefObject<HTMLDivElement>;
+    messagesEndRef: React.RefObject<HTMLDivElement | null>;
+    isTaskMode?: boolean;
 }
 
-export const ChatMessageList = ({ messageGroups, messagesEndRef }: ChatMessageListProps) => {
+export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = true }: ChatMessageListProps) => {
     const textColor = useColorModeValue("gray.600", "gray.400");
     const scrollbarTrackBg = useColorModeValue("#f1f1f1", "#2d3748");
     const scrollbarThumbBg = useColorModeValue("#c5c5c5", "#4a5568");
@@ -104,6 +105,7 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef }: ChatMessageLi
                                         message={message}
                                         isUser={group.isCurrentUser}
                                         isFirstInGroup={msgIndex === 0}
+                                        isTaskMode={isTaskMode}
                                     />
 
                                     {/* Add timestamp to the last message in each group */}

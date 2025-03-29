@@ -5,6 +5,16 @@ import { ITask } from '@/types/task';
 export async function POST(request: Request) {
     try {
         const task: ITask = await request.json();
+
+        // Ensure context and tools_called are properly stringified if they're objects
+        const contextValue = typeof task.context === 'string'
+            ? task.context
+            : JSON.stringify(task.context);
+
+        const toolsCalledValue = typeof task.tools_called === 'string'
+            ? task.tools_called
+            : JSON.stringify(task.tools_called);
+
         await db('tasks').insert({
             task_id: task.task_id,
             created_at: task.created_at,
@@ -14,8 +24,8 @@ export async function POST(request: Request) {
             assignee: task.assignee,
             task_summarization: task.task_summarization,
             room_id: task.room_id,
-            context: task.context,
-            tools_called: task.tools_called,
+            context: contextValue,
+            tools_called: toolsCalledValue,
             status: task.status,
             result: task.result
         });

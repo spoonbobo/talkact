@@ -11,9 +11,10 @@ export interface IMessage {
 }
 
 export interface IChatBubbleProps {
-    message: Message;
+    message: IMessage;
     isUser: boolean;
     isFirstInGroup: boolean;
+    isTaskMode?: boolean;
 }
 
 // client-view

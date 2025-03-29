@@ -10,7 +10,7 @@ import { toaster } from "@/components/ui/toaster";
 
 export default function SignOutPage() {
     const router = useRouter();
-    const t = useTranslations("auth");
+    const t = useTranslations("Auth");
     const params = useParams();
     const locale = params.locale as string;
 

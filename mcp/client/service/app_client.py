@@ -6,7 +6,7 @@ import requests
 from loguru import logger
 from typing import Dict, Any, Optional
 
-from schemas.mcp import MCPResponse
+# from schemas.mcp impor
 
 class AppClient:
     """Client for connecting to chat rooms and sending messages."""
@@ -62,7 +62,7 @@ class AppClient:
             await self.sio.disconnect()
             logger.info("Disconnected from server")
 
-    async def send_message(self, response: MCPResponse, wait_for_ack=True, timeout=10.0) -> bool:
+    async def send_message(self, response, wait_for_ack=True, timeout=10.0) -> bool:
         """
         Send a message to the current room.
         
@@ -120,7 +120,7 @@ class AppClient:
             logger.error(traceback.format_exc())
             return False
 
-    async def send_message_with_retry(self, response: MCPResponse, max_retries=3, initial_timeout=5.0) -> bool:
+    async def send_message_with_retry(self, response, max_retries=3, initial_timeout=5.0) -> bool:
         """
         Send a message with automatic retries on failure.
         

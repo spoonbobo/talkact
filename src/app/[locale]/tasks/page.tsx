@@ -10,31 +10,43 @@ import {
   Icon,
   Container,
   Tabs,
+  Stack,
+  Field,
+  Input,
+  Button,
+  Dialog,
 } from "@chakra-ui/react";
 import { Table, Select, createListCollection } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { FaTasks, FaSync } from "react-icons/fa";
+import { FaTasks, FaSync, FaEdit, FaSave, FaTimes } from "react-icons/fa";
 import { useTranslations } from "next-intl";
-import TaskStatusBadge from "@/components/task_badge";
+import TaskStatusBadge from "@/components/task/task_badge";
 import { useCallback, useRef, useState, useEffect } from "react";
 import { ITask } from "@/types/task";
 import Loading from "@/components/loading";
 import { useSession } from "next-auth/react";
 import { useColorModeValue } from "@/components/ui/color-mode";
+import TaskMetadata from "@/components/task/task_metadata";
+import TaskSidebar from "@/components/task/task_sidebar";
+import MCPToolCalls from "@/components/task/task_mcp";
+import axios from "axios";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 export default function TasksPage() {
   const t = useTranslations("Tasks");
 
-  // Mock data for UI demonstration
-  const tasks: ITask[] = [];
-  const loading = false;
-  const error = null;
-  const totalTasks = 0;
-  const currentPage = 1;
-  const itemsPerPage = 10;
-  const totalPages = Math.ceil(totalTasks / itemsPerPage);
+  // Task data state
+  const [tasks, setTasks] = useState<ITask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalTasks, setTotalTasks] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedTask, setSelectedTask] = useState<ITask | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Resizable layout state - set initial top height to 75% (logger at 25%)
   const [topHeight, setTopHeight] = useState(75);
@@ -43,7 +55,102 @@ export default function TasksPage() {
   const startY = useRef(0);
   const startHeight = useRef(0);
 
-  // Dark mode adaptive colors
+  // Fetch tasks function
+  const fetchTasks = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Ensure statusFilter is a valid string before using it
+      const statusParam = statusFilter && statusFilter !== "all" ? `&status=${statusFilter}` : "";
+
+      console.log(`Fetching tasks with status: ${statusFilter}, URL param: ${statusParam}`);
+
+      const response = await fetch(
+        `/api/task/get_tasks?page=${currentPage}&limit=${itemsPerPage}${statusParam}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setTasks(data.tasks || []);
+      setTotalTasks(data.pagination.total);
+      setTotalPages(data.pagination.totalPages);
+    } catch (err) {
+      console.error("Error fetching tasks:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch tasks");
+      setTasks([]);
+      setTotalTasks(0);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, itemsPerPage, statusFilter]);
+
+  // Handle page change
+  const handlePageChange = useCallback((newPage: number) => {
+    setCurrentPage(newPage);
+  }, []);
+
+  // Handle items per page change
+  const handleItemsPerPageChange = useCallback((value: string) => {
+    setItemsPerPage(parseInt(value, 10));
+    setCurrentPage(1); // Reset to first page when changing items per page
+  }, []);
+
+  // Handle status filter change
+  const handleStatusFilterChange = useCallback((valueObj: any) => {
+    // Extract the value from the object structure
+    const value = valueObj?.value?.[0] || "all";
+    console.log("Setting status filter to:", value);
+    setStatusFilter(value);
+    setCurrentPage(1); // Reset to first page when changing filter
+  }, []);
+
+  // Add function to handle task selection
+  const handleTaskSelect = useCallback((task: ITask) => {
+    setSelectedTask(task);
+  }, []);
+
+  // Add this new function for handling approve/deny actions - MOVED HERE to maintain hook order
+  const approveOrDeny = useCallback(async (action: 'approve' | 'deny') => {
+    if (!selectedTask) {
+      console.log('No task selected');
+      return;
+    }
+
+    console.log(`Attempting to ${action} task: ${selectedTask.task_id}`);
+
+    try {
+      if (action === 'approve') {
+        // Only make API call for approve action
+        const url = `http://${window.location.hostname}:34430/api/agent/approve`;
+        const response = await axios.post(url, selectedTask);
+        console.log(`Task ${selectedTask.task_id} approved successfully`);
+        console.log('API response:', response.data);
+      } else {
+        // For deny action, just log it without making an API call
+        console.log(`Task ${selectedTask.task_id} denied (no API call made)`);
+      }
+
+      // After action is processed, refresh the tasks list
+      fetchTasks();
+    } catch (error) {
+      console.error(`Error ${action}ing task:`, error);
+      if (axios.isAxiosError(error)) {
+        console.error('Response data:', error.response?.data);
+        console.error('Status code:', error.response?.status);
+      }
+    }
+  }, [selectedTask, fetchTasks]);
+
+  // Load tasks on initial render and when dependencies change
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  // Dark mode adaptive colors - enhanced for better contrast
   const bgSubtle = useColorModeValue("bg.subtle", "gray.800");
   const textColor = useColorModeValue("gray.600", "gray.400");
   const textColorStrong = useColorModeValue("gray.700", "gray.300");
@@ -71,6 +178,13 @@ export default function TasksPage() {
   const refreshButtonColor = useColorModeValue("gray.600", "gray.400");
   const refreshButtonHoverBg = useColorModeValue("gray.100", "gray.600");
   const refreshButtonActiveBg = useColorModeValue("gray.200", "gray.500");
+  // New colors for logger and tabs
+  const loggerBg = useColorModeValue("white", "gray.900");
+  const loggerCodeBg = useColorModeValue("gray.50", "gray.800");
+  const tabActiveBg = useColorModeValue("white", "gray.900");
+  const tabHoverBg = useColorModeValue("gray.50", "gray.700");
+  const tabIndicatorColor = useColorModeValue("blue.500", "blue.400");
+  const monospaceTextColor = useColorModeValue("gray.800", "gray.200");
 
   const statusOptions = createListCollection({
     items: [
@@ -93,6 +207,20 @@ export default function TasksPage() {
     ],
   });
 
+  // Format task ID to show first chunk
+  const formatTaskId = (taskId: string) => {
+    if (!taskId) return "-";
+    const parts = taskId.split("-");
+    return parts.length > 0 ? parts[0] : taskId;
+  };
+
+  // Format user ID to show first chunk
+  const formatUserId = (userId: string) => {
+    if (!userId) return "-";
+    const parts = userId.split("-");
+    return parts.length > 0 ? parts[0] : userId;
+  };
+
   const truncateText = (text: string, maxLength: number) => {
     if (!text) return "";
     if (text.length <= maxLength) return text;
@@ -108,7 +236,7 @@ export default function TasksPage() {
     return <TaskStatusBadge status={status} size="sm" />;
   };
 
-  // Resize handlers
+  // Resize handlers - optimized for performance
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -117,6 +245,14 @@ export default function TasksPage() {
       startHeight.current = topHeight;
       document.body.style.userSelect = "none";
       document.body.style.cursor = "ns-resize";
+
+      // Apply direct DOM manipulation during drag for better performance
+      const topElement = containerRef.current?.firstElementChild as HTMLElement;
+      const bottomElement = containerRef.current?.lastElementChild as HTMLElement;
+      if (topElement && bottomElement) {
+        topElement.style.transition = "none";
+        bottomElement.style.transition = "none";
+      }
     },
     [topHeight]
   );
@@ -124,6 +260,7 @@ export default function TasksPage() {
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging.current || !containerRef.current) return;
 
+    // Use direct DOM manipulation instead of state updates during drag
     const containerHeight = containerRef.current.offsetHeight;
     const deltaY = e.clientY - startY.current;
     const deltaPercent = (deltaY / containerHeight) * 100;
@@ -131,21 +268,53 @@ export default function TasksPage() {
 
     // Constrain the resize (min 20% for bottom, min 30% for top)
     if (newTopHeight >= 30 && 100 - newTopHeight >= 20) {
-      setTopHeight(newTopHeight);
+      // Apply styles directly to DOM elements for smoother dragging
+      const topElement = containerRef.current.firstElementChild as HTMLElement;
+      const bottomElement = containerRef.current.lastElementChild as HTMLElement;
+
+      if (topElement && bottomElement) {
+        // Skip the divider element which is the second child
+        const dividerElement = containerRef.current.children[1] as HTMLElement;
+
+        topElement.style.height = `${newTopHeight}%`;
+        bottomElement.style.height = `${100 - newTopHeight}%`;
+      }
     }
   }, []);
 
   const handleMouseUp = useCallback(() => {
+    if (!isDragging.current || !containerRef.current) return;
+
     isDragging.current = false;
     document.body.style.userSelect = "";
     document.body.style.cursor = "";
+
+    // Get the current height from the DOM element and update state once at the end
+    const topElement = containerRef.current.firstElementChild as HTMLElement;
+    if (topElement) {
+      // Extract percentage value from style
+      const heightStyle = topElement.style.height;
+      const percentValue = parseFloat(heightStyle);
+
+      if (!isNaN(percentValue)) {
+        // Restore transitions
+        const bottomElement = containerRef.current.lastElementChild as HTMLElement;
+        if (topElement && bottomElement) {
+          topElement.style.transition = "";
+          bottomElement.style.transition = "";
+        }
+
+        // Update state only once at the end of drag
+        setTopHeight(percentValue);
+      }
+    }
   }, []);
 
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => handleMouseMove(e);
     const handleGlobalMouseUp = () => handleMouseUp();
 
-    document.addEventListener("mousemove", handleGlobalMouseMove);
+    document.addEventListener("mousemove", handleGlobalMouseMove, { passive: true });
     document.addEventListener("mouseup", handleGlobalMouseUp);
 
     return () => {
@@ -158,134 +327,6 @@ export default function TasksPage() {
   if (!session) {
     return <Loading />;
   }
-
-  // Task metadata component (simplified from TaskMetadata)
-  const TaskMetadata = () => (
-    <Flex direction="column" gap={4}>
-      <Box width="100%">
-        <Text fontSize={{ base: "sm", md: "md" }} color={textColor} mb={1}>
-          {t("summarization")}
-        </Text>
-        <Text
-          fontSize={{ base: "sm", md: "md" }}
-          fontWeight="medium"
-          whiteSpace="pre-wrap"
-          color={textColorStrong}
-        >
-          {t("no_task_selected")}
-        </Text>
-      </Box>
-
-      <Flex direction="row" wrap="wrap" gap={4}>
-        <Box>
-          <Text fontSize="xs" color={textColor}>
-            {t("created")}
-          </Text>
-          <Text fontSize="sm" color={textColorStrong}>N/A</Text>
-        </Box>
-        <Box>
-          <Text fontSize="xs" color={textColor}>
-            {t("started")}
-          </Text>
-          <Text fontSize="sm" color={textColorStrong}>N/A</Text>
-        </Box>
-        <Box>
-          <Text fontSize="xs" color={textColor}>
-            {t("completed")}
-          </Text>
-          <Text fontSize="sm" color={textColorStrong}>N/A</Text>
-        </Box>
-      </Flex>
-    </Flex>
-  );
-
-  // Task sidebar component (simplified from TaskSidebar)
-  const TaskSidebar = () => (
-    <Box
-      width="180px"
-      bg={bgSubtle}
-      p={4}
-      borderRadius="md"
-      height="fit-content"
-      borderWidth="1px"
-      borderColor={borderColor}
-    >
-      <Flex direction="column" gap={3}>
-        <Flex justify="space-between" align="center">
-          <Text fontSize="xs" fontWeight="medium" color={textColor}>
-            {t("status")}
-          </Text>
-          <Flex align="center">
-            <Text fontSize="xs" color={textColor}>
-              {t("no_task_selected")}
-            </Text>
-          </Flex>
-        </Flex>
-
-        <Box mb={2}>
-          <Text fontSize="xs" color={textColor}>
-            {t("task_id")}
-          </Text>
-          <Text fontSize="sm" fontWeight="medium" color={textColorStrong}>
-            -
-          </Text>
-        </Box>
-
-        <Flex direction="column" gap={2} mt={2}>
-          <Box
-            as="button"
-            py={2}
-            px={3}
-            borderRadius="md"
-            bg={approveButtonBg}
-            color={approveButtonColor}
-            fontWeight="medium"
-            fontSize="sm"
-            _hover={{ bg: approveButtonHoverBg }}
-            _active={{ bg: approveButtonActiveBg }}
-            _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-          >
-            {t("approve")}
-          </Box>
-
-          <Box
-            as="button"
-            py={2}
-            px={3}
-            borderRadius="md"
-            bg={denyButtonBg}
-            color={denyButtonColor}
-            fontWeight="medium"
-            fontSize="sm"
-            _hover={{ bg: denyButtonHoverBg }}
-            _active={{ bg: denyButtonActiveBg }}
-            _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-          >
-            {t("deny")}
-          </Box>
-
-          <Box
-            as="button"
-            py={2}
-            px={3}
-            borderRadius="md"
-            bg={refreshButtonBg}
-            color={refreshButtonColor}
-            fontWeight="medium"
-            fontSize="sm"
-            _hover={{ bg: refreshButtonHoverBg }}
-            _active={{ bg: refreshButtonActiveBg }}
-            _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-          >
-            <Flex align="center" justify="center">
-              <Icon as={FaSync} mr={2} />
-              {t("refresh")}
-            </Flex>
-          </Box>
-        </Flex>
-      </Flex>
-    </Box>
-  );
 
   return (
     <Container
@@ -340,11 +381,15 @@ export default function TasksPage() {
               <Flex gap={2} alignItems="center" flexWrap="wrap">
                 <Text fontSize="sm" color={textColor}>{t("status")}:</Text>
                 <Select.Root
+                  color={textColor}
                   size="sm"
                   width="150px"
-                  color={textColor}
                   collection={statusOptions}
                   defaultValue={["all"]}
+                  onValueChange={(valueObj) => {
+                    console.log("Select onValueChange - values:", valueObj);
+                    handleStatusFilterChange(valueObj);
+                  }}
                 >
                   <Select.HiddenSelect />
                   <Select.Control>
@@ -368,6 +413,26 @@ export default function TasksPage() {
                     </Select.Positioner>
                   </Portal>
                 </Select.Root>
+
+                <Box
+                  as="button"
+                  py={2}
+                  px={3}
+                  borderRadius="md"
+                  bg={refreshButtonBg}
+                  color={refreshButtonColor}
+                  fontWeight="medium"
+                  fontSize="sm"
+                  _hover={{ bg: refreshButtonHoverBg }}
+                  _active={{ bg: refreshButtonActiveBg }}
+                  onClick={fetchTasks}
+                  ml={2}
+                >
+                  <Flex align="center" justify="center">
+                    <Icon as={FaSync} mr={2} />
+                    {t("refresh")}
+                  </Flex>
+                </Box>
               </Flex>
             </Flex>
 
@@ -377,7 +442,7 @@ export default function TasksPage() {
               </Flex>
             ) : error ? (
               <Box p={5} textAlign="center" bg={errorBg} borderRadius="md">
-                <Text color={errorText}>{t("error")}</Text>
+                <Text color={errorText}>{error}</Text>
               </Box>
             ) : tasks.length === 0 ? (
               <Box p={5} textAlign="center" bg={emptyBg} borderRadius="md" borderWidth="1px" borderColor={borderColor}>
@@ -396,32 +461,38 @@ export default function TasksPage() {
                       <Table.Row>
                         <Table.ColumnHeader
                           fontWeight="semibold"
-                          width={{ base: "20%", md: "10%" }}
+                          width="10%"
                           color={textColorHeading}
                         >
-                          {t("id")}
+                          {t("task_id")}
                         </Table.ColumnHeader>
                         <Table.ColumnHeader
                           fontWeight="semibold"
-                          width={{ base: "25%", md: "15%" }}
-                          color={textColorHeading}
-                        >
-                          {t("role")}
-                        </Table.ColumnHeader>
-                        <Table.ColumnHeader
-                          fontWeight="semibold"
-                          width={{ base: "55%", md: "45%" }}
-                          color={textColorHeading}
-                        >
-                          {t("summarization")}
-                        </Table.ColumnHeader>
-                        <Table.ColumnHeader
-                          fontWeight="semibold"
-                          width="20%"
-                          display={{ base: "none", md: "table-cell" }}
+                          width="15%"
                           color={textColorHeading}
                         >
                           {t("created_at")}
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader
+                          fontWeight="semibold"
+                          width="10%"
+                          color={textColorHeading}
+                        >
+                          {t("assigner")}
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader
+                          fontWeight="semibold"
+                          width="10%"
+                          color={textColorHeading}
+                        >
+                          {t("assignee")}
+                        </Table.ColumnHeader>
+                        <Table.ColumnHeader
+                          fontWeight="semibold"
+                          width="45%"
+                          color={textColorHeading}
+                        >
+                          {t("summarization")}
                         </Table.ColumnHeader>
                         <Table.ColumnHeader
                           fontWeight="semibold"
@@ -439,16 +510,24 @@ export default function TasksPage() {
                           key={task.id}
                           cursor="pointer"
                           _hover={{ bg: hoverBg }}
+                          onClick={() => handleTaskSelect(task)}
+                          bg={selectedTask?.id === task.id ? hoverBg : undefined}
                         >
                           <Table.Cell
                             fontWeight="medium"
                             fontSize={{ base: "xs", md: "sm" }}
                             color={textColorStrong}
                           >
-                            {task.id}
+                            {formatTaskId(task.task_id)}
                           </Table.Cell>
                           <Table.Cell fontSize={{ base: "xs", md: "sm" }} color={textColorStrong}>
-                            {task.task_id}
+                            {formatDate(task.created_at)}
+                          </Table.Cell>
+                          <Table.Cell fontSize={{ base: "xs", md: "sm" }} color={textColorStrong}>
+                            {formatUserId(task.assigner)}
+                          </Table.Cell>
+                          <Table.Cell fontSize={{ base: "xs", md: "sm" }} color={textColorStrong}>
+                            {formatUserId(task.assignee)}
                           </Table.Cell>
                           <Table.Cell>
                             <Box
@@ -458,13 +537,6 @@ export default function TasksPage() {
                             >
                               {truncateText(task.task_summarization || "", 100)}
                             </Box>
-                          </Table.Cell>
-                          <Table.Cell
-                            fontSize={{ base: "xs", md: "sm" }}
-                            display={{ base: "none", md: "table-cell" }}
-                            color={textColorStrong}
-                          >
-                            {formatDate(task.created_at)}
                           </Table.Cell>
                           <Table.Cell textAlign="center" padding={2}>
                             {getStatusBadge(task.status)}
@@ -488,7 +560,8 @@ export default function TasksPage() {
                       size="sm"
                       width="120px"
                       collection={perPageOptions}
-                      defaultValue={[itemsPerPage.toString()]}
+                      value={[itemsPerPage.toString()]}
+                      onValueChange={(value) => handleItemsPerPageChange(value[0])}
                     >
                       <Select.HiddenSelect />
                       <Select.Control>
@@ -527,6 +600,7 @@ export default function TasksPage() {
                       }}
                       aria-disabled={currentPage === 1}
                       pointerEvents={currentPage === 1 ? "none" : "auto"}
+                      onClick={() => handlePageChange(1)}
                     >
                       «
                     </Box>
@@ -542,6 +616,7 @@ export default function TasksPage() {
                       }}
                       aria-disabled={currentPage === 1}
                       pointerEvents={currentPage === 1 ? "none" : "auto"}
+                      onClick={() => handlePageChange(currentPage - 1)}
                     >
                       ‹
                     </Box>
@@ -580,6 +655,7 @@ export default function TasksPage() {
                           ? "none"
                           : "auto"
                       }
+                      onClick={() => handlePageChange(currentPage + 1)}
                     >
                       ›
                     </Box>
@@ -613,6 +689,7 @@ export default function TasksPage() {
                           ? "none"
                           : "auto"
                       }
+                      onClick={() => handlePageChange(totalPages)}
                     >
                       »
                     </Box>
@@ -650,39 +727,83 @@ export default function TasksPage() {
             }}
           />
 
-          {/* Bottom component - Task Logger */}
+          {/* Bottom component - Task Logger - improved for dark mode */}
           <MotionBox
             width="100%"
             height={`${100 - topHeight}%`}
-            overflow="auto"
+            overflow="hidden"
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            bg={bgSubtle}
+            bg={loggerBg}
             borderRadius="md"
             boxShadow="sm"
             p={4}
             borderWidth="1px"
             borderColor={borderColor}
           >
-            <Flex width="100%" height="100%">
-              <Box flex="1" mr={4} height="100%">
-                <Tabs.Root defaultValue="details" variant="line">
-                  <Tabs.List mb={4}>
+            <Flex
+              width="100%"
+              height="100%"
+              direction={{ base: "column", md: "row" }}
+              gap={{ base: 4, md: 2 }}
+            >
+              <Box
+                flex="1"
+                mr={{ base: 0, md: 3 }}
+                mb={{ base: 4, md: 0 }}
+                height={{ base: "auto", md: "100%" }}
+                display="flex"
+                flexDirection="column"
+                overflow="hidden"
+                minWidth="0"
+              >
+                <Tabs.Root
+                  defaultValue="details"
+                  variant="line"
+                  height="100%"
+                  // @ts-ignore
+                  sx={{
+                    '[data-part="trigger"]': {
+                      color: textColorStrong,
+                      fontWeight: "medium",
+                      px: 3,
+                      py: 2,
+                      _hover: { bg: tabHoverBg },
+                      _selected: { color: tabIndicatorColor, bg: tabActiveBg }
+                    },
+                    '[data-part="indicator"]': {
+                      bg: tabIndicatorColor,
+                      height: "2px"
+                    }
+                  }}
+                >
+                  <Tabs.List
+                    mb={4}
+                    // @ts-ignore
+                    sx={{
+                      overflowX: "hidden",
+                      scrollbarWidth: "none",  // Firefox
+                      "&::-webkit-scrollbar": {
+                        display: "none"  // Chrome, Safari, Edge
+                      },
+                      msOverflowStyle: "none"  // IE and Edge
+                    }}
+                    whiteSpace="nowrap"
+                    borderBottomWidth="1px"
+                    borderBottomColor={borderColor}
+                    width="100%"
+                    px={1}
+                  >
                     <Tabs.Trigger value="details">{t("details")}</Tabs.Trigger>
-                    <Tabs.Trigger value="description">
-                      {t("description")}
-                    </Tabs.Trigger>
-                    <Tabs.Trigger value="arguments">
-                      {t("arguments")}
-                    </Tabs.Trigger>
+                    <Tabs.Trigger value="arguments">{t("arguments")}</Tabs.Trigger>
                     <Tabs.Trigger value="logs">{t("logs")}</Tabs.Trigger>
                     <Tabs.Indicator />
                   </Tabs.List>
 
-                  <Box flex="1" position="relative" overflow="hidden">
-                    <Tabs.Content value="details">
+                  <Box flex="1" position="relative" overflow="hidden" height="calc(100% - 48px)">
+                    <Tabs.Content value="details" height="100%" overflow="auto">
                       <MotionBox
                         height="100%"
-                        p={4}
+                        p={2}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{
@@ -691,14 +812,38 @@ export default function TasksPage() {
                           delay: 0.1,
                         }}
                       >
-                        <TaskMetadata />
+                        <TaskMetadata selectedTask={selectedTask} />
                       </MotionBox>
                     </Tabs.Content>
 
-                    <Tabs.Content value="description">
+                    <Tabs.Content value="arguments" height="100%" overflow="auto">
                       <MotionBox
                         height="100%"
-                        p={4}
+                        p={2}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          duration: 0.4,
+                          ease: "easeOut",
+                          delay: 0.1,
+                        }}
+                      >
+                        {selectedTask && selectedTask.tools_called && selectedTask.tools_called.length > 0 ? (
+                          <MCPToolCalls
+                            selectedTask={selectedTask}
+                            setSelectedTask={setSelectedTask}
+                            fetchTasks={fetchTasks}
+                          />
+                        ) : (
+                          <Text color={textColor}>{t("no_mcp_tool_calls")}</Text>
+                        )}
+                      </MotionBox>
+                    </Tabs.Content>
+
+                    <Tabs.Content value="logs" height="100%" overflow="auto">
+                      <MotionBox
+                        height="100%"
+                        p={2}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{
@@ -709,47 +854,17 @@ export default function TasksPage() {
                       >
                         <Text
                           fontSize={{ base: "sm", md: "md" }}
+                          color={monospaceTextColor}
                           whiteSpace="pre-wrap"
-                          color={textColorStrong}
+                          fontFamily="mono"
+                          p={3}
+                          bg={loggerCodeBg}
+                          borderRadius="md"
+                          overflowX="auto"
+                          height="100%"
+                          overflowY="auto"
                         >
-                          {t("no_task_selected")}
-                        </Text>
-                      </MotionBox>
-                    </Tabs.Content>
-
-                    <Tabs.Content value="arguments">
-                      <MotionBox
-                        height="100%"
-                        p={4}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{
-                          duration: 0.4,
-                          ease: "easeOut",
-                          delay: 0.1,
-                        }}
-                      >
-                        <Text color={textColor}>{t("no_task_selected")}</Text>
-                      </MotionBox>
-                    </Tabs.Content>
-
-                    <Tabs.Content value="logs">
-                      <MotionBox
-                        height="100%"
-                        p={4}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{
-                          duration: 0.4,
-                          ease: "easeOut",
-                          delay: 0.1,
-                        }}
-                      >
-                        <Text
-                          fontSize={{ base: "sm", md: "md" }}
-                          color={textColor}
-                        >
-                          {t("no_task_selected")}
+                          {selectedTask && selectedTask.result ? selectedTask.result : t("no_logs_available")}
                         </Text>
                       </MotionBox>
                     </Tabs.Content>
@@ -757,11 +872,23 @@ export default function TasksPage() {
                 </Tabs.Root>
               </Box>
 
-              <TaskSidebar />
+              {/* Only show sidebar on larger screens or stack it on mobile */}
+              <Box
+                width={{ base: "100%", md: "200px" }}
+                minWidth={{ md: "200px" }}
+                height={{ base: "auto", md: "100%" }}
+                overflow="auto"
+              >
+                <TaskSidebar
+                  selectedTask={selectedTask}
+                  approveOrDeny={approveOrDeny}
+                  fetchTasks={fetchTasks}
+                />
+              </Box>
             </Flex>
           </MotionBox>
         </Flex>
-      </MotionBox>
-    </Container>
+      </MotionBox >
+    </Container >
   );
 }

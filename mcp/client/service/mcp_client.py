@@ -1,6 +1,6 @@
 import dotenv
 from contextlib import AsyncExitStack
-from typing import Dict, SupportsIndex
+from typing import Dict
 from datetime import datetime
 import asyncio
 import httpx
@@ -14,8 +14,8 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.types import Tool as mcp_tool
 from mcp.client.stdio import stdio_client
 
-from schemas.mcp import MCPSummon
-from schemas.mcp import MCPAccess, MCPResponse, MCPToolCall, MCPTool, MCPServer, MCPApproval
+from schemas.mcp import MCPSummon, Task
+from schemas.mcp import MCPTool, MCPServer
 from service.bypasser import Bypasser
 
 class MCPClient:
@@ -82,15 +82,16 @@ class MCPClient:
         summon: MCPSummon, 
     ) -> None:
         client_url = f"http://{summon.client_host}:3000"
+        
+        logger.info(f"mcp client url: {summon}")
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{client_url}/api/chat/get_messages", 
                 json={"roomId": summon.room_id, "limit": 100}
             )
             messages = response.json()
-            print(messages)
         
-        
+        logger.info(f"Summoner: {summon.summoner}")
         query = summon.query
         query = query.replace("@agent", "")
         query = [{"role": "user", "content": query}]
@@ -110,8 +111,9 @@ class MCPClient:
         tools = await server.list_tools()
         tools = tools.tools
         ollama_tools = [self.convert_mcp_tool_desc_to_ollama_tool(tool) for tool in tools]
-        descriptions = [tool["function"]["description"] for tool in ollama_tools]
-
+        
+        # Create a mapping of tool names to descriptions
+        tool_descriptions = {tool["function"]["name"]: tool["function"]["description"] for tool in ollama_tools}
 
         llm_response = self.ollama_client.chat(
             model=self.ollama_model,
@@ -128,7 +130,7 @@ class MCPClient:
                 "tool_name": tool_call.function.name,
                 "args": tool_call.function.arguments,
                 "mcp_server": byp_mcp_server,
-                "room_id": summon.room_id,
+                "description": tool_descriptions.get(tool_call.function.name, ""),  # Get description from mapping
             }
             for tool_call in tool_calls
         ]
@@ -147,14 +149,14 @@ Server purpose: {server_description}"""
             messages=conversations + [summarize_query],
         )
 
-        task_id = uuid.uuid4()
+        task_id = str(uuid.uuid4())
         task = {
             "task_id": task_id,
             "created_at": datetime.now().isoformat(),
             "start_time": None,
             "end_time": None,
-            "assigner": None,
-            "assignee": None,
+            "assigner": summon.assigner,
+            "assignee": summon.assignee,
             "task_summarization": summarization.message.content,
             "room_id": summon.room_id,
             "context": tools_called,
@@ -162,44 +164,57 @@ Server purpose: {server_description}"""
             "status": "pending",
             "result": ""
         }
-        
-
-    async def call_tool(
-        self, 
-        approval: MCPApproval
-    ) -> MCPResponse:
-        results = []
-        for tool_call in approval.tools_called:
-            session = self.servers[tool_call.mcp_server]
-            tool_response = await session.call_tool(tool_call.tool_name, tool_call.args)
-            logger.info(f"Tool response: {tool_response}")
-            results.append(tool_response.content[0].text)
-        
-        logger.info(f"Reuslts: {results}")
-
-        query = {
-            "role": "user",
-            "content": f"""
-            Given the results {results},
+        logger.info(f"Task: {task}")
+        # create notification as well.
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{client_url}/api/task/create_task", 
+                json=task
+            )
             
-            Provide an analysis of the result, and answer the user's query
-            {approval.conversation[-1]["content"]}
-            
-            Context for your reference:
-            {approval.conversation[:-1]}
-            """
-        }
-        
-        summarization = self.ollama_client.chat(
-            model=self.ollama_model,
-            messages=[query],
-        )
+            logger.info(f"Task created: {response}")
 
-        return MCPResponse(
-            sender="agent",
-            text=summarization.message.content, # type: ignore
-            is_tool_call=False,
-        )
+    async def execute(
+        self,
+        task: Task,
+    ):
+        pass
+    # async def call_tool(
+    #     self, 
+    #     approval: MCPApproval
+    # ) -> MCPResponse:
+    #     results = []
+    #     for tool_call in approval.tools_called:
+    #         session = self.servers[tool_call.mcp_server]
+    #         tool_response = await session.call_tool(tool_call.tool_name, tool_call.args)
+    #         logger.info(f"Tool response: {tool_response}")
+    #         results.append(tool_response.content[0].text)
+        
+    #     logger.info(f"Reuslts: {results}")
+
+    #     query = {
+    #         "role": "user",
+    #         "content": f"""
+    #         Given the results {results},
+            
+    #         Provide an analysis of the result, and answer the user's query
+    #         {approval.conversation[-1]["content"]}
+            
+    #         Context for your reference:
+    #         {approval.conversation[:-1]}
+    #         """
+    #     }
+        
+    #     summarization = self.ollama_client.chat(
+    #         model=self.ollama_model,
+    #         messages=[query],
+    #     )
+
+    #     return MCPResponse(
+    #         sender="agent",
+    #         text=summarization.message.content, # type: ignore
+    #         is_tool_call=False,
+    #     )
 
     async def get_servers(self) -> Dict[str, MCPServer]:
         server_information = {}

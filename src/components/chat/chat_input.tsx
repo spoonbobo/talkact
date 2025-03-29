@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { User } from "@/types/user";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 interface MentionState {
     isActive: boolean;
@@ -26,7 +26,9 @@ interface ChatInputProps {
         username?: string;
         token?: string;
         tokenCreatedAt?: number;
+        user_id?: string;
     } | null;
+    isTaskMode?: boolean;
 }
 
 export const ChatInput = ({
@@ -37,6 +39,7 @@ export const ChatInput = ({
     users = [],
     agents = [],
     currentUser = null,
+    isTaskMode = true,
 }: ChatInputProps) => {
     const t = useTranslations("Chat");
     const [mentionState, setMentionState] = useState<MentionState>({
@@ -67,39 +70,37 @@ export const ChatInput = ({
 
         // Filter out current user and include only other users plus agents
         const filteredUsers = users.filter(user =>
-            user.username !== currentUser?.username &&
+            user.user_id !== currentUser?.user_id &&
             // @ts-ignore
             user.id !== currentUser?.id?.toString()
         );
 
+        // Combine filtered users with agents
         const allUsers = [...filteredUsers, ...agents];
 
-        // Add default "agent" mention if it doesn't exist in the list
-        const hasAgentMention = allUsers.some(user => user.username === "agent");
-        if (!hasAgentMention) {
-            allUsers.push({
-                // @ts-ignore
-                id: "agent",
-                username: "agent",
-                // Add any other required properties with default values
-            });
-        }
+        // No longer adding default "agent" mention when no agents are available
 
         const uniqueUsers = Array.from(new Map(allUsers.map(user => [user.username, user])).values());
 
         // If search text is empty, return all users
         // If search text is not empty, filter by username
-        // Always prioritize "agent" by putting it first in the list
+        // Always prioritize agents by putting them first in the list
         const filteredSuggestions = mentionState.searchText.trim() === ''
             ? uniqueUsers
             : uniqueUsers.filter(user =>
                 user.username.toLowerCase().includes(mentionState.searchText.toLowerCase()));
 
-        // Sort to put "agent" at the top of the list
+        // Sort to put agents at the top of the list
         return filteredSuggestions.sort((a, b) => {
-            if (a.username === "agent") return -1;
-            if (b.username === "agent") return 1;
-            return 0;
+            // First check if either is an agent (by role or username)
+            const aIsAgent = a.role === "agent" || a.username === "agent";
+            const bIsAgent = b.role === "agent" || b.username === "agent";
+
+            if (aIsAgent && !bIsAgent) return -1;
+            if (!aIsAgent && bIsAgent) return 1;
+
+            // If both or neither are agents, sort alphabetically
+            return a.username.localeCompare(b.username);
         });
     }, [users, agents, mentionState, currentUser]);
 
@@ -206,8 +207,8 @@ export const ChatInput = ({
         <Flex
             p={4}
             borderTopWidth="1px"
-            borderColor={borderColor}
-            bg={bgSubtle}
+            borderColor={isTaskMode ? borderColor : "green.200"}
+            bg={isTaskMode ? bgSubtle : "rgba(236, 253, 245, 0.4)"}
             align="center"
             position="relative"
         >
@@ -224,6 +225,13 @@ export const ChatInput = ({
                 bg={inputBg}
                 color={textColorStrong}
                 _placeholder={{ color: textColor }}
+                borderColor={isTaskMode ? "inherit" : "green.200"}
+                _focus={{
+                    borderColor: isTaskMode ? "blue.500" : "green.400",
+                    boxShadow: isTaskMode ?
+                        "0 0 0 1px var(--chakra-colors-blue-500)" :
+                        "0 0 0 1px var(--chakra-colors-green-400)"
+                }}
             />
 
             <Box
@@ -231,12 +239,12 @@ export const ChatInput = ({
                 py={2}
                 px={4}
                 borderRadius="md"
-                bg="blue.500"
+                bg={isTaskMode ? "blue.500" : "green.500"}
                 color="white"
                 fontWeight="medium"
                 fontSize="sm"
-                _hover={{ bg: "blue.600" }}
-                _active={{ bg: "blue.700" }}
+                _hover={{ bg: isTaskMode ? "blue.600" : "green.600" }}
+                _active={{ bg: isTaskMode ? "blue.700" : "green.700" }}
                 _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
                 onClick={handleSendMessage}
                 // @ts-ignore

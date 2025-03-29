@@ -25,7 +25,8 @@ import { RootState } from '@/store/store';
 import {
   setRooms,
   setSelectedRoom,
-  setLoading,
+  setLoadingRooms,
+  setLoadingMessages,
   joinRoom,
   setMessages,
   markRoomMessagesLoaded
@@ -37,8 +38,11 @@ import { ChatRoomList } from "@/components/chat/room_list";
 import { ChatMessageList } from "@/components/chat/message_list";
 import { ChatInput } from "@/components/chat/chat_input";
 import { CreateRoomForm } from "@/components/chat/create_room_form";
+import { ChatModeProvider, useChatMode } from "@/components/chat/chat_mode_context";
+import { ChatModeMessageList } from "@/components/chat/chat_mode_message_list";
+import { ChatModeInput } from "@/components/chat/chat_mode_input";
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 // Add this dummy TaskLog component
 const TaskLog = () => {
@@ -84,7 +88,24 @@ const TaskLog = () => {
   );
 };
 
+// Wrap the main component with the ChatModeProvider
 export default function ChatPage() {
+  const { data: session } = useSession();
+  const { currentUser } = useSelector((state: RootState) => state.user);
+
+  if (!session) {
+    return <Loading />;
+  }
+
+  return (
+    <ChatModeProvider currentUser={currentUser}>
+      <ChatPageContent />
+    </ChatModeProvider>
+  );
+}
+
+// The existing ChatPageContent component remains as is
+const ChatPageContent = () => {
   const t = useTranslations("Chat");
   const { data: session } = useSession();
   const dispatch = useDispatch();
@@ -95,9 +116,12 @@ export default function ChatPage() {
     selectedRoomId,
     messages,
     unreadCounts,
-    isLoading,
+    isLoadingRooms,
+    isLoadingMessages,
     messagesLoaded
   } = useSelector((state: RootState) => state.chat);
+
+  const { currentUser } = useSelector((state: RootState) => state.user);
 
   // Get messages for the selected room
   const currentMessages = selectedRoomId ? messages[selectedRoomId] || [] : [];
@@ -107,6 +131,9 @@ export default function ChatPage() {
   const [newRoomName, setNewRoomName] = useState<string>("");
   const [isCreatingRoomLoading, setIsCreatingRoomLoading] = useState<boolean>(false);
   const [isLayoutFlipped, setIsLayoutFlipped] = useState<boolean>(false);
+  const [isTaskMode, setIsTaskMode] = useState<boolean>(true);
+  const [users, setUsers] = useState<User[]>([]);
+  const [agents, setAgents] = useState<User[]>([]);
 
   // Add ref for message container to enable auto-scrolling
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
@@ -135,22 +162,27 @@ export default function ChatPage() {
   }, []);
 
   // Dark mode adaptive colors
-  const bgSubtle = useColorModeValue("bg.subtle", "gray.800");
+  const bgSubtle = useColorModeValue("rgba(249, 250, 251, 0.8)", "rgba(26, 32, 44, 0.8)");
   const textColor = useColorModeValue("gray.600", "gray.400");
   const textColorHeading = useColorModeValue("gray.800", "gray.100");
   const borderColor = useColorModeValue("gray.200", "gray.700");
+
+  // Add these new color variables for chat mode - making them less green and more subtle
+  const chatModeBg = useColorModeValue("rgba(245, 250, 248, 0.3)", "rgba(30, 40, 38, 0.3)");
+  const chatModeBorder = useColorModeValue("gray.300", "gray.600");
+  const chatModeHeading = useColorModeValue("teal.600", "teal.400");
 
   // Fetch rooms
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        dispatch(setLoading(true));
+        dispatch(setLoadingRooms(true));
         const response = await axios.get("/api/chat/get_rooms");
         dispatch(setRooms(response.data));
       } catch (error) {
         console.error("Error fetching chat rooms:", error);
       } finally {
-        dispatch(setLoading(false));
+        dispatch(setLoadingRooms(false));
       }
     };
 
@@ -159,8 +191,29 @@ export default function ChatPage() {
     }
   }, [session, dispatch]);
 
+  // Fetch users and agents
+  useEffect(() => {
+    const fetchUsersAndAgents = async () => {
+      try {
+        // Fetch regular users
+        const usersResponse = await axios.get("/api/user/get_users");
+        setUsers(usersResponse.data.users);
+
+        // Fetch agents specifically
+        const agentsResponse = await axios.get("/api/user/get_users?role=agent");
+        setAgents(agentsResponse.data.users);
+      } catch (error) {
+        console.error("Error fetching users and agents:", error);
+      }
+    };
+
+    if (session) {
+      fetchUsersAndAgents();
+    }
+  }, [session]);
+
   const handleSendMessage = () => {
-    if (messageInput.trim() && selectedRoomId) {
+    if (messageInput.trim() && selectedRoomId && isTaskMode) {
       const newMessage: IMessage = {
         id: uuidv4(),
         room_id: selectedRoomId,
@@ -187,9 +240,47 @@ export default function ChatPage() {
   const triggerAgentAPI = async (message: string, roomId: string) => {
     try {
       console.log("Agent mentioned, triggering API call");
-      const url = `http://${window.location.hostname}:34430/api/agent/summon`;
-      const response = await axios.post(url, { query: message, room_id: roomId, created_at: new Date().toISOString() });
 
+      // Extract the mentioned agent username
+      let assigneeId = null;
+      const mentionMatch = message.match(/@([a-zA-Z0-9_]+)/);
+
+      if (mentionMatch && mentionMatch[1]) {
+        const mentionedUsername = mentionMatch[1];
+
+        // Only look for specific agents if we have agents available
+        if (agents.length > 0) {
+          // If it's the default "agent" mention, use the first available agent
+          if (mentionedUsername === "agent") {
+            assigneeId = agents[0].user_id;
+          } else {
+            // Find the specific agent that was mentioned
+            const mentionedAgent = agents.find(agent => agent.username === mentionedUsername);
+            if (mentionedAgent) {
+              assigneeId = mentionedAgent.user_id;
+            }
+          }
+        }
+      }
+
+      const url = `http://${window.location.hostname}:34430/api/agent/summon`;
+      const payload = {
+        summoner: currentUser?.email,
+        query: message,
+        room_id: roomId,
+        assigner: currentUser?.user_id,
+        assignee: assigneeId,
+        created_at: new Date().toISOString()
+      };
+      console.log("Payload:", payload);
+
+      // Only add assignee to the payload if we found a valid assignee
+      if (assigneeId) {
+        // @ts-ignore
+        payload.assignee = assigneeId;
+      }
+
+      const response = await axios.post(url, payload);
       console.log("Agent API response:", response.data);
     }
     catch (error) {
@@ -274,7 +365,7 @@ export default function ChatPage() {
 
         if (!hasLoadedMessages) {
           try {
-            dispatch(setLoading(true));
+            dispatch(setLoadingMessages(true));
             const response = await axios.get(`/api/chat/get_messages?roomId=${selectedRoomId}`);
 
             // Merge with any existing messages we might have
@@ -306,7 +397,7 @@ export default function ChatPage() {
           } catch (error) {
             console.error("Error fetching messages:", error);
           } finally {
-            dispatch(setLoading(false));
+            dispatch(setLoadingMessages(false));
           }
         }
       }
@@ -319,11 +410,27 @@ export default function ChatPage() {
     setIsLayoutFlipped(!isLayoutFlipped);
   };
 
-  if (!session) {
-    return <Loading />;
-  }
+  // Add this function to handle task mode toggle
+  const handleTaskModeToggle = () => {
+    setIsTaskMode(!isTaskMode);
+  };
 
-  if (isLoading) {
+  // Get the chat mode context
+  const chatModeContext = useChatMode();
+
+  // Use a ref to track if we're in task mode to avoid dependency cycles
+  const isTaskModeRef = React.useRef(isTaskMode);
+  isTaskModeRef.current = isTaskMode;
+
+  // Effect to clear chat mode messages when switching back to task mode
+  useEffect(() => {
+    if (isTaskMode && !isTaskModeRef.current) {
+      chatModeContext.clearChatModeMessages();
+    }
+    isTaskModeRef.current = isTaskMode;
+  }, [isTaskMode, chatModeContext]);
+
+  if (isLoadingRooms || isLoadingMessages || !session) {
     return <Loading />;
   }
 
@@ -347,9 +454,26 @@ export default function ChatPage() {
         overflow="hidden"
         position="relative"
       >
-        <Heading size="lg" mb={6} display="flex" alignItems="center" color={textColorHeading}>
-          <Icon as={FaComments} mr={3} color="blue.500" />
+        <Heading
+          size="lg"
+          mb={6}
+          display="flex"
+          alignItems="center"
+          color={isTaskMode ? textColorHeading : "green.600"}
+        >
+          <Icon as={FaComments} mr={3} color={isTaskMode ? "blue.500" : "green.500"} />
           {t("chat")}
+          {!isTaskMode && (
+            <motion.span
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.3 }}
+              style={{ marginLeft: '8px', color: 'green.500' }}
+            >
+              ({t("chat_mode")})
+            </motion.span>
+          )}
         </Heading>
 
         <Flex
@@ -365,20 +489,22 @@ export default function ChatPage() {
             initial={false}
             animate={{
               left: isLayoutFlipped ? "calc(100% - 300px)" : 0,
-              opacity: 1,
-              scale: 1,
+              opacity: isTaskMode ? 1 : 0,
+              scale: isTaskMode ? 1 : 0.9,
+              width: isTaskMode ? "300px" : "0px",
+              pointerEvents: isTaskMode ? "auto" : "none",
             }}
             transition={{
               duration: 0.5,
               ease: "easeInOut",
               opacity: { duration: 0.3 },
-              scale: { duration: 0.3 }
+              scale: { duration: 0.3 },
+              width: { duration: 0.5 }
             }}
             position="absolute"
-            width="300px"
             height="100%"
             zIndex={1}
-            whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+            whileHover={{ boxShadow: isTaskMode ? "0 4px 12px rgba(0,0,0,0.1)" : "none" }}
           >
             <AnimatePresence mode="wait" initial={false}>
               {isLayoutFlipped ? (
@@ -463,10 +589,13 @@ export default function ChatPage() {
             layout
             initial={false}
             animate={{
-              left: isLayoutFlipped ? 0 : "300px",
-              width: isLayoutFlipped ? "calc(100% - 300px - 1rem)" : "calc(100% - 300px - 1rem)",
+              left: !isTaskMode ? 0 : (isLayoutFlipped ? 0 : "300px"),
+              width: !isTaskMode ? "100%" : (isLayoutFlipped ? "calc(100% - 300px - 1rem)" : "calc(100% - 300px - 1rem)"),
               opacity: 1,
               scale: 1,
+            }}
+            style={{
+              backgroundColor: isTaskMode ? bgSubtle : chatModeBg,
             }}
             transition={{
               duration: 0.5,
@@ -477,23 +606,20 @@ export default function ChatPage() {
             position="absolute"
             height="100%"
             overflow="hidden"
-            bg={bgSubtle}
             borderRadius="md"
             display="flex"
             flexDirection="column"
             borderWidth="1px"
-            borderColor={borderColor}
+            borderColor={isTaskMode ? borderColor : chatModeBorder}
             zIndex={2}
-            left={isLayoutFlipped ? 0 : "300px"}
-            width="calc(100% - 300px - 1rem)"
             whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
           >
             {/* Chat header */}
             <Flex
               p={4}
               borderBottomWidth="1px"
-              borderColor={borderColor}
-              bg={bgSubtle}
+              borderColor={isTaskMode ? borderColor : chatModeBorder}
+              bg={isTaskMode ? bgSubtle : chatModeBg}
               align="center"
               minHeight="80px"
               width="100%"
@@ -520,21 +646,36 @@ export default function ChatPage() {
                     transition={{ duration: 0.3, ease: "easeInOut" }}
                   >
                     <Box ml={3}>
-                      <Text fontSize="lg" fontWeight="bold" color={textColorHeading}>
+                      <Text
+                        fontSize="lg"
+                        fontWeight="bold"
+                        color={isTaskMode ? textColorHeading : chatModeHeading}
+                      >
                         {currentRoom?.name || t("select_room")}
                       </Text>
-                      <Flex align="center">
-                        <Icon
-                          as={FaUsers}
-                          color="blue.500"
-                          boxSize={3}
-                          mr={1}
-                        />
-                        <Text fontSize="xs" color={textColor}>
-                          {t("active_users")}:{" "}
-                          {currentRoom?.active_users?.length || 0}
-                        </Text>
-                      </Flex>
+                      <AnimatePresence>
+                        {isTaskMode && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <Flex align="center">
+                              <Icon
+                                as={FaUsers}
+                                color="blue.500"
+                                boxSize={3}
+                                mr={1}
+                              />
+                              <Text fontSize="xs" color={textColor}>
+                                {t("active_users")}:{" "}
+                                {currentRoom?.active_users?.length || 0}
+                              </Text>
+                            </Flex>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </Box>
                   </motion.div>
                 )}
@@ -552,42 +693,93 @@ export default function ChatPage() {
                       position: "absolute",
                       right: "16px",
                       top: "50%",
-                      transform: "translateY(-50%)"
+                      transform: "translateY(-50%)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px"
                     }}
                   >
+                    {/* Task mode toggle */}
                     <Text
                       as="button"
-                      color="blue.500"
+                      color={isTaskMode ? "blue.500" : "green.500"}
                       fontWeight="medium"
                       cursor="pointer"
-                      onClick={handleFlipLayout}
-                      _hover={{ color: "blue.600", textDecoration: "underline" }}
+                      onClick={handleTaskModeToggle}
+                      _hover={{
+                        color: isTaskMode ? "blue.600" : "green.600",
+                        textDecoration: "underline"
+                      }}
                       transition="color 0.2s ease"
                     >
-                      {isLayoutFlipped ? t("switch_to_room_view") : t("switch_to_task_view")}
+                      {isTaskMode ? t("switch_to_chat_mode") : t("switch_to_task_mode")}
                     </Text>
+
+                    {/* Reset chat button - only show in chat mode */}
+                    {!isTaskMode && (
+                      <Text
+                        as="button"
+                        color="green.500"
+                        fontWeight="medium"
+                        cursor="pointer"
+                        onClick={() => chatModeContext.clearChatModeMessages()}
+                        _hover={{ color: "green.600", textDecoration: "underline" }}
+                        transition="color 0.2s ease"
+                        ml={4}
+                      >
+                        {t("reset_chat_mode") || "Reset Chat"}
+                      </Text>
+                    )}
+
+                    {/* Layout toggle - only show in task mode */}
+                    {isTaskMode && (
+                      <Text
+                        as="button"
+                        color="blue.500"
+                        fontWeight="medium"
+                        cursor="pointer"
+                        onClick={handleFlipLayout}
+                        _hover={{ color: "blue.600", textDecoration: "underline" }}
+                        transition="color 0.2s ease"
+                      >
+                        {isLayoutFlipped ? t("switch_to_room_view") : t("switch_to_task_view")}
+                      </Text>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
             </Flex>
 
-            {/* Messages area */}
-            <ChatMessageList
-              messageGroups={groupedMessages}
-              // @ts-ignore
-              messagesEndRef={messagesEndRef}
-            />
+            {/* Messages area - conditionally render based on mode */}
+            {isTaskMode ? (
+              <ChatMessageList
+                messageGroups={groupedMessages}
+                messagesEndRef={messagesEndRef}
+                isTaskMode={isTaskMode}
+              />
+            ) : (
+              <ChatModeMessageList messagesEndRef={messagesEndRef} />
+            )}
 
-            {/* Input area */}
-            <ChatInput
-              messageInput={messageInput}
-              setMessageInput={setMessageInput}
-              handleSendMessage={handleSendMessage}
-              selectedRoomId={selectedRoomId}
-            />
+            {/* Input area - conditionally render based on mode */}
+            {isTaskMode ? (
+              <ChatInput
+                messageInput={messageInput}
+                setMessageInput={setMessageInput}
+                handleSendMessage={handleSendMessage}
+                selectedRoomId={selectedRoomId}
+                users={users}
+                agents={agents}
+                currentUser={currentUser}
+                isTaskMode={isTaskMode}
+              />
+            ) : (
+              <ChatModeInput currentUser={currentUser} />
+            )}
           </MotionBox>
         </Flex>
       </MotionBox>
     </Container>
   );
-}
+};
+

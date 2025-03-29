@@ -3,7 +3,7 @@
 import React from "react";
 import { Link, Box, Icon, useBreakpointValue } from "@chakra-ui/react";
 import { useTranslations } from "next-intl";
-import { useSession, signOut } from "next-auth/react";
+import { useSelector } from "react-redux";
 import {
   FaTasks,
   FaComment,
@@ -12,10 +12,12 @@ import {
   FaCog,
   FaSignOutAlt,
   FaSignInAlt,
+  FaUserCog,
 } from "react-icons/fa";
 import { toaster } from "./ui/toaster";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { useParams } from "next/navigation";
+import { RootState } from "@/store/store";
 
 const NavBar = ({ onExpansionChange }: { onExpansionChange?: (expanded: boolean) => void }) => {
   const isMobile = useBreakpointValue({ base: true, md: false });
@@ -216,8 +218,10 @@ const NavIconButton = ({
 
 const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: boolean }) => {
   const t = useTranslations("Navbar");
-  const { data: session, status } = useSession();
-  const isLoggedIn = !!session;
+  const { currentUser, isAuthenticated, isLoading, isSigningOut } = useSelector(
+    (state: RootState) => state.user
+  );
+  const isLoggedIn = isAuthenticated;
   const logoBgColor = useColorModeValue("gray.100", "gray.700");
   const logoTextColor = useColorModeValue("gray.800", "gray.100");
   const logoShadow = useColorModeValue("shadow-sm", "shadow-none");
@@ -280,6 +284,15 @@ const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: 
               icon={FaBook}
               label="Learn"
               tooltipContent={t("learn")}
+              isMobile={isMobile}
+              isExpanded={isExpanded}
+            />
+
+            <NavIconButton
+              to="/admin/panel"
+              icon={FaUserCog}
+              label="admin_panel"
+              tooltipContent={t("admin_panel")}
               isMobile={isMobile}
               isExpanded={isExpanded}
             />

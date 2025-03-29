@@ -20,26 +20,27 @@ import { useSession } from "next-auth/react";
 import { User } from "@/types/user";
 import { v4 as uuidv4 } from 'uuid';
 import axios from "axios";
+import { useDispatch } from "react-redux";
+import { setUser } from "@/store/features/userSlice";
 
 interface ProfileFormData {
     email: string;
-    password: string;
     avatarUrl: string;
 }
 
 interface ProfileFormErrors {
     email?: string;
-    password?: string;
 }
 
 // Create motion components
-const MotionBox = motion(Box);
-const MotionVStack = motion(VStack);
+const MotionBox = motion.create(Box);
+const MotionVStack = motion.create(VStack);
 
 export default function CreateProfilePage() {
     const t = useTranslations("Signup");
     const router = useRouter();
     const { data: session } = useSession();
+    const dispatch = useDispatch();
 
     // Color mode values - matching signin page style
     const accentColor = "blue.500";
@@ -55,13 +56,11 @@ export default function CreateProfilePage() {
 
     const [formData, setFormData] = useState<ProfileFormData>({
         email: "",
-        password: "",
         avatarUrl: ""
     });
 
     const [errors, setErrors] = useState<ProfileFormErrors>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
 
     // Get email from session when component mounts
     useEffect(() => {
@@ -110,9 +109,6 @@ export default function CreateProfilePage() {
         e.preventDefault();
 
         const newErrors: ProfileFormErrors = {};
-        if (!formData.password.trim()) {
-            newErrors.password = t("password_required");
-        }
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -126,8 +122,8 @@ export default function CreateProfilePage() {
             const newUser: User = {
                 user_id: uuidv4(),
                 email: formData.email,
-                password: formData.password,
                 avatar: formData.avatarUrl,
+                role: "user",
                 created_at: createAt,
                 updated_at: createAt,
                 active_rooms: [],
@@ -137,6 +133,9 @@ export default function CreateProfilePage() {
 
             const response = await axios.post("/api/user/create_user", newUser);
             console.log("--------------------------", response);
+
+            // Dispatch user to Redux store
+            dispatch(setUser(newUser));
 
             router.push("/");
         } catch (error) {
@@ -226,29 +225,6 @@ export default function CreateProfilePage() {
                                         {errors.email}
                                     </Text>
                                 )
-                            )}
-                        </Stack>
-
-                        {/* Password */}
-                        <Stack gap={2}>
-                            <Text fontWeight="medium" fontSize="md" color={labelColor}>
-                                {t("password")} *
-                            </Text>
-                            <Input
-                                color={textColorHeading}
-                                name="password"
-                                type={showPassword ? "text" : "password"}
-                                value={formData.password}
-                                onChange={handleChange}
-                                placeholder={t("password_placeholder")}
-                                _invalid={{ borderColor: "red.500" }}
-                                size="lg"
-                                height="50px"
-                            />
-                            {errors.password && (
-                                <Text color="red.500" fontSize="sm">
-                                    {errors.password}
-                                </Text>
                             )}
                         </Stack>
 

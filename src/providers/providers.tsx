@@ -48,11 +48,11 @@ export default function Providers({
                     overflow="hidden"
                     display="flex"
                     flexDirection="column"
-                    height="calc(100vh - 64px)" // Assuming header is 64px
+                    height="100vh"
                     position="relative"
                   >
                     <Box
-                      position="absolute"
+                      position="fixed"
                       top="0"
                       left="0"
                       right="0"

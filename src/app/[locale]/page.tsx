@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { Box, Container, Flex, Heading, Icon, Text, SimpleGrid, Separator } from "@chakra-ui/react";
+import React, { useEffect, useState } from "react";
+import { Box, Container, Flex, Heading, Icon, Text, SimpleGrid, Separator, Button, Dialog, Portal, CloseButton } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FiHome, FiServer, FiBook, FiMessageSquare, FiBell, FiTool } from "react-icons/fi";
 import { useTranslations } from "next-intl";
@@ -16,8 +16,24 @@ import { debounce } from 'lodash';
 import { FaBook } from "react-icons/fa";
 import { FaTasks } from "react-icons/fa";
 
-const MotionBox = motion(Box);
-const MotionFlex = motion(Flex);
+const MotionBox = motion.create(Box);
+const MotionFlex = motion.create(Flex);
+
+// Update the interface for the notice data structure to match the YAML format
+interface NoticeData {
+  announcement?: Array<{
+    value: string;
+    date: string;
+  }>;
+  known_issues?: Array<{
+    value: string;
+    description: string;
+  }>;
+  features_implementing?: Array<{
+    value: string;
+    description: string;
+  }>;
+}
 
 export default function HomePage() {
   const t = useTranslations("Home");
@@ -26,6 +42,8 @@ export default function HomePage() {
   const { currentUser, isAuthenticated, isLoading, isSigningOut } = useSelector(
     (state: RootState) => state.user
   );
+  // Add state for notice data
+  const [noticeData, setNoticeData] = useState<NoticeData | null>(null);
 
   const textColor = useColorModeValue("gray.700", "gray.200");
   const textColorSecondary = useColorModeValue("gray.600", "gray.400");
@@ -53,6 +71,25 @@ export default function HomePage() {
       debouncedSetSigningOut(false);
     }
   }, [isAuthenticated, isSigningOut, debouncedSetSigningOut]);
+
+  // Add useEffect to fetch notice data
+  useEffect(() => {
+    const fetchNoticeData = async () => {
+      try {
+        const response = await fetch('/api/notice');
+        if (response.ok) {
+          const data = await response.json();
+          setNoticeData(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch notice data:', error);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchNoticeData();
+    }
+  }, [isAuthenticated]);
 
   if (isSigningOut) {
     return <Loading />;
@@ -159,18 +196,95 @@ export default function HomePage() {
               borderColor={borderColor}
               boxShadow="sm"
             >
-              <Flex align="center" mb={3}>
-                <Icon as={FiBell} fontSize="2xl" color="orange.500" mr={3} />
-                <Heading as="h2" size="md" color={textColor}>
-                  {t("announcement") || "Announcement"}
-                </Heading>
-              </Flex>
+              <Dialog.Root scrollBehavior="inside" size="md">
+                <Dialog.Trigger asChild>
+                  <Flex align="center" mb={3} cursor="pointer" _hover={{ opacity: 0.8 }}>
+                    <Icon as={FiBell} fontSize="2xl" color="orange.500" mr={3} />
+                    <Heading as="h2" size="md" color={textColor}>
+                      {t("announcement") || "Announcement"}
+                    </Heading>
+                  </Flex>
+                </Dialog.Trigger>
+                <Portal>
+                  <Dialog.Backdrop bg="blackAlpha.600" />
+                  <Dialog.Positioner>
+                    <Dialog.Content bg={useColorModeValue("white", "gray.800")} borderColor={cardBorderColor}>
+                      <Dialog.Header bg={useColorModeValue("gray.100", "gray.700")}>
+                        <Dialog.Title color={textColor}>{t("announcement") || "Announcement"}</Dialog.Title>
+                      </Dialog.Header>
+                      <Dialog.CloseTrigger asChild>
+                        <CloseButton size="sm" color={textColor} />
+                      </Dialog.CloseTrigger>
+                      <Dialog.Body>
+                        <Text color={textColor} fontSize="md" fontWeight="medium" mb={3}>
+                          {noticeData?.announcement?.[0]?.value || "Welcome to the MCP platform! We're constantly improving our services."}
+                        </Text>
+                        <Text color={textColorSecondary} fontSize="sm">
+                          {noticeData?.announcement?.[0]?.date ? `Last updated: ${noticeData.announcement[0].date}` : "Last updated: June 15, 2023"}
+                        </Text>
+                      </Dialog.Body>
+                    </Dialog.Content>
+                  </Dialog.Positioner>
+                </Portal>
+              </Dialog.Root>
               <Text color={textColor} fontSize="md" fontWeight="medium" mb={3}>
-                {t("announcement_message") || "Welcome to the MCP platform! We're constantly improving our services."}
+                {noticeData?.announcement?.[0]?.value
+                  ? (noticeData.announcement[0].value.length > 100
+                    ? `${noticeData.announcement[0].value.substring(0, 100)}...`
+                    : noticeData.announcement[0].value)
+                  : "Welcome to the MCP platform! We're constantly improving our services."}
               </Text>
               <Text color={textColorSecondary} fontSize="sm">
-                {t("announcement_date") || "Last updated: June 15, 2023"}
+                {noticeData?.announcement?.[0]?.date ? `Last updated: ${noticeData.announcement[0].date}` : "Last updated: June 15, 2023"}
               </Text>
+            </MotionBox>
+
+            {/* Known Issues Section */}
+            <MotionBox
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25, duration: 0.3 }}
+              p={6}
+              borderRadius="xl"
+              bg={sectionBgColor}
+              border="1px solid"
+              borderColor={borderColor}
+              boxShadow="sm"
+            >
+              <Flex align="center" mb={5}>
+                <Icon as={FiTool} fontSize="2xl" color="red.500" mr={3} />
+                <Heading as="h2" size="md" color={textColor}>
+                  {t("known_issues") || "Known Issues"}
+                </Heading>
+              </Flex>
+
+              <Box>
+                {noticeData?.known_issues?.map((issue, index) => (
+                  <React.Fragment key={index}>
+                    {index > 0 && <Separator my={4} borderColor={dividerColor} />}
+                    <FeatureItem
+                      color="red.400"
+                      title={issue.value || t("issue_1_title") || "Connection Stability"}
+                      description={issue.description || t("issue_1_description") || "Occasional connection drops when using MCP with large datasets."}
+                      textColor={textColor}
+                      textColorSecondary={textColorSecondary}
+                      cardBorderColor={cardBorderColor}
+                    />
+                  </React.Fragment>
+                ))}
+
+                {/* Fallback if no known issues */}
+                {(!noticeData?.known_issues || noticeData.known_issues.length === 0) && (
+                  <FeatureItem
+                    color="red.400"
+                    title={t("issue_1_title") || "Connection Stability"}
+                    description={t("issue_1_description") || "Occasional connection drops when using MCP with large datasets."}
+                    textColor={textColor}
+                    textColorSecondary={textColorSecondary}
+                    cardBorderColor={cardBorderColor}
+                  />
+                )}
+              </Box>
             </MotionBox>
 
             {/* Features Implementing Section */}
@@ -193,33 +307,31 @@ export default function HomePage() {
               </Flex>
 
               <Box>
-                <FeatureItem
-                  color="yellow.400"
-                  title={t("feature_1_title") || "Chat Room"}
-                  description={t("feature_1_description") || "A dedicated space for real-time communication."}
-                  textColor={textColor}
-                  textColorSecondary={textColorSecondary}
-                />
+                {noticeData?.features_implementing?.map((feature, index) => (
+                  <React.Fragment key={index}>
+                    {index > 0 && <Separator my={4} borderColor={dividerColor} />}
+                    <FeatureItem
+                      color={index % 3 === 0 ? "yellow.400" : index % 3 === 1 ? "green.400" : "blue.400"}
+                      title={feature.value || t("feature_1_title") || "Chat Room"}
+                      description={feature.description || t("feature_1_description") || "A dedicated space for real-time communication."}
+                      textColor={textColor}
+                      textColorSecondary={textColorSecondary}
+                      cardBorderColor={cardBorderColor}
+                    />
+                  </React.Fragment>
+                ))}
 
-                <Separator my={4} borderColor={dividerColor} />
-
-                <FeatureItem
-                  color="green.400"
-                  title={t("feature_2_title") || "Task Management"}
-                  description={t("feature_2_description") || "Organizing and tracking tasks efficiently."}
-                  textColor={textColor}
-                  textColorSecondary={textColorSecondary}
-                />
-
-                <Separator my={4} borderColor={dividerColor} />
-
-                <FeatureItem
-                  color="blue.400"
-                  title={t("feature_3_title") || "Learn"}
-                  description={t("feature_3_description") || "Accessing resources and tutorials for skill development."}
-                  textColor={textColor}
-                  textColorSecondary={textColorSecondary}
-                />
+                {/* Fallback if no features implementing */}
+                {(!noticeData?.features_implementing || noticeData.features_implementing.length === 0) && (
+                  <FeatureItem
+                    color="yellow.400"
+                    title={t("feature_1_title") || "Chat Room"}
+                    description={t("feature_1_description") || "A dedicated space for real-time communication."}
+                    textColor={textColor}
+                    textColorSecondary={textColorSecondary}
+                    cardBorderColor={cardBorderColor}
+                  />
+                )}
               </Box>
             </MotionBox>
           </Flex>
@@ -235,29 +347,53 @@ function FeatureItem({
   title,
   description,
   textColor,
-  textColorSecondary
+  textColorSecondary,
+  cardBorderColor
 }: {
   color: string;
   title: string;
   description: string;
   textColor: string;
   textColorSecondary: string;
+  cardBorderColor: string;
 }) {
+  const dialogBgColor = useColorModeValue("white", "gray.800");
+  const dialogHeaderColor = useColorModeValue("gray.100", "gray.700");
+
   return (
     <MotionBox
       initial={{ opacity: 0, x: -5 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Flex align="center" mb={2}>
-        <Box w="14px" h="14px" borderRadius="full" bg={color} mr={3}></Box>
-        <Text fontWeight="semibold" color={textColor}>
-          {title}
-        </Text>
-      </Flex>
-      <Text ml="24px" mb={1} color={textColorSecondary} fontSize="sm">
-        {description}
-      </Text>
+      <Dialog.Root scrollBehavior="inside" size="md">
+        <Dialog.Trigger asChild>
+          <Flex align="center" cursor="pointer" _hover={{ opacity: 0.8 }}>
+            <Box w="14px" h="14px" borderRadius="full" bg={color} mr={3}></Box>
+            <Text fontWeight="semibold" color={textColor}>
+              {title}
+            </Text>
+          </Flex>
+        </Dialog.Trigger>
+        <Portal>
+          <Dialog.Backdrop bg="blackAlpha.600" />
+          <Dialog.Positioner>
+            <Dialog.Content bg={dialogBgColor} borderColor={cardBorderColor}>
+              <Dialog.Header bg={dialogHeaderColor}>
+                <Dialog.Title color={textColor}>{title}</Dialog.Title>
+              </Dialog.Header>
+              <Dialog.CloseTrigger asChild>
+                <CloseButton size="sm" color={textColor} />
+              </Dialog.CloseTrigger>
+              <Dialog.Body>
+                <Text color={textColorSecondary}>
+                  {description}
+                </Text>
+              </Dialog.Body>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
     </MotionBox>
   );
 }

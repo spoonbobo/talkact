@@ -9,6 +9,7 @@ services:
       - "REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5"
     networks:
       - kakashi-network
+    restart: always
 
   redis-node-1:
     image: docker.io/bitnami/redis-cluster:7.4
@@ -19,6 +20,7 @@ services:
       - "REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5"
     networks:
       - kakashi-network
+    restart: always
 
   redis-node-2:
     image: docker.io/bitnami/redis-cluster:7.4
@@ -29,6 +31,7 @@ services:
       - "REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5"
     networks:
       - kakashi-network
+    restart: always
 
   redis-node-3:
     image: docker.io/bitnami/redis-cluster:7.4
@@ -39,6 +42,7 @@ services:
       - "REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5"
     networks:
       - kakashi-network
+    restart: always
 
   redis-node-4:
     image: docker.io/bitnami/redis-cluster:7.4
@@ -49,6 +53,7 @@ services:
       - "REDIS_NODES=redis-node-0 redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5"
     networks:
       - kakashi-network
+    restart: always
 
   redis-node-5:
     image: docker.io/bitnami/redis-cluster:7.4
@@ -68,24 +73,7 @@ services:
       - "REDIS_CLUSTER_CREATOR=yes"
     networks:
       - kakashi-network
-
-  # dummy-service:
-  #   image: node:18
-  #   volumes:
-  #     - ./dummy-service:/usr/src/app
-  #   working_dir: /usr/src/app
-  #   command: sh -c "npm install && node index.js"
-  #   environment:
-  #     - REDIS_HOST=redis-node-5
-  #     - REDIS_PORT=6379
-  #     - REDIS_PASSWORD=bitnami
-  #     - PORT=3222
-  #   ports:
-  #     - "3222:3222"
-  #   networks:
-  #     - kakashi-network
-  #   depends_on:
-  #     - redis-node-5
+    restart: always
 
   kakashi-psqldb:
     image: postgres:latest
@@ -101,6 +89,7 @@ services:
       - ./db_seeds:/docker-entrypoint-initdb.d
     networks:
       - kakashi-network
+    restart: always
 
   kakashi-qdrant:
     image: qdrant/qdrant
@@ -111,6 +100,7 @@ services:
       - qdrant_data:/qdrant/storage
     networks:
       - kakashi-network
+    restart: always
 
   # # main application services
   kakashi-chat_server:
@@ -126,6 +116,7 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - CLIENT_URL=${CLIENT_URL}
       - NODE_ENV=${NODE_ENV}
+    restart: always
     volumes:
       - ./server/chat_server:/app
     depends_on:
@@ -134,11 +125,11 @@ services:
     networks:
       - kakashi-network
 
-  # kakashi-alert_server:
+  # kakashi-notification_server:
   #   build:
   #     context: .
-  #     dockerfile: docker/Dockerfile.alert_server
-  #   container_name: kakashi-alert_server
+  #     dockerfile: docker/Dockerfile.notification_server
+  #   container_name: kakashi-notification_server
   #   ports:
   #     - "3002:3002"
   #   environment:
@@ -181,6 +172,7 @@ services:
       # - NEXT_PUBLIC_NOTIFICATION_SERVER_URL=${NEXT_PUBLIC_NOTIFICATION_SERVER_URL}
     volumes:
       - .:/app
+    restart: always
     depends_on:
       # - kakashi-chat_server
       - kakashi-psqldb
@@ -194,7 +186,7 @@ services:
       dockerfile: docker/Dockerfile.mcp.client
     container_name: kakashi-mcp_client
     depends_on:
-      #   - kakashi-chat_server
+      - kakashi-chat_server
       - kakashi-psqldb
       - kakashi-app
       - kakashi-llm
@@ -216,6 +208,27 @@ services:
       - EMBED_MODEL=nomic-embed-text:latest
     networks:
       - kakashi-network
+    restart: always
+
+  kakashi-kb:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.kb
+    container_name: kakashi-kb
+    volumes:
+      - ./knowledge_base:/app
+      - qdrant_data:/qdrant/storage
+    ports:
+      - "35430:35430"
+    depends_on:
+      - kakashi-qdrant
+    environment:
+      - EMBED_MODEL=nomic-embed-text:latest
+      - OLLAMA_MODEL=llama3.2:latest
+      - OLLAMA_API_BASE_URL=http://kakashi-llm:11434
+    networks:
+      - kakashi-network
+    restart: always
 
   kakashi-llm:
     image: ollama/ollama:latest
@@ -226,6 +239,7 @@ services:
       - ollama_data:/root/.ollama
     networks:
       - kakashi-network
+    restart: always
 
   # supporting services
   kakashi-nginx:
@@ -237,10 +251,11 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - kakashi-app
-      # - kakashi-chat_server
+      - kakashi-chat_server
       - kakashi-mcp_client
     networks:
       - kakashi-network
+    restart: always
 
   kakashi-pgadmin:
     image: dpage/pgadmin4
@@ -254,6 +269,7 @@ services:
       - kakashi-psqldb
     networks:
       - kakashi-network
+    restart: always
 
 volumes:
   postgres_data:

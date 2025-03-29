@@ -1,0 +1,17 @@
+announcement:
+  - value: "KB UAT is expected to be completed by 4 Apr 2025"
+    date: "2025-03-28"
+
+known_issues:
+  - value: non-supported multi-window openings
+    description: Socket connection is not supported in multi-window openings
+  - value: "# online users not available yet"
+    description: "Online users are not available yet"
+
+features_implementing:
+  # - value: kb
+  #   description: "This is a test message"
+  - value: dashboard
+    description: "This is a test message"
+  - value: customizable knowledge sources and keys
+    description: "Customizable knowledge sources and keys"

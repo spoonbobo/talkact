@@ -18,9 +18,12 @@
     "settings": "Settings",
     "signup": "Sign Up",
     "signout": "Sign Out",
+    "sign_out": "Sign Out",
     "signin": "Sign In",
+    "sign_in": "Sign In",
     "signout_success": "Sign Out Successful",
-    "signout_success_description": "You have successfully signed out"
+    "signout_success_description": "You have successfully signed out",
+    "admin_panel": "Admin Panel"
   },
   "Signup": {
     "signup": "Sign Up",
@@ -45,7 +48,11 @@
     "email_invalid": "Invalid email address",
     "password_required": "Password is required",
     "password_must_be_at_least_8_characters": "Password must be at least 8 characters",
-    "passwords_do_not_match": "Passwords do not match"
+    "passwords_do_not_match": "Passwords do not match",
+    "profile_creation_description": "After creating an account, you can use Kakashi",
+    "3rd_party_login_email": "Your email address is from a third-party login. Please create an account with that email address",
+    "complete_your_profile": "Complete your profile",
+    "create_profile": "Create Profile"
   },
   "Signin": {
     "signin": "Sign In",
@@ -64,6 +71,34 @@
     "signin_success": "Sign In Successful",
     "signin_success_description": "You have successfully signed in"
   },
+  "Home": {
+    "welcome": "Welcome to Kakashi",
+    "learn_title": "Learn",
+    "learn_description": "Explore Kakashi's learning features",
+    "tasks_title": "Tasks",
+    "tasks_description": "Check and complete tasks",
+    "mcp_title": "MCP",
+    "mcp_description": "Explore Kakashi's MCP features",
+    "welcome_message": "Hello",
+    "guest_welcome": "Hello",
+    "guest_welcome_message": "Kakashi is a program that integrates MCP servers to enhance productivity for you and your team.",
+    "guest_features_title": "Features",
+    "guest_cta_title": "Get Started Now",
+    "guest_cta_description": "After logging in or registering, you can use various features of Kakashi",
+    "get_started": "Get Started",
+    "guest_footer": "Only supports Passwordless login mode",
+    "feature_chat_room": "Chat Room",
+    "feature_chat_room_desc": "A space dedicated to real-time communication.",
+    "feature_task_management": "Task Management",
+    "feature_task_management_desc": "Efficiently organize and track tasks.",
+    "feature_learn": "Learn",
+    "feature_learn_desc": "Access resources and tutorials to improve your skills."
+  },
+  "Footer": {
+    "privacy_policy": "Privacy Policy",
+    "terms_of_service": "Terms of Service",
+    "contact_us": "Contact Us"
+  },
   "Chat": {
     "chat": "Chat",
     "rooms": "Chat Rooms",
@@ -75,7 +110,15 @@
     "select_room": "Select a chat room",
     "enter_room_name": "Please enter a chat room name",
     "create": "Create",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "creating": "Creating...",
+    "please_select_a_room": "Please select a chat room",
+    "mention_someone": "Mention someone",
+    "no_users_found": "No users found",
+    "task_log": "Task Log",
+    "switch_to_task_view": "Switch to Task Log",
+    "switch_to_room_view": "Switch to Chat Room",
+    "task_log_empty": "No task logs"
   },
   "Tasks": {
     "tasks": "Tasks",
@@ -106,12 +149,81 @@
     "created": "Created",
     "started": "Started",
     "completed": "Completed",
-    "no_tasks_found": "No tasks found"
+    "no_tasks_found": "No tasks found",
+    "assigner": "Assigner",
+    "assignee": "Assignee",
+    "id": "ID",
+    "created_at": "Created At",
+    "rows_per_page": "Rows per page",
+    "of": "of",
+    "page": "Page",
+    "showing": "Showing",
+    "no_logs_available": "No logs available",
+    "no_arguments_found": "No arguments found",
+    "save_changes": "Save Changes",
+    "reset_all": "Reset All",
+    "edit_arguments": "Edit Arguments",
+    "task_details": "Task Details",
+    "summary": "Task Summary",
+    "tools_called": "Tools Called",
+    "start_time": "Start Time",
+    "end_time": "End Time",
+    "close": "Close",
+    "edit": "Edit",
+    "no_mcp_tool_calls": "No MCP tool calls"
   },
   "Learn": {
     "learn": "Learn",
     "mcp_explorer": "MCP Explorer",
-    "knowledge_base": "Knowledge Base"
+    "knowledge_base": "Knowledge Base",
+    "mcp": {
+      "servers": "Servers",
+      "search_servers_and_tools": "Search servers and tools",
+      "error_loading_servers": "Error loading servers",
+      "parameter": "Parameter",
+      "type": "Type",
+      "required": "Required",
+      "optional": "Optional",
+      "available_servers": "Available Servers",
+      "show_details": "Show Details",
+      "hide_details": "Hide Details"
+    },
+    "kb": {
+      "document_categories": "Document Categories",
+      "upload_document": "Upload Document",
+      "search_placeholder": "Search documents"
+    }
+  },
+  "AdminPanel": {
+    "admin_panel": "Admin Panel",
+    "users": "Users",
+    "user_management": "User Management",
+    "user_list": "User List",
+    "username": "Username",
+    "email": "Email Address",
+    "user_id": "User ID",
+    "created_at": "Created At",
+    "role": "Role",
+    "search_users": "Search Users",
+    "create_user": "Create User",
+    "rows_per_page": "Rows per page",
+    "of": "of",
+    "page": "Page",
+    "showing": "Showing",
+    "details": "Details",
+    "activity": "Activity",
+    "permissions": "Permissions",
+    "select_user_to_view_details": "Select a user to view details",
+    "select_user_to_view_activity": "Select a user to view activity",
+    "select_user_to_view_permissions": "Select a user to view permissions",
+    "recent_activity": "Recent Activity",
+    "user_permissions": "User Permissions",
+    "admin_access": "Admin Access",
+    "can_manage_tasks": "Can Manage Tasks",
+    "updated_at": "Updated At",
+    "cancel": "Cancel",
+    "leave_blank_to_use_email_prefix": "Leave blank to use email prefix",
+    "create_new_user": "Create New User"
   },
   "Settings": {
     "settings": "Settings",
@@ -130,6 +242,17 @@
     "managed_by_provider": "Managed by provider"
   },
   "Loading": {
-    "loading": "Loading, please wait..."
+    "loading": "Loading, please wait...",
+    "load": "Loading..."
+  },
+  "Auth": {
+    "signout_success": "Sign Out Successful",
+    "signout_success_description": "You have successfully signed out",
+    "signout_error": "Sign Out Error",
+    "signout_error_description": "Failed to sign out",
+    "signing_out": "Signing out...",
+    "please_wait_while_we_sign_you_out": "Please wait while we sign you out. Try again later if it takes too long.",
+    "loading_authentication": "Loading authentication...",
+    "please_wait_while_we_verify_your_account": "Please wait while we verify your account. Try again later if it takes too long."
   }
 }

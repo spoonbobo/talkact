@@ -9,6 +9,7 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+knowledge_base/local/
 
 # testing
 /coverage

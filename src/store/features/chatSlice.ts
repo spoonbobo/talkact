@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createAction } from '@reduxjs/toolkit';
 import { persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { IChatRoom, IMessage } from '@/types/chat';
@@ -11,7 +11,8 @@ interface ChatState {
     selectedRoomId: string | null;
     messages: Record<string, IMessage[]>; // roomId -> messages
     unreadCounts: Record<string, number>; // roomId -> count
-    isLoading: boolean;
+    isLoadingRooms: boolean;
+    isLoadingMessages: boolean;
     messagesLoaded: Record<string, boolean>; // Track which rooms have loaded messages from server
 }
 
@@ -21,7 +22,8 @@ const initialState: ChatState = {
     selectedRoomId: null,
     messages: {},
     unreadCounts: {},
-    isLoading: false,
+    isLoadingRooms: false,
+    isLoadingMessages: false,
     messagesLoaded: {},
 };
 
@@ -84,9 +86,6 @@ export const chatSlice = createSlice({
         setUnreadCount: (state, action: PayloadAction<{ roomId: string, count: number }>) => {
             state.unreadCounts[action.payload.roomId] = action.payload.count;
         },
-        setLoading: (state, action: PayloadAction<boolean>) => {
-            state.isLoading = action.payload;
-        },
         joinRoom: (state, action: PayloadAction<string>) => {
             // This is just to update the Redux state
             // The actual socket join happens in the middleware
@@ -112,11 +111,13 @@ export const {
     addMessage,
     setMessages,
     setUnreadCount,
-    setLoading,
     joinRoom,
     markRoomMessagesLoaded,
     initializeSocket,
 } = chatSlice.actions;
+
+export const setLoadingRooms = createAction<boolean>('chat/setLoadingRooms');
+export const setLoadingMessages = createAction<boolean>('chat/setLoadingMessages');
 
 // Create a persisted reducer
 const persistedChatReducer = persistReducer(chatPersistConfig, chatSlice.reducer);

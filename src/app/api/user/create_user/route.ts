@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db'; // knex
 import { User } from '@/types/user';
-// import bcrypt from 'bcrypt'; // TODO: encrypt password
 
 export async function POST(request: Request) {
     try {
@@ -12,19 +11,15 @@ export async function POST(request: Request) {
             userData.username = userData.email.split('@')[0];
         }
 
-        // Hash the password
-        // if (userData.password) {
-        //     const saltRounds = 10;
-        //     userData.password = await bcrypt.hash(userData.password, saltRounds);
-        // }
+        // Password-related code removed
 
         // Prepare user data for insertion
         const userToInsert = {
             user_id: userData.user_id,
             email: userData.email,
             username: userData.username,
-            password: userData.password,
             avatar: userData.avatar || null,
+            role: userData.role || null,
             created_at: userData.created_at || new Date(),
             updated_at: userData.updated_at || new Date(),
             active_rooms: userData.active_rooms || [],
