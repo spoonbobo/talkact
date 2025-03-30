@@ -98,7 +98,8 @@
       "features_implementing": "구현 중인 기능",
       "no_announcements": "공지사항 없음",
       "no_known_issues": "알려진 문제 없음",
-      "no_upcoming_features": "구현 예정 기능 없음"
+      "no_upcoming_features": "구현 예정 기능 없음",
+      "no_data": "데이터 없음"
     },
     "Footer": {
       "privacy_policy": "개인정보 처리방침",
@@ -136,7 +137,8 @@
       "chat_mode_description": "여기서는 태스크 제약 없이 AI와 자유롭게 대화할 수 있습니다.",
       "chat_mode_hint": "오른쪽 상단의 버튼을 클릭하여 언제든지 태스크 모드로 돌아갈 수 있습니다.",
       "room_created": "채팅방 생성됨",
-      "room_created_description": "채팅방이 성공적으로 생성되었습니다"
+      "room_created_description": "채팅방이 성공적으로 생성되었습니다",
+      "disabled_task_view_due_to_uat": "태스크 뷰는 UAT에서 사용할 수 없습니다"
     },
     "Tasks": {
       "tasks": "태스크",
@@ -208,7 +210,10 @@
         "optional": "선택",
         "available_servers": "사용 가능한 서버",
         "show_details": "세부 정보 표시",
-        "hide_details": "세부 정보 숨기기"
+        "hide_details": "세부 정보 숨기기",
+        "no_parameters_needed": "매개변수가 필요하지 않음",
+        "parameters": "매개변수 표",
+        "full_description": "전체 설명"
       },
       "kb": {
         "document_categories": "문서 카테고리",
@@ -219,6 +224,11 @@
         "search_data_sources": "데이터 소스 검색",
         "search_folders": "폴더 검색"
       }
+    },
+    "Dashboard": {
+      "dashboard": "대시보드",
+      "under_development": "이 기능은 개발 중입니다",
+      "dashboard_coming_soon": "대시보드는 곧 제공될 예정입니다"
     },
     "AdminPanel": {
       "admin_panel": "관리자 패널",
@@ -284,5 +294,14 @@
       "please_wait_while_we_sign_you_out": "로그아웃 중입니다. 시간이 오래 걸리면 나중에 다시 시도하세요.",
       "loading_authentication": "인증 로딩 중...",
       "please_wait_while_we_verify_your_account": "계정을 확인하는 중입니다. 시간이 오래 걸리면 나중에 다시 시도하세요."
+    },
+    "Errors": {
+      "access_denied": "접근이 거부되었습니다",
+      "no_permission": "이 페이지에 접근할 권한이 없습니다",
+      "owner_access_required": "이 페이지에 접근하려면 관리자 권한이 필요합니다",
+      "default_no_access": "이 페이지에 접근할 권한이 없습니다",
+      "redirecting_in": "리다이렉트까지",
+      "seconds": "초",
+      "to_home": "홈으로 돌아가기"
     }
 }

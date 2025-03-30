@@ -14,6 +14,9 @@ import {
   Badge,
   Input,
   Container,
+  Select,
+  Portal,
+  createListCollection,
 } from "@chakra-ui/react";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
@@ -24,6 +27,11 @@ import Loading from "@/components/loading";
 import {
   ColorModeButton, useColorModeValue
 } from "@/components/ui/color-mode"
+import { toaster } from "@/components/ui/toaster"
+import { useSelector } from 'react-redux';
+import { RootState } from "@/store/store";
+import { useRouter, usePathname, useParams } from "next/navigation";
+
 // Create motion components
 const MotionBox = motion.create(Box);
 const MotionFlex = motion.create(Flex);
@@ -32,9 +40,13 @@ const MotionVStack = motion.create(VStack);
 export default function SettingsPage() {
   const t = useTranslations("Settings");
   const { data: session } = useSession();
-  // const { colorMode } = useColorMode();
+  const { isOwner } = useSelector((state: RootState) => state.user);
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useParams();
 
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingAllRooms, setIsDeletingAllRooms] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
   const accentColor = "blue.500";
@@ -49,6 +61,34 @@ export default function SettingsPage() {
   const dangerZoneText = useColorModeValue("red.700", "red.200");
   const dangerZoneHeading = useColorModeValue("red.600", "red.300");
   const textColorHeading = useColorModeValue("gray.800", "gray.100");
+
+  // Get current locale from params
+  const currentLocale = params.locale as string;
+
+  // Language options collection
+  const languageOptions = createListCollection({
+    items: [
+      { label: "English", value: "en" },
+      { label: "中文(繁體)", value: "zh-HK" },
+      { label: "한국어 (Korean)", value: "ko" },
+      { label: "日本語 (Japanese)", value: "ja" },
+    ],
+  });
+
+  // Handle language change
+  const handleLanguageChange = (valueObj: any) => {
+    // Extract the value from the object structure
+    const value = valueObj?.value?.[0] || currentLocale;
+
+    // Get current path without locale prefix
+    const pathParts = pathname.split('/');
+    pathParts.splice(1, 1); // Remove the locale part
+    const pathWithoutLocale = pathParts.join('/');
+
+    // Redirect to the same page with new locale
+    router.push(`/${value}${pathWithoutLocale}`);
+  };
+
   if (!session) {
     return <Loading />;
   }
@@ -73,6 +113,42 @@ export default function SettingsPage() {
   const tabVariants = {
     hidden: { opacity: 0, x: -20 },
     visible: { opacity: 1, x: 0, transition: { duration: 0.3 } },
+  };
+
+  const handleDeleteAllRooms = async () => {
+    if (!session) return;
+
+    setIsDeletingAllRooms(true);
+    try {
+      const response = await fetch('/api/chat/delete_room', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ all: true }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toaster.create({
+          title: t("rooms_deleted"),
+          description: data.message,
+          duration: 5000,
+        });
+      } else {
+        throw new Error(data.error || "Failed to delete rooms");
+      }
+    } catch (error) {
+      console.error("Error deleting rooms:", error);
+      toaster.create({
+        title: t("error"),
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        duration: 5000,
+      });
+    } finally {
+      setIsDeletingAllRooms(false);
+    }
   };
 
   return (
@@ -124,6 +200,7 @@ export default function SettingsPage() {
                 label: t("danger_zone"),
                 id: 2,
                 color: "red.500",
+                disabled: !isOwner
               },
             ].map((item) => (
               <motion.div key={item.id} variants={tabVariants}>
@@ -138,9 +215,12 @@ export default function SettingsPage() {
                   fontSize="sm"
                   width="100%"
                   textAlign="left"
-                  _hover={{ bg: hoverBg }}
+                  _hover={{ bg: item.disabled ? "transparent" : hoverBg }}
                   _active={{ bg: activeTab === item.id ? hoverBg : "gray.100" }}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => !item.disabled && setActiveTab(item.id)}
+                  opacity={item.disabled ? 0.5 : 1}
+                  cursor={item.disabled ? "not-allowed" : "pointer"}
+                  pointerEvents={item.disabled ? "none" : "auto"}
                 >
                   <Flex align="center">
                     <Icon
@@ -177,7 +257,7 @@ export default function SettingsPage() {
                 )}
               </Heading>
 
-              {activeTab !== 2 && (
+              {/* {activeTab !== 2 && (
                 <Box
                   as="button"
                   py={2}
@@ -192,7 +272,7 @@ export default function SettingsPage() {
                 >
                   {t("save_changes")}
                 </Box>
-              )}
+              )} */}
             </Flex>
             <Separator mb={6} />
 
@@ -247,7 +327,7 @@ export default function SettingsPage() {
                       </Text>
                     </Box>
 
-                    <Box>
+                    {/* <Box>
                       <Text fontWeight="medium" mb={1} color={textColor}>
                         {t("bio")}
                       </Text>
@@ -256,13 +336,51 @@ export default function SettingsPage() {
                         placeholder={t("tell_us_about_yourself")}
                         maxW="400px"
                       />
-                    </Box>
+                    </Box> */}
 
                     <Box>
                       <Text fontWeight="medium" mb={1} color={textColor}>
                         {t("theme")}
                       </Text>
                       <ColorModeButton />
+                    </Box>
+
+                    <Box>
+                      <Text fontWeight="medium" mb={1} color={textColor}>
+                        {t("language")}
+                      </Text>
+                      <Select.Root
+                        color={textColor}
+                        size="sm"
+                        width="200px"
+                        collection={languageOptions}
+                        defaultValue={[currentLocale]}
+                        onValueChange={(valueObj) => {
+                          handleLanguageChange(valueObj);
+                        }}
+                      >
+                        <Select.HiddenSelect />
+                        <Select.Control>
+                          <Select.Trigger>
+                            <Select.ValueText placeholder={t("select_language")} />
+                          </Select.Trigger>
+                          <Select.IndicatorGroup>
+                            <Select.Indicator />
+                          </Select.IndicatorGroup>
+                        </Select.Control>
+                        <Portal>
+                          <Select.Positioner>
+                            <Select.Content>
+                              {languageOptions.items.map((option) => (
+                                <Select.Item color={textColor} item={option} key={option.value}>
+                                  {option.label}
+                                  <Select.ItemIndicator />
+                                </Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Positioner>
+                        </Portal>
+                      </Select.Root>
                     </Box>
                   </VStack>
                 </Box>
@@ -385,44 +503,68 @@ export default function SettingsPage() {
               {/* Danger Zone */}
               {activeTab === 2 && (
                 <Box>
-                  <Box
-                    p={4}
-                    borderWidth="1px"
-                    borderColor={dangerZoneBorder}
-                    borderRadius="md"
-                    bg={dangerZoneBg}
-                    mb={6}
-                  >
-                    <HStack align="flex-start">
-                      <Icon as={FiInfo} color="red.500" boxSize={5} mt={0.5} />
-                      <Box>
-                        <Heading size="sm" color={dangerZoneHeading} mb={1}>
-                          {t("delete_all_rooms")}
-                        </Heading>
-                        <Text color={dangerZoneText} fontSize="sm">
-                          {t("delete_all_rooms_warning")}
-                        </Text>
-                        <Box
-                          as="button"
-                          mt={3}
-                          py={2}
-                          px={4}
-                          borderRadius="md"
-                          bg="red.500"
-                          color="white"
-                          fontWeight="medium"
-                          fontSize="sm"
-                          _hover={{ bg: "red.600" }}
-                          _active={{ bg: "red.700" }}
-                          _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-                          onClick={() => setIsDeleting(true)}
-                          aria-disabled={isDeleting}
-                        >
-                          {isDeleting ? t("deleting") : t("delete_all_rooms")}
-                        </Box>
+                  {isOwner ? (
+                    <>
+                      <Box
+                        p={4}
+                        borderWidth="1px"
+                        borderColor={dangerZoneBorder}
+                        borderRadius="md"
+                        bg={dangerZoneBg}
+                        mb={6}
+                      >
+                        <HStack align="flex-start">
+                          <Icon as={FiInfo} color="red.500" boxSize={5} mt={0.5} />
+                          <Box>
+                            <Heading size="sm" color={dangerZoneHeading} mb={1}>
+                              {t("delete_all_rooms")}
+                            </Heading>
+                            <Text color={dangerZoneText} fontSize="sm">
+                              {t("delete_all_rooms_warning")}
+                            </Text>
+                            <Box
+                              as="button"
+                              mt={3}
+                              py={2}
+                              px={4}
+                              borderRadius="md"
+                              bg="red.500"
+                              color="white"
+                              fontWeight="medium"
+                              fontSize="sm"
+                              _hover={{ bg: "red.600" }}
+                              _active={{ bg: "red.700" }}
+                              _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+                              onClick={handleDeleteAllRooms}
+                              // TODO: is fine
+                              // @ts-ignore
+                              disabled={isDeletingAllRooms}
+                            >
+                              {isDeletingAllRooms ? t("deleting") : t("delete_all_rooms")}
+                            </Box>
+                          </Box>
+                        </HStack>
                       </Box>
-                    </HStack>
-                  </Box>
+                    </>
+                  ) : (
+                    <Box
+                      p={4}
+                      borderWidth="1px"
+                      borderRadius="md"
+                      borderColor={borderColor}
+                      bg={cardBg}
+                    >
+                      <Flex align="center" justify="center" direction="column" py={6}>
+                        <Icon as={FiInfo} color="gray.400" boxSize={8} mb={3} />
+                        <Text color={textColor} fontWeight="medium">
+                          {t("admin_only_access")}
+                        </Text>
+                        <Text color="gray.500" fontSize="sm" textAlign="center" mt={2}>
+                          {t("admin_only_access_description")}
+                        </Text>
+                      </Flex>
+                    </Box>
+                  )}
                 </Box>
               )}
             </Box>

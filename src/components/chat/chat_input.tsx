@@ -221,7 +221,8 @@ export const ChatInput = ({
                 onKeyDown={handleKeyDown}
                 borderRadius="full"
                 size="md"
-                disabled={!selectedRoomId}
+                disabled={!messageInput.trim() || !selectedRoomId}
+                _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
                 bg={inputBg}
                 color={textColorStrong}
                 _placeholder={{ color: textColor }}
@@ -245,10 +246,11 @@ export const ChatInput = ({
                 fontSize="sm"
                 _hover={{ bg: isTaskMode ? "blue.600" : "green.600" }}
                 _active={{ bg: isTaskMode ? "blue.700" : "green.700" }}
+                // @ts-ignore
+                // TODO: is fine
+                disabled={!messageInput.trim() || !selectedRoomId}
                 _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
                 onClick={handleSendMessage}
-                // @ts-ignore
-                disabled={!messageInput.trim() || !selectedRoomId}
             >
                 <Flex align="center" justify="center">
                     <Icon as={FaPaperPlane} mr={2} />

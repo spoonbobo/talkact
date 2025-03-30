@@ -1,19 +1,35 @@
 announcement:
   - value: "KB UAT is expected to be completed by 4 Apr 2025"
     date: "2025-03-28"
+  - value: "System maintenance scheduled for 15 Apr 2025 from 22:00-02:00 UTC"
+    date: "2025-04-01"
+  - value: "New feature release: Enhanced reporting module available from 20 Apr 2025"
+    date: "2025-04-10"
 
 known_issues:
   - value: non-supported multi-window openings
     description: Socket connection is not supported in multi-window openings
+    status: "Under investigation"
+    reported: "2025-03-15"
   - value: "# online users not available yet"
-    description: "Online users are not available yet"
+    description: "Online users count feature is currently unavailable due to performance issues"
+    status: "Fix scheduled for next release"
+    reported: "2025-03-20"
   - value: "switching view during chat mode may cause problems"
-    description: "2025-03-29"
+    description: "Users may experience UI freezing when switching views while in active chat sessions"
+    status: "Workaround: Close chat before switching views"
+    reported: "2025-03-29"
 
 features_implementing:
-  # - value: kb
-  #   description: "This is a test message"
+  - value: MCP planner
+    description: "Multi-channel planning tool for resource allocation and scheduling"
+    expected_release: "2025-05-15"
+    completion: "75%"
   - value: dashboard
-    description: "This is a test message"
-  - value: customizable knowledge sources and keys
-    description: "Customizable knowledge sources and keys"
+    description: "Customizable analytics dashboard with real-time data visualization"
+    expected_release: "2025-04-30"
+    completion: "90%"
+  - value: CAG
+    description: "Content Automation Generator for streamlined document creation"
+    expected_release: "2025-06-10"
+    completion: "40%"

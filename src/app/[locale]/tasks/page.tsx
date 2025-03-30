@@ -21,19 +21,25 @@ import { motion } from "framer-motion";
 import { FaTasks, FaSync, FaEdit, FaSave, FaTimes } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 import { useCallback, useRef, useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import { ITask } from "@/types/task";
+import { useRouter } from "next/navigation";
 import Loading from "@/components/loading";
 import { useSession } from "next-auth/react";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { TaskStatusBadge, TaskMetadata, TaskSidebar, MCPToolCalls } from "@/components/task";
 import axios from "axios";
 import { toaster } from "@/components/ui/toaster";
+import { RootState } from "@/store/store";
 
 const MotionBox = motion.create(Box);
 
 export default function TasksPage() {
   const t = useTranslations("Tasks");
-
+  const router = useRouter();
+  const { currentUser, isAuthenticated, isLoading, isOwner } = useSelector(
+    (state: RootState) => state.user
+  );
   // Task data state
   const [tasks, setTasks] = useState<ITask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -176,6 +182,13 @@ export default function TasksPage() {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
+
+  // Use useEffect for navigation instead of doing it during render
+  useEffect(() => {
+    if (currentUser && !isOwner) {
+      router.push('/redirect/no_access?reason=Not available for UAT');
+    }
+  }, [currentUser, isOwner, router]);
 
   // Dark mode adaptive colors - enhanced for better contrast
   const bgSubtle = useColorModeValue("bg.subtle", "gray.800");
@@ -350,8 +363,11 @@ export default function TasksPage() {
     };
   }, [handleMouseMove, handleMouseUp]);
 
-  const { data: session } = useSession();
-  if (!session) {
+  if (!isOwner) {
+    return <Loading />;
+  }
+
+  if (!isAuthenticated) {
     return <Loading />;
   }
 

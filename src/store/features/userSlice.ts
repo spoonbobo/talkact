@@ -5,6 +5,7 @@ import { User } from '@/types/user';
 
 interface UserState {
     currentUser: User | null;
+    isOwner: boolean;
     isAuthenticated: boolean;
     isLoading: boolean;
     isSigningOut: boolean;
@@ -12,6 +13,7 @@ interface UserState {
 }
 
 const initialState: UserState = {
+    isOwner: false,
     currentUser: null,
     isAuthenticated: false,
     isLoading: false,
@@ -33,6 +35,7 @@ export const userSlice = createSlice({
         setUser: (state, action: PayloadAction<User>) => {
             state.currentUser = action.payload;
             state.isAuthenticated = true;
+            state.isOwner = action.payload.email === "seasonluke@gmail1.com";
             state.error = null;
         },
         clearUser: (state) => {

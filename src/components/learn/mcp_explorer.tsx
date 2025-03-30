@@ -14,15 +14,15 @@ import {
     Icon,
     Table,
     Input,
+    IconButton,
 } from '@chakra-ui/react';
 import { Tooltip } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from 'framer-motion';
-// import { toast, ToastContainer } from 'react-toastify';
-// import 'react-toastify/dist/ReactToastify.css';
-import { FiSearch, FiServer, FiTool, FiInfo, FiCopy, FiExternalLink } from 'react-icons/fi';
-import axios from 'axios';
+import { FiSearch, FiServer, FiTool, FiInfo, FiCopy, FiExternalLink, FiRefreshCw } from 'react-icons/fi';
+// import axios from 'axios';
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { useTranslations } from 'next-intl';
+import { toaster } from "@/components/ui/toaster";
 
 const MotionBox = motion.create(Box);
 const MotionFlex = motion.create(Flex);
@@ -66,6 +66,9 @@ const ToolCard = ({ tool, serverKey, isExpanded, toggleToolExpansion }: { tool: 
     const headingColor = useColorModeValue("gray.800", "gray.100");
     const textColor = useColorModeValue("gray.700", "gray.300");
     const tableBg = useColorModeValue("gray.50", "gray.900");
+    const badgeBg = useColorModeValue("blue.50", "blue.900");
+    const buttonHoverBg = useColorModeValue("blue.50", "blue.700");
+    const buttonHoverColor = useColorModeValue("blue.600", "blue.200");
 
     // @ts-expect-error - useClipboard hook returns complex object with hasCopied property
     const clipboard = useClipboard(tool.name);
@@ -73,6 +76,10 @@ const ToolCard = ({ tool, serverKey, isExpanded, toggleToolExpansion }: { tool: 
     const hasCopied = clipboard.hasCopied;
     // @ts-expect-error - accessing onCopy from clipboard object
     const onCopy = clipboard.onCopy;
+
+    const hasParameters = tool.input_schema &&
+        tool.input_schema.properties &&
+        Object.keys(tool.input_schema.properties).length > 0;
 
     return (
         <MotionBox
@@ -87,67 +94,99 @@ const ToolCard = ({ tool, serverKey, isExpanded, toggleToolExpansion }: { tool: 
             animate={{ opacity: 1, y: 0 }}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             transition={{ duration: 0.3 } as any}
+            position="relative"
+            overflow="hidden"
+            width="100%"
+            maxW="100%"
         >
-            <Flex justifyContent="space-between" mb={2}>
-                <HStack>
-                    <Heading size="sm" color={headingColor}>{tool.name}</Heading>
+            {/* Tool header with improved spacing and visual hierarchy */}
+            <Flex justifyContent="space-between" mb={2} alignItems="center">
+                <HStack gap={2}>
+                    <Icon as={FiTool} color="blue.500" />
+                    <Heading size="sm" color={headingColor} fontWeight="semibold">{tool.name}</Heading>
                     <Tooltip content={hasCopied ? "Copied!" : "Copy tool name"}>
-                        <Button
+                        <IconButton
                             size="xs"
                             variant="ghost"
                             onClick={onCopy}
                             aria-label="Copy tool name"
+                            _hover={{ bg: buttonHoverBg, color: buttonHoverColor }}
                         >
                             <Icon as={FiCopy} />
-                        </Button>
+                        </IconButton>
                     </Tooltip>
                 </HStack>
-                <Button
-                    size="xs"
+                <IconButton
+                    size="sm"
                     variant="ghost"
+                    colorScheme="blue"
                     onClick={() => toggleToolExpansion(toolId)}
+                    aria-label={isExpanded ? "Hide details" : "Show details"}
+                    _hover={{ bg: buttonHoverBg, color: buttonHoverColor }}
                 >
-                    {isExpanded ? t("mcp.hide_details") : t("mcp.show_details")}
-                    {!isExpanded && <Icon as={FiExternalLink} ml={1} />}
-                </Button>
+                    <Icon as={isExpanded ? FiRefreshCw : FiExternalLink} />
+                </IconButton>
             </Flex>
 
-            {/* Input Parameters - Always visible without header */}
-            <Box mb={3} overflowX="auto">
-                <Table.Root size="sm" variant="outline" colorScheme="blue" mb={1}>
-                    <Table.Header bg={tableBg} position="sticky" top={0} zIndex={1}>
-                        <Table.Row>
-                            <Table.ColumnHeader fontWeight="semibold" fontSize="xs">{t("mcp.parameter")}</Table.ColumnHeader>
-                            <Table.ColumnHeader fontWeight="semibold" fontSize="xs">{t("mcp.type")}</Table.ColumnHeader>
-                            <Table.ColumnHeader fontWeight="semibold" fontSize="xs">{t("mcp.required")}</Table.ColumnHeader>
-                        </Table.Row>
-                    </Table.Header>
-                    <Table.Body>
-                        {Object.entries(tool.input_schema.properties).map(([paramName, param]) => (
-                            <Table.Row key={paramName} _hover={{ bg: cardBg }}>
-                                <Table.Cell fontWeight="medium" fontSize="xs" color={textColor}>{param.title || paramName}</Table.Cell>
-                                <Table.Cell fontSize="xs" color={textColor}><Code colorScheme="blue" px={1} py={0}>{param.type}</Code></Table.Cell>
-                                <Table.Cell fontSize="xs">
-                                    {tool.input_schema.required.includes(paramName) ?
-                                        <Badge colorScheme="red" borderRadius="full" px={1} fontSize="2xs">{t("mcp.required")}</Badge> :
-                                        <Badge colorScheme="gray" borderRadius="full" px={1} fontSize="2xs">{t("mcp.optional")}</Badge>
-                                    }
-                                </Table.Cell>
+            {/* Brief description preview - always visible */}
+            <Text
+                fontSize="sm"
+                color={textColor}
+                mb={2}
+                lineClamp={isExpanded ? undefined : 2}
+                fontStyle={isExpanded ? "normal" : "italic"}
+            >
+                {tool.description}
+            </Text>
+
+            {/* Input Parameters with improved styling */}
+            <Box mb={2} overflowX="auto" borderRadius="md" border="1px" borderColor={cardBorderColor}>
+                <Heading color={textColor} size="xs" p={2} bg={badgeBg} borderBottom="1px" borderColor={cardBorderColor}>
+                    {t("mcp.parameters")}
+                </Heading>
+                {hasParameters ? (
+                    // TODO: is fine
+                    // @ts-ignore
+                    <Table.Root size="sm" variant="simple" colorScheme="blue">
+                        <Table.Header bg={tableBg} position="sticky" top={0} zIndex={1}>
+                            <Table.Row>
+                                <Table.ColumnHeader width="40%" fontWeight="semibold" fontSize="xs">{t("mcp.parameter")}</Table.ColumnHeader>
+                                <Table.ColumnHeader width="30%" fontWeight="semibold" fontSize="xs">{t("mcp.type")}</Table.ColumnHeader>
+                                <Table.ColumnHeader width="30%" fontWeight="semibold" fontSize="xs">{t("mcp.required")}</Table.ColumnHeader>
                             </Table.Row>
-                        ))}
-                    </Table.Body>
-                </Table.Root>
+                        </Table.Header>
+                        <Table.Body>
+                            {Object.entries(tool.input_schema.properties).map(([paramName, param]) => (
+                                <Table.Row key={paramName} _hover={{ bg: cardBg }}>
+                                    <Table.Cell fontWeight="medium" fontSize="xs" color={textColor}>{param.title || paramName}</Table.Cell>
+                                    <Table.Cell fontSize="xs" color={textColor}><Code colorScheme="blue" px={1} py={0}>{param.type}</Code></Table.Cell>
+                                    <Table.Cell fontSize="xs">
+                                        {tool.input_schema.required.includes(paramName) ?
+                                            <Badge colorScheme="red" borderRadius="full" px={2} fontSize="2xs">{t("mcp.required")}</Badge> :
+                                            <Badge colorScheme="gray" borderRadius="full" px={2} fontSize="2xs">{t("mcp.optional")}</Badge>
+                                        }
+                                    </Table.Cell>
+                                </Table.Row>
+                            ))}
+                        </Table.Body>
+                    </Table.Root>
+                ) : (
+                    <Box py={2} px={3} bg={tableBg} fontSize="sm" color={textColor} textAlign="center">
+                        <Text>{t("mcp.no_parameters_needed")}</Text>
+                    </Box>
+                )}
             </Box>
 
-            {/* Description - Expandable section */}
+            {/* Full description - Expandable section */}
             {isExpanded && (
                 <Box
                     mt={3}
-                    pt={3}
+                    pt={2}
                     borderTop="1px"
                     borderColor={cardBorderColor}
                 >
-                    <Text whiteSpace="pre-wrap" mb={3} color={textColor} fontSize="sm">{tool.description}</Text>
+                    <Heading size="xs" mb={2} color={headingColor}>{t("mcp.full_description")}</Heading>
+                    <Text whiteSpace="pre-wrap" color={textColor} fontSize="sm">{tool.description}</Text>
                 </Box>
             )}
         </MotionBox>
@@ -162,6 +201,7 @@ export const MCPResourceExplorer: React.FC<ServerListProps> = () => {
     const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set());
     const [searchFocused, setSearchFocused] = useState(false);
     const [selectedServer, setSelectedServer] = useState<string | null>(null);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     // Updated colors to match page.tsx files
     const bgColor = useColorModeValue("white", "gray.800");
@@ -185,37 +225,59 @@ export const MCPResourceExplorer: React.FC<ServerListProps> = () => {
 
     const t = useTranslations("Learn");
 
-    useEffect(() => {
-        const fetchServers = async () => {
-            try {
-                const response = await fetch(`http://${window.location.hostname}:34430/api/app/get_servers`);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch servers: ${response.statusText}`);
-                }
-                const data = await response.json();
-
-                // Process server descriptions to remove leading "You "
-                Object.values(data as Record<string, Server>).forEach((server) => {
-                    if (server.server_description.startsWith("You ")) {
-                        server.server_description = server.server_description.substring(4);
-                    }
-                });
-
-                setServers(data);
-
-                // Set the first server as selected by default if available
-                const serverKeys = Object.keys(data);
-                if (serverKeys.length > 0) {
-                    setSelectedServer(serverKeys[0]);
-                }
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'An unknown error occurred');
-                // toast.error(`Failed to load servers: ${err instanceof Error ? err.message : 'Unknown error'}`);
-            } finally {
-                setLoading(false);
+    const fetchServers = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch(`http://${window.location.hostname}:34430/api/app/get_servers`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch servers: ${response.statusText}`);
             }
-        };
+            const data = await response.json();
 
+            // Process server descriptions to remove leading "You "
+            Object.values(data as Record<string, Server>).forEach((server) => {
+                if (server.server_description.startsWith("You ")) {
+                    server.server_description = server.server_description.substring(4);
+                }
+            });
+
+            setServers(data);
+
+            // Set the first server as selected by default if available
+            const serverKeys = Object.keys(data);
+            if (serverKeys.length > 0) {
+                setSelectedServer(serverKeys[0]);
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An unknown error occurred');
+            // toast.error(`Failed to load servers: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Add sync function
+    const syncServers = async () => {
+        try {
+            setIsSyncing(true);
+            await fetchServers();
+            toaster.create({
+                title: "Servers synchronized",
+                description: "MCP servers have been refreshed successfully.",
+                duration: 3000,
+            });
+        } catch (err) {
+            toaster.create({
+                title: "Sync failed",
+                description: "Could not refresh MCP servers. Please try again later.",
+                duration: 5000,
+            });
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
+    useEffect(() => {
         fetchServers();
     }, []);
 
@@ -321,42 +383,55 @@ export const MCPResourceExplorer: React.FC<ServerListProps> = () => {
                     flexDirection="column"
                     h={{ base: "300px", md: "100%" }}
                 >
-                    {/* Search Box */}
-                    <Box
-                        mb={3}
-                        position="relative"
-                    >
-                        <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" zIndex={1} pointerEvents="none">
-                            <Icon as={FiSearch} color={searchFocused ? "blue.400" : "gray.400"} transition="color 0.2s" />
-                        </Box>
-                        <Input
-                            placeholder={t("mcp.search_servers_and_tools")}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            onFocus={() => setSearchFocused(true)}
-                            onBlur={() => setSearchFocused(false)}
-                            pl={10}
-                            bg={searchFocused ? searchFocusBg : searchBg}
-                            borderRadius="md"
-                            border="none"
-                            boxShadow="none"
-                            _hover={{ bg: searchFocusBg }}
-                            _focus={{ bg: searchFocusBg, outline: "none", boxShadow: "none" }}
-                            transition="all 0.2s"
-                        />
-                        {searchTerm && (
-                            <Box position="absolute" right={3} top="50%" transform="translateY(-50%)">
-                                <Button
-                                    size="xs"
-                                    variant="ghost"
-                                    onClick={() => setSearchTerm('')}
-                                    aria-label="Clear search"
-                                >
-                                    Clear
-                                </Button>
+                    {/* Search Box with Sync Button */}
+                    <Flex mb={3} position="relative" alignItems="center" gap={2}>
+                        <Box position="relative" flex="1">
+                            <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" zIndex={1} pointerEvents="none">
+                                <Icon as={FiSearch} color={searchFocused ? "blue.400" : "gray.400"} transition="color 0.2s" />
                             </Box>
-                        )}
-                    </Box>
+                            <Input
+                                placeholder={t("mcp.search_servers_and_tools")}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onFocus={() => setSearchFocused(true)}
+                                onBlur={() => setSearchFocused(false)}
+                                pl={10}
+                                bg={searchFocused ? searchFocusBg : searchBg}
+                                borderRadius="md"
+                                border="none"
+                                boxShadow="none"
+                                _hover={{ bg: searchFocusBg }}
+                                _focus={{ bg: searchFocusBg, outline: "none", boxShadow: "none" }}
+                                transition="all 0.2s"
+                            />
+                            {searchTerm && (
+                                <Box position="absolute" right={3} top="50%" transform="translateY(-50%)">
+                                    <IconButton
+                                        size="xs"
+                                        variant="ghost"
+                                        onClick={() => setSearchTerm('')}
+                                        aria-label="Clear search"
+                                        _hover={{ bg: "blue.50", color: "blue.600" }}
+                                    >
+                                        <Icon as={FiRefreshCw} />
+                                    </IconButton >
+                                </Box>
+                            )}
+                        </Box>
+
+                        {/* Add Sync Button */}
+                        <IconButton
+                            aria-label="Sync MCP Servers"
+                            size="sm"
+                            colorScheme="blue"
+                            variant="ghost"
+                            loading={isSyncing}
+                            onClick={syncServers}
+                            _hover={{ bg: "blue.50", color: "blue.600" }}
+                        >
+                            <Icon as={FiRefreshCw} />
+                        </IconButton>
+                    </Flex>
 
                     {/* Server List */}
                     <Box
@@ -450,9 +525,11 @@ export const MCPResourceExplorer: React.FC<ServerListProps> = () => {
                                 <VStack
                                     align="stretch"
                                     overflowY="auto"
+                                    pl={2}
                                     pr={2}
                                     flex="1"
                                     pb={3}
+                                    gap={3}
                                     css={{
                                         '&::-webkit-scrollbar': { width: '6px' },
                                         '&::-webkit-scrollbar-track': { background: 'transparent' },

@@ -50,7 +50,7 @@ export default function AdminPanelPage() {
   const t = useTranslations("AdminPanel");
   const { data: session } = useSession();
   const router = useRouter();
-  const { currentUser, isAuthenticated, isLoading } = useSelector(
+  const { currentUser, isAuthenticated, isLoading, isOwner } = useSelector(
     (state: RootState) => state.user
   );
 
@@ -256,6 +256,13 @@ export default function AdminPanelPage() {
       document.removeEventListener("mouseup", handleGlobalMouseUp);
     };
   }, [handleMouseMove, handleMouseUp]);
+
+  // Use useEffect for navigation instead of doing it during render
+  useEffect(() => {
+    if (currentUser && !isOwner) {
+      router.push('/redirect/no_access?reason=Not available for UAT');
+    }
+  }, [currentUser, isOwner, router]);
 
   // Show loading state while checking authentication
   if (isLoading || !session) {

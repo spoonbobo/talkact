@@ -19,7 +19,7 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   const t = useTranslations("Dashboard");
   const router = useRouter();
-  const { currentUser, isAuthenticated, isLoading } = useSelector(
+  const { currentUser, isAuthenticated, isLoading, isOwner } = useSelector(
     (state: RootState) => state.user
   );
 
@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const textColorHeading = useColorModeValue("gray.800", "gray.100");
   const textColor = useColorModeValue("gray.600", "gray.400");
   const bgColor = useColorModeValue("gray.50", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
 
   // If user data is available, log it
   useEffect(() => {
@@ -35,6 +36,13 @@ export default function DashboardPage() {
     }
   }, [currentUser]);
 
+  // Use useEffect for navigation instead of doing it during render
+  useEffect(() => {
+    if (currentUser && !isOwner) {
+      router.push('/redirect/no_access?reason=Not available for UAT');
+    }
+  }, [currentUser, isOwner, router]);
+
   // Show loading state while checking authentication
   if (isLoading || !session) {
     return <Loading />;
@@ -42,8 +50,12 @@ export default function DashboardPage() {
 
   // Redirect if not authenticated
   if (!isAuthenticated && !session) {
-    router.push('/login');
-    return null;
+    return <Loading />; // Show loading instead of direct navigation
+  }
+
+  // Add a check to not render the dashboard content if not owner
+  if (!isOwner) {
+    return <Loading />;
   }
 
   return (
@@ -78,7 +90,7 @@ export default function DashboardPage() {
           boxShadow="sm"
           height="calc(100vh - 200px)"
           borderWidth="1px"
-          borderColor={useColorModeValue("gray.200", "gray.700")}
+          borderColor={borderColor}
         >
           <VStack gap={6}>
             <Icon as={FaTools} fontSize="6xl" color="blue.400" />

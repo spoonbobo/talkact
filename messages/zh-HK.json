@@ -52,7 +52,8 @@
     "features_implementing": "正在實現的功能",
     "no_announcements": "暫無公告",
     "no_known_issues": "暫無已知問題",
-    "no_upcoming_features": "暫無正在實現的功能"
+    "no_upcoming_features": "暫無正在實現的功能",
+    "no_data": "暫無數據"
   },
   "Signup": {
     "signup": "註冊",
@@ -113,7 +114,7 @@
     "type_message": "請輸入消息",
     "new": "新建",
     "active_users": "在線用戶",
-    "select_room": "選擇聊天室",
+    "select_room": "選擇或創建聊天室",
     "enter_room_name": "請輸入聊天室名稱",
     "create": "創建",
     "cancel": "取消",
@@ -136,7 +137,8 @@
     "chat_mode_description": "在這裡，你可以與AI進行自由的交流，無需擔心任務的限制。",
     "chat_mode_hint": "你可以隨時切換回任務模式，只需點擊右上角的按鈕。",
     "room_created": "已創立房間",
-    "room_created_description": "已成功創立房間"
+    "room_created_description": "已成功創立房間",
+    "disabled_task_view_due_to_uat": "任務模式在UAT中不可用"
   },
   "Tasks": {
     "tasks": "任務",
@@ -208,7 +210,10 @@
       "optional": "可選",
       "available_servers": "可用伺服器",
       "show_details": "顯示詳情",
-      "hide_details": "隱藏詳情"
+      "hide_details": "隱藏詳情",
+      "no_parameters_needed": "無需參數",
+      "parameters": "參數表",
+      "full_description": "完整描述"
     },
     "kb": {
       "document_categories": "文檔類別",
@@ -220,6 +225,11 @@
       "search_folders": "搜索文件夾"
     }
   },
+  "Dashboard": {
+      "dashboard": "儀表板",
+      "under_development": "此功能正在開發中",
+      "dashboard_coming_soon": "儀表板將會在不久的將來推出"
+    },
   "AdminPanel": {
     "admin_panel": "管理面板",
     "users": "用戶",
@@ -284,5 +294,14 @@
     "please_wait_while_we_sign_you_out": "正在登出，如果時間過長，請稍後再試。",
     "loading_authentication": "驗證中...",
     "please_wait_while_we_verify_your_account": "正在驗證您的帳戶，如果時間過長，請稍後再試。"
+  },
+  "Errors": {
+    "access_denied": "訪問被拒絕",
+    "no_permission": "您沒有權限訪問此頁面",
+    "owner_access_required": "需要管理員權限才能訪問此頁面",
+    "default_no_access": "您沒有權限訪問此頁面",
+    "redirecting_in": "將在",
+    "seconds": "秒",
+    "to_home": "返回主頁"
   }
 }

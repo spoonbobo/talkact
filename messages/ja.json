@@ -99,7 +99,8 @@
     "features_implementing": "実装予定の機能",
     "no_announcements": "お知らせはありません",
     "no_known_issues": "既知の問題はありません",
-    "no_upcoming_features": "実装予定の機能はありません"
+    "no_upcoming_features": "実装予定の機能はありません",
+    "no_data": "データなし"
   },
   "Footer": {
     "privacy_policy": "プライバシーポリシー",
@@ -137,7 +138,8 @@
     "chat_mode_description": "ここでは、タスクの制限を気にせずにAIと自由に会話できます。",
     "chat_mode_hint": "右上のボタンをクリックすると、いつでもタスクモードに切り替えることができます。",
     "room_created": "ルームが作成されました",
-    "room_created_description": "チャットルームが正常に作成されました"
+    "room_created_description": "チャットルームが正常に作成されました",
+    "disabled_task_view_due_to_uat": "タスクビューはUATでは利用できません"
   },
   "Tasks": {
     "tasks": "タスク",
@@ -209,7 +211,10 @@
       "optional": "オプション",
       "available_servers": "利用可能なサーバー",
       "show_details": "詳細を表示",
-      "hide_details": "詳細を非表示"
+      "hide_details": "詳細を非表示",
+      "no_parameters_needed": "パラメータは必要ありません",
+      "parameters": "パラメータ表",
+      "full_description": "詳細な説明"
     },
     "kb": {
       "document_categories": "ドキュメントカテゴリ",
@@ -285,5 +290,20 @@
     "please_wait_while_we_verify_your_account": "アカウントの検証中です。しばらくしてから再度お試しください。",
     "signin_success": "ログイン成功",
     "signin_success_description": "正常にログインしました"
+  },
+  "Dashboard": {
+    "dashboard": "ダッシュボード",
+    "under_development": "この機能は開発中です",
+    "dashboard_coming_soon": "ダッシュボードはまもなく公開されます"
+  },
+  "Errors": {
+    "access_denied": "アクセスが拒否されました",
+    "no_permission": "このページにアクセスする権限がありません",
+    "owner_access_required": "このページにアクセスするには管理者権限が必要です",
+    "default_no_access": "このページにアクセスする権限がありません",
+    "redirecting_in": "リダイレクトまで",
+    "seconds": "秒",
+    "to_home": "ホームに戻る"
   }
+  
 }

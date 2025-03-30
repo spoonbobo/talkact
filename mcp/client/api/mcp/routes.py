@@ -26,7 +26,8 @@ async def mcp_summon(request: Request, summon: MCPSummon):
 
 @router.post("/api/agent/approve")
 async def approve(request: Request, task: Task):
-    logger.info(f"Approving task: {task}")
+    mcp_client = request.app.state.mcp_client
+    await mcp_client.execute(task)
     return PlainTextResponse(content="OK", status_code=200)
 
 # @router.post("/api/app/approve")

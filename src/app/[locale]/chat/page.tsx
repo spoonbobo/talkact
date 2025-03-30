@@ -43,6 +43,7 @@ import { ChatModeMessageList } from "@/components/chat/chat_mode_message_list";
 import { ChatModeInput } from "@/components/chat/chat_mode_input";
 import { toaster } from "@/components/ui/toaster";
 
+
 const MotionBox = motion.create(Box);
 
 // Add this dummy TaskLog component
@@ -122,7 +123,10 @@ const ChatPageContent = () => {
     messagesLoaded
   } = useSelector((state: RootState) => state.chat);
 
-  const { currentUser } = useSelector((state: RootState) => state.user);
+  const { currentUser, isOwner } = useSelector((state: RootState) => state.user);
+
+  // UAT flag to check if user is not an owner
+  const UAT = !isOwner;
 
   // Get messages for the selected room
   const currentMessages = selectedRoomId ? messages[selectedRoomId] || [] : [];
@@ -132,7 +136,8 @@ const ChatPageContent = () => {
   const [newRoomName, setNewRoomName] = useState<string>("");
   const [isCreatingRoomLoading, setIsCreatingRoomLoading] = useState<boolean>(false);
   const [isLayoutFlipped, setIsLayoutFlipped] = useState<boolean>(false);
-  const [isTaskMode, setIsTaskMode] = useState<boolean>(true);
+  // Force chat mode for non-owners in UAT
+  const [isTaskMode, setIsTaskMode] = useState<boolean>(!UAT);
   const [users, setUsers] = useState<User[]>([]);
   const [agents, setAgents] = useState<User[]>([]);
 
@@ -446,8 +451,13 @@ const ChatPageContent = () => {
     setIsLayoutFlipped(!isLayoutFlipped);
   };
 
-  // Modify the handleTaskModeToggle function to manage event source
+  // Modify the handleTaskModeToggle function to prevent non-owners from switching to task mode
   const handleTaskModeToggle = () => {
+    // If user is not an owner in UAT, don't allow switching to task mode
+    if (UAT && isTaskMode === false) {
+      return;
+    }
+
     // If switching to task mode while event source is active
     if (isTaskMode === false && isEventSourceActive) {
       // Don't immediately clear messages, just pause the UI updates
@@ -484,6 +494,13 @@ const ChatPageContent = () => {
     }
     isTaskModeRef.current = isTaskMode;
   }, [isTaskMode, chatModeContext]);
+
+  // Force chat mode for non-owners when component mounts
+  useEffect(() => {
+    if (UAT) {
+      setIsTaskMode(false);
+    }
+  }, [UAT]);
 
   if (isLoadingRooms || isLoadingMessages || !session) {
     return <Loading />;
@@ -709,7 +726,7 @@ const ChatPageContent = () => {
                         {currentRoom?.name || t("select_room")}
                       </Text>
                       <AnimatePresence>
-                        {isTaskMode && (
+                        {isTaskMode && currentRoom && (
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
@@ -754,20 +771,26 @@ const ChatPageContent = () => {
                       gap: "12px"
                     }}
                   >
-                    {/* Task mode toggle */}
+                    {/* Task mode toggle - disabled for non-owners in UAT */}
                     <Text
                       as="button"
                       color={isTaskMode ? "blue.500" : "green.500"}
                       fontWeight="medium"
-                      cursor="pointer"
+                      cursor={UAT && !isTaskMode ? "not-allowed" : "pointer"}
                       onClick={handleTaskModeToggle}
+                      opacity={UAT && !isTaskMode ? 0.6 : 1}
                       _hover={{
-                        color: isTaskMode ? "blue.600" : "green.600",
-                        textDecoration: "underline"
+                        color: UAT && !isTaskMode ? (isTaskMode ? "blue.500" : "green.500") : (isTaskMode ? "blue.600" : "green.600"),
+                        textDecoration: UAT && !isTaskMode ? "none" : "underline"
                       }}
                       transition="color 0.2s ease"
                     >
-                      {isTaskMode ? t("switch_to_chat_mode") : t("switch_to_task_mode")}
+                      {isTaskMode
+                        ? t("switch_to_chat_mode")
+                        : UAT
+                          ? `${t("switch_to_task_mode")} (${t("disabled_task_view_due_to_uat")})`
+                          : t("switch_to_task_mode")
+                      }
                     </Text>
 
                     {/* Reset chat button - only show in chat mode */}
@@ -786,8 +809,8 @@ const ChatPageContent = () => {
                       </Text>
                     )}
 
-                    {/* Layout toggle - only show in task mode */}
-                    {isTaskMode && (
+                    {/* Layout toggle - only show in task mode and for owners */}
+                    {isTaskMode && !UAT && (
                       <Text
                         as="button"
                         color="blue.500"

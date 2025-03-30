@@ -9,7 +9,7 @@
     "create_account": "Create Account"
   },
   "Navbar": {
-    "kakashi": "All talk and no action",
+    "kakashi": "Kakashi",
     "home": "Home",
     "chat": "Chat",
     "tasks": "Tasks",
@@ -98,7 +98,8 @@
     "features_implementing": "Features Being Implemented",
     "no_announcements": "No announcements",
     "no_known_issues": "No known issues",
-    "no_upcoming_features": "No upcoming features"
+    "no_upcoming_features": "No upcoming features",
+    "no_data": "No data"
   },
   "Footer": {
     "privacy_policy": "Privacy Policy",
@@ -136,7 +137,8 @@
     "chat_mode_description": "Here, you can freely communicate with AI without worrying about task constraints.",
     "chat_mode_hint": "You can switch back to task mode at any time by clicking the button in the top right corner.",
     "room_created": "Room Created",
-    "room_created_description": "Chat room has been successfully created"
+    "room_created_description": "Chat room has been successfully created",
+    "disabled_task_view_due_to_uat": "Task view is not available in UAT"
   },
   "Tasks": {
     "tasks": "Tasks",
@@ -207,7 +209,10 @@
       "optional": "Optional",
       "available_servers": "Available Servers",
       "show_details": "Show Details",
-      "hide_details": "Hide Details"
+      "hide_details": "Hide Details",
+      "no_parameters_needed": "No parameters needed",
+      "parameters": "Parameters",
+      "full_description": "Full Description"
     },
     "kb": {
       "document_categories": "Document Categories",
@@ -282,6 +287,21 @@
     "loading_authentication": "Loading authentication...",
     "please_wait_while_we_verify_your_account": "Please wait while we verify your account. Try again later if it takes too long.",
     "signin_success": "Sign In Successful",
-    "signin_success_description": "Normalmente você se conectou"
+    "signin_success_description": "You have successfully signed in"
+  },
+  "Dashboard": {
+    "dashboard": "Dashboard",
+    "under_development": "This feature is under development",
+    "dashboard_coming_soon": "Dashboard will be coming soon"
+  },
+  "Errors": {
+    "access_denied": "Access Denied",
+    "no_permission": "You don't have permission to access this page",
+    "owner_access_required": "Administrator privileges are required to access this page",
+    "default_no_access": "You do not have permission to access this page",
+    "redirecting_in": "Redirect in",
+    "seconds": "seconds",
+    "to_home": "to home"
   }
+  
 }

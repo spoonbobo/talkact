@@ -178,6 +178,7 @@ Server purpose: {server_description}"""
         self,
         task: Task,
     ):
+        logger.info(f"Executing task: {task}")
         pass
     # async def call_tool(
     #     self, 

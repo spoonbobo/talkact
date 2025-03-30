@@ -1,7 +1,6 @@
 # Kakashi
 
 Kakashi (光說不做) is a go-to chatroom application for you to collaborate with your team and AI agents, integrated with task system, knowledge base, under MCP protocols.
-
 Kakashi is under rapid development, welcome to contribute.
 
 ## Features
@@ -15,8 +14,7 @@ Kakashi is under rapid development, welcome to contribute.
 ## Setup
 
 ```bash
-cp public/.env.template public/.env
-npm install
+cp config/.env.template config/.env
 docker compose up
 
 # in other terminal
@@ -26,11 +24,4 @@ ollama pull llama3.2:latest
 ```
 
 Only Ollama is supported now for LLM service. Roadmap is to support more LLM services.
-
 Visit `kakashi-dev.com` to open the web application.
-Login with default account: ID `admin` and password `admin1234`.
-
-## Supported MCP Servers
-
-- weather
-- download from web

@@ -7,6 +7,7 @@ import os
 import httpx
 import asyncio
 from datetime import datetime
+import uuid
 
 from loguru import logger
 import dotenv
@@ -28,8 +29,16 @@ auth_post = {
     "auth": None
 }
 
-response = requests.post(AUTH_URL, json=auth_post, verify=False).json()
-auth_token = response.get("result", None)
+# Add timeout to prevent hanging if server is unresponsive (10 seconds)
+try:
+    response = requests.post(AUTH_URL, json=auth_post, verify=False, timeout=10).json()
+    auth_token = response.get("result", None)
+    if auth_token is None:
+        logger.warning("Failed to get auth token from Zabbix, using fallback UUID")
+        auth_token = str(uuid.uuid4())
+except Exception as e:
+    logger.error(f"Error authenticating with Zabbix: {str(e)}")
+    auth_token = str(uuid.uuid4())
 
 mcp = FastMCP("zabbix")
 
@@ -137,8 +146,8 @@ async def get_zabbix_host_items(host_name: str) -> str:
 @mcp.tool()
 async def get_zabbix_host_memory_utilization(
     host_name: str,
-    time_from: int | None = None,
-    time_to: int | None = None
+    time_from: int = None,
+    time_to: int = None
 ) -> str:
     """
     Retrieve memory utilization of a host from Zabbix in a time range (time_from: int, time_to: int)
@@ -258,10 +267,6 @@ async def get_zabbix_host_memory_utilization(
     except Exception as e:
         return f"{time_range_info}\nError retrieving memory utilization: {str(e)}"
 
-# print(asyncio.run(get_host_list_on_zabbix()))
-# print(asyncio.run(get_host_infomation_on_zabbix("KLB-DGX-076-Agent")))
-# print(asyncio.run(get_zabbix_host_items("KLB-DGX-076-Agent")))
-print(asyncio.run(get_zabbix_host_memory_utilization("KLB-DGX-076-Agent")))
 
 if __name__ == "__main__":
     print("Starting zabbix server")

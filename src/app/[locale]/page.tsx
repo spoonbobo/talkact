@@ -253,30 +253,22 @@ export default function HomePage() {
               </Flex>
 
               <Box>
-                {noticeData?.known_issues?.map((issue, index) => (
-                  <React.Fragment key={index}>
-                    {index > 0 && <Separator my={4} borderColor={dividerColor} />}
-                    <FeatureItem
-                      color="red.400"
-                      title={issue.value || t("issue_1_title") || "Connection Stability"}
-                      description={issue.description || t("issue_1_description") || "Occasional connection drops when using MCP with large datasets."}
-                      textColor={textColor}
-                      textColorSecondary={textColorSecondary}
-                      cardBorderColor={cardBorderColor}
-                    />
-                  </React.Fragment>
-                ))}
-
-                {/* Fallback if no known issues */}
-                {(!noticeData?.known_issues || noticeData.known_issues.length === 0) && (
-                  <FeatureItem
-                    color="red.400"
-                    title={t("issue_1_title") || "Connection Stability"}
-                    description={t("issue_1_description") || "Occasional connection drops when using MCP with large datasets."}
-                    textColor={textColor}
-                    textColorSecondary={textColorSecondary}
-                    cardBorderColor={cardBorderColor}
-                  />
+                {noticeData?.known_issues && noticeData.known_issues.length > 0 ? (
+                  noticeData.known_issues.map((issue, index) => (
+                    <React.Fragment key={index}>
+                      {index > 0 && <Separator my={4} borderColor={dividerColor} />}
+                      <FeatureItem
+                        color="red.400"
+                        title={issue.value || t("issue_1_title") || "Connection Stability"}
+                        description={issue.description || t("issue_1_description") || "Occasional connection drops when using MCP with large datasets."}
+                        textColor={textColor}
+                        textColorSecondary={textColorSecondary}
+                        cardBorderColor={cardBorderColor}
+                      />
+                    </React.Fragment>
+                  ))
+                ) : (
+                  <Text color={textColorSecondary}>{t("no_data") || "No known issues at this time."}</Text>
                 )}
               </Box>
             </MotionBox>
@@ -301,30 +293,22 @@ export default function HomePage() {
               </Flex>
 
               <Box>
-                {noticeData?.features_implementing?.map((feature, index) => (
-                  <React.Fragment key={index}>
-                    {index > 0 && <Separator my={4} borderColor={dividerColor} />}
-                    <FeatureItem
-                      color={index % 3 === 0 ? "yellow.400" : index % 3 === 1 ? "green.400" : "blue.400"}
-                      title={feature.value || t("feature_1_title") || "Chat Room"}
-                      description={feature.description || t("feature_1_description") || "A dedicated space for real-time communication."}
-                      textColor={textColor}
-                      textColorSecondary={textColorSecondary}
-                      cardBorderColor={cardBorderColor}
-                    />
-                  </React.Fragment>
-                ))}
-
-                {/* Fallback if no features implementing */}
-                {(!noticeData?.features_implementing || noticeData.features_implementing.length === 0) && (
-                  <FeatureItem
-                    color="yellow.400"
-                    title={t("feature_1_title") || "Chat Room"}
-                    description={t("feature_1_description") || "A dedicated space for real-time communication."}
-                    textColor={textColor}
-                    textColorSecondary={textColorSecondary}
-                    cardBorderColor={cardBorderColor}
-                  />
+                {noticeData?.features_implementing && noticeData.features_implementing.length > 0 ? (
+                  noticeData.features_implementing.map((feature, index) => (
+                    <React.Fragment key={index}>
+                      {index > 0 && <Separator my={4} borderColor={dividerColor} />}
+                      <FeatureItem
+                        color={index % 3 === 0 ? "yellow.400" : index % 3 === 1 ? "green.400" : "blue.400"}
+                        title={feature.value || t("feature_1_title") || "Chat Room"}
+                        description={feature.description || t("feature_1_description") || "A dedicated space for real-time communication."}
+                        textColor={textColor}
+                        textColorSecondary={textColorSecondary}
+                        cardBorderColor={cardBorderColor}
+                      />
+                    </React.Fragment>
+                  ))
+                ) : (
+                  <Text color={textColorSecondary}>{t("no_data") || "No upcoming features to announce at this time."}</Text>
                 )}
               </Box>
             </MotionBox>
