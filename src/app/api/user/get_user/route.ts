@@ -24,7 +24,6 @@ export async function GET(request: Request) {
     }
 }
 
-// Also support POST method for backward compatibility
 export async function POST(request: Request) {
     try {
         const body = await request.json();

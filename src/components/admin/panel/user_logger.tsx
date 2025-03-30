@@ -11,10 +11,13 @@ import {
     Badge,
     Separator,
     Button,
+    IconButton,
 } from "@chakra-ui/react";
 import { FaClock, FaUser, FaSignInAlt, FaSignOutAlt, FaEdit, FaTrash, FaPlus, FaUserPlus } from "react-icons/fa";
+import { FiRefreshCw } from "react-icons/fi";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { motion } from "framer-motion";
+import { toaster } from "@/components/ui/toaster";
 
 // Define the UserLog interface
 interface UserLog {
@@ -94,7 +97,11 @@ const UserLogger: React.FC<UserLoggerProps> = ({
             setLogs(data.logs);
             setError(null);
         } catch (err) {
-            console.error("Error fetching user logs:", err);
+            toaster.create({
+                title: "Error fetching user logs",
+                description: "Failed to fetch user logs. Please try again later.",
+                type: "error"
+            })
             setError((err as Error).message);
         } finally {
             setLoading(false);
@@ -200,16 +207,17 @@ const UserLogger: React.FC<UserLoggerProps> = ({
                         </Badge>
                     </Flex>
 
-                    <Button
+                    <IconButton
+                        aria-label="Sync User Logs"
                         size="sm"
-                        leftIcon={<Icon as={FaUserPlus} />}
-                        bg={buttonBg}
-                        color="white"
-                        _hover={{ bg: buttonHoverBg }}
-                        onClick={handleCreateUserClick}
+                        colorScheme="blue"
+                        variant="ghost"
+                        loading={loading}
+                        onClick={fetchUserLogs}
+                        _hover={{ bg: "blue.50", color: "blue.600" }}
                     >
-                        Create User
-                    </Button>
+                        <Icon as={FiRefreshCw} />
+                    </IconButton>
                 </Flex>
             )}
 

@@ -2,11 +2,7 @@
 
 import React from "react";
 import { Flex } from "@chakra-ui/react";
-// import { useTranslation } from "react-i18next";
-interface TaskStatusBadgeProps {
-  status: string;
-  size?: "sm" | "md" | "lg";
-}
+import { TaskStatusBadgeProps } from "@/types/task";
 
 export const TaskStatusBadge: React.FC<TaskStatusBadgeProps> = ({
   status,
@@ -75,4 +71,3 @@ export const TaskStatusBadge: React.FC<TaskStatusBadgeProps> = ({
   );
 };
 
-export default TaskStatusBadge;

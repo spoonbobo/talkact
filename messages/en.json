@@ -92,7 +92,13 @@
     "feature_task_management": "Task Management",
     "feature_task_management_desc": "Efficiently organize and track tasks.",
     "feature_learn": "Learn",
-    "feature_learn_desc": "Access resources and tutorials to improve your skills."
+    "feature_learn_desc": "Access resources and tutorials to improve your skills.",
+    "announcement": "Announcement",
+    "known_issues": "Known Issues",
+    "features_implementing": "Features Being Implemented",
+    "no_announcements": "No announcements",
+    "no_known_issues": "No known issues",
+    "no_upcoming_features": "No upcoming features"
   },
   "Footer": {
     "privacy_policy": "Privacy Policy",
@@ -118,7 +124,19 @@
     "task_log": "Task Log",
     "switch_to_task_view": "Switch to Task Log",
     "switch_to_room_view": "Switch to Chat Room",
-    "task_log_empty": "No task logs"
+    "task_log_empty": "No task logs",
+    "switch_to_chat_mode": "Switch to Chat Mode",
+    "switch_to_task_mode": "Return to Task Mode",
+    "chat_mode": "Chat Only",
+    "reset_chat_mode": "Reset Chat",
+    "ask_anything": "Enter your message...",
+    "chat_generating": "Generating",
+    "generating": "Generating",
+    "chat_mode_welcome": "Welcome to Chat Mode",
+    "chat_mode_description": "Here, you can freely communicate with AI without worrying about task constraints.",
+    "chat_mode_hint": "You can switch back to task mode at any time by clicking the button in the top right corner.",
+    "room_created": "Room Created",
+    "room_created_description": "Chat room has been successfully created"
   },
   "Tasks": {
     "tasks": "Tasks",
@@ -170,7 +188,10 @@
     "end_time": "End Time",
     "close": "Close",
     "edit": "Edit",
-    "no_mcp_tool_calls": "No MCP tool calls"
+    "no_mcp_tool_calls": "No MCP tool calls",
+    "save": "Save",
+    "error_fetching_tasks_title": "Failed to Load Tasks",
+    "error_fetching_tasks_description": "Unable to load tasks. Please try again later."
   },
   "Learn": {
     "learn": "Learn",
@@ -191,7 +212,11 @@
     "kb": {
       "document_categories": "Document Categories",
       "upload_document": "Upload Document",
-      "search_placeholder": "Search documents"
+      "search_placeholder": "Search documents",
+      "data_sources": "Data Sources",
+      "folder_structure": "Folder Structure",
+      "search_data_sources": "Search data sources",
+      "search_folders": "Search folders"
     }
   },
   "AdminPanel": {
@@ -239,7 +264,9 @@
     "save_changes": "Save Changes",
     "bio": "Bio",
     "tell_us_about_yourself": "Tell us about yourself",
-    "managed_by_provider": "Managed by provider"
+    "managed_by_provider": "Managed by provider",
+    "your_display_name": "Your Display Name",
+    "your_email": "Your Email Address"
   },
   "Loading": {
     "loading": "Loading, please wait...",
@@ -253,6 +280,8 @@
     "signing_out": "Signing out...",
     "please_wait_while_we_sign_you_out": "Please wait while we sign you out. Try again later if it takes too long.",
     "loading_authentication": "Loading authentication...",
-    "please_wait_while_we_verify_your_account": "Please wait while we verify your account. Try again later if it takes too long."
+    "please_wait_while_we_verify_your_account": "Please wait while we verify your account. Try again later if it takes too long.",
+    "signin_success": "Sign In Successful",
+    "signin_success_description": "Normalmente você se conectou"
   }
 }

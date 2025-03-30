@@ -20,16 +20,14 @@ import { Table, Select, createListCollection } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaTasks, FaSync, FaEdit, FaSave, FaTimes } from "react-icons/fa";
 import { useTranslations } from "next-intl";
-import TaskStatusBadge from "@/components/task/task_badge";
 import { useCallback, useRef, useState, useEffect } from "react";
 import { ITask } from "@/types/task";
 import Loading from "@/components/loading";
 import { useSession } from "next-auth/react";
 import { useColorModeValue } from "@/components/ui/color-mode";
-import TaskMetadata from "@/components/task/task_metadata";
-import TaskSidebar from "@/components/task/task_sidebar";
-import MCPToolCalls from "@/components/task/task_mcp";
+import { TaskStatusBadge, TaskMetadata, TaskSidebar, MCPToolCalls } from "@/components/task";
 import axios from "axios";
+import { toaster } from "@/components/ui/toaster";
 
 const MotionBox = motion.create(Box);
 
@@ -63,8 +61,6 @@ export default function TasksPage() {
       // Ensure statusFilter is a valid string before using it
       const statusParam = statusFilter && statusFilter !== "all" ? `&status=${statusFilter}` : "";
 
-      console.log(`Fetching tasks with status: ${statusFilter}, URL param: ${statusParam}`);
-
       const response = await fetch(
         `/api/task/get_tasks?page=${currentPage}&limit=${itemsPerPage}${statusParam}`
       );
@@ -78,7 +74,11 @@ export default function TasksPage() {
       setTotalTasks(data.pagination.total);
       setTotalPages(data.pagination.totalPages);
     } catch (err) {
-      console.error("Error fetching tasks:", err);
+      toaster.create({
+        title: t("error_fetching_tasks_title"),
+        description: t("error_fetching_tasks_description"),
+        type: "error"
+      });
       setError(err instanceof Error ? err.message : "Failed to fetch tasks");
       setTasks([]);
       setTotalTasks(0);
@@ -86,7 +86,7 @@ export default function TasksPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, itemsPerPage, statusFilter]);
+  }, [currentPage, itemsPerPage, statusFilter, t]);
 
   // Handle page change
   const handlePageChange = useCallback((newPage: number) => {
@@ -103,10 +103,14 @@ export default function TasksPage() {
   const handleStatusFilterChange = useCallback((valueObj: any) => {
     // Extract the value from the object structure
     const value = valueObj?.value?.[0] || "all";
-    console.log("Setting status filter to:", value);
+    toaster.create({
+      title: t("status"),
+      description: t("showing") + ` ${value} ` + t("tasks"),
+      type: "info"
+    });
     setStatusFilter(value);
     setCurrentPage(1); // Reset to first page when changing filter
-  }, []);
+  }, [t]);
 
   // Add function to handle task selection
   const handleTaskSelect = useCallback((task: ITask) => {
@@ -116,34 +120,57 @@ export default function TasksPage() {
   // Add this new function for handling approve/deny actions - MOVED HERE to maintain hook order
   const approveOrDeny = useCallback(async (action: 'approve' | 'deny') => {
     if (!selectedTask) {
-      console.log('No task selected');
+      toaster.create({
+        title: t("no_task_selected"),
+        description: action === 'approve' ? t("approve") : t("deny"),
+        type: "warning"
+      });
       return;
     }
 
-    console.log(`Attempting to ${action} task: ${selectedTask.task_id}`);
+    toaster.create({
+      title: action === 'approve' ? t("approve") : t("deny"),
+      description: `${t("task_id")}: ${selectedTask.task_id}`,
+      type: "info"
+    });
 
     try {
       if (action === 'approve') {
         // Only make API call for approve action
         const url = `http://${window.location.hostname}:34430/api/agent/approve`;
         const response = await axios.post(url, selectedTask);
-        console.log(`Task ${selectedTask.task_id} approved successfully`);
-        console.log('API response:', response.data);
+        toaster.create({
+          title: t("approved"),
+          description: `${t("task_id")}: ${selectedTask.task_id}`,
+          type: "success"
+        });
       } else {
         // For deny action, just log it without making an API call
-        console.log(`Task ${selectedTask.task_id} denied (no API call made)`);
+        toaster.create({
+          title: t("denied"),
+          description: `${t("task_id")}: ${selectedTask.task_id}`,
+          type: "info"
+        });
       }
 
       // After action is processed, refresh the tasks list
       fetchTasks();
     } catch (error) {
-      console.error(`Error ${action}ing task:`, error);
+      toaster.create({
+        title: t("error"),
+        description: `${action === 'approve' ? t("approve") : t("deny")} ${t("failed")}`,
+        type: "error"
+      });
+
       if (axios.isAxiosError(error)) {
-        console.error('Response data:', error.response?.data);
-        console.error('Status code:', error.response?.status);
+        toaster.create({
+          title: t("error"),
+          description: `${t("status")}: ${error.response?.status}`,
+          type: "error"
+        });
       }
     }
-  }, [selectedTask, fetchTasks]);
+  }, [selectedTask, fetchTasks, t]);
 
   // Load tasks on initial render and when dependencies change
   useEffect(() => {
@@ -561,6 +588,8 @@ export default function TasksPage() {
                       width="120px"
                       collection={perPageOptions}
                       value={[itemsPerPage.toString()]}
+                      // TODO: 
+                      // @ts-ignore
                       onValueChange={(value) => handleItemsPerPageChange(value[0])}
                     >
                       <Select.HiddenSelect />

@@ -34,4 +34,4 @@ RUN apk add --no-cache python3 make g++ postgresql-dev && \
 
 EXPOSE 3000
 # Use "start" instead of "dev" for production
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "start"]

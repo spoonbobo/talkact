@@ -3,20 +3,21 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Input, Button, VStack, Checkbox, Text, Stack } from "@chakra-ui/react";
-import { ISignupErrors, ISignupForm } from "@/types/signup";
+import { SignupErrors, type SignupForm } from "@/types/signup";
 import { useRouter } from "next/navigation";
+import { toaster } from "@/components/ui/toaster";
 
 export default function SignupForm() {
   const t = useTranslations("Signup");
   const router = useRouter();
-  const [formData, setFormData] = useState<ISignupForm>({
+  const [formData, setFormData] = useState<SignupForm>({
     username: "",
     email: "",
     password: "",
     confirmPassword: "",
     agreeToTerms: false,
   });
-  const [errors, setErrors] = useState<Partial<ISignupErrors>>({});
+  const [errors, setErrors] = useState<Partial<SignupErrors>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -27,7 +28,7 @@ export default function SignupForm() {
       [name]: type === "checkbox" ? checked : value,
     });
 
-    if (errors[name as keyof ISignupForm]) {
+    if (errors[name as keyof SignupForm]) {
       setErrors({
         ...errors,
         [name]: undefined,
@@ -38,9 +39,9 @@ export default function SignupForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const validate = (formData: ISignupForm) => {
+    const validate = (formData: SignupForm) => {
       console.log("formData", formData);
-      const e: Partial<ISignupErrors> = {};
+      const e: Partial<SignupErrors> = {};
       if (!formData.username.trim()) {
         e.username = t("username_required");
       }
@@ -79,7 +80,11 @@ export default function SignupForm() {
       // Redirect to success page or dashboard after successful signup
       router.push("/");
     } catch (error) {
-      console.error("Signup error:", error);
+      toaster.create({
+        title: "Error signing up",
+        description: "Failed to sign up. Please try again later.",
+        type: "error"
+      })
       // Handle error
     } finally {
       setIsSubmitting(false);
@@ -113,7 +118,7 @@ export default function SignupForm() {
             value={formData.email}
             onChange={handleChange}
             placeholder={t("email_placeholder")}
-            // isInvalid={!!errors.email}
+          // isInvalid={!!errors.email}
           />
           {errors.email && (
             <Text color="red.500" fontSize="sm">
@@ -130,7 +135,7 @@ export default function SignupForm() {
             value={formData.password}
             onChange={handleChange}
             placeholder={t("password_placeholder")}
-            //   isInvalid={!!errors.password}
+          //   isInvalid={!!errors.password}
           />
           {/* <InputElement placement="end" width="4.5rem">
             <Button

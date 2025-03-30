@@ -7,9 +7,8 @@ import { ChatBubble } from "./bubble";
 import { useSession } from "next-auth/react";
 import { useChatMode } from "./chat_mode_context";
 import { useColorModeValue } from "@/components/ui/color-mode";
-import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-
+import { useEffect } from "react";
 interface ChatModeMessageListProps {
     messagesEndRef: React.RefObject<HTMLDivElement | null>;
 }
@@ -18,6 +17,45 @@ export const ChatModeMessageList = ({ messagesEndRef }: ChatModeMessageListProps
     const { data: session } = useSession();
     const { chatModeMessages, isStreaming, currentStreamingMessage } = useChatMode();
     const t = useTranslations("Chat");
+
+    // Auto-scroll functionality with performance optimization
+    const scrollToBottom = () => {
+        // Use requestAnimationFrame to avoid forced reflow
+        requestAnimationFrame(() => {
+            if (messagesEndRef.current) {
+                messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    };
+
+    // Scroll when messages change - with debounce
+    useEffect(() => {
+        // Only scroll if there are messages
+        if (chatModeMessages.length > 0) {
+            scrollToBottom();
+        }
+    }, [chatModeMessages.length]);
+
+    // Scroll when streaming content updates - with throttling
+    useEffect(() => {
+        let lastScrollTime = 0;
+        const scrollThreshold = 150; // ms
+
+        const handleMessageUpdate = () => {
+            const now = Date.now();
+            if (now - lastScrollTime > scrollThreshold) {
+                lastScrollTime = now;
+                scrollToBottom();
+            }
+        };
+
+        window.addEventListener('chatMessageUpdated', handleMessageUpdate);
+
+        return () => {
+            window.removeEventListener('chatMessageUpdated', handleMessageUpdate);
+        };
+    }, []);
+
     // Group messages by sender for continuous messages
     const groupedMessages = chatModeMessages.reduce(
         (
@@ -123,12 +161,13 @@ export const ChatModeMessageList = ({ messagesEndRef }: ChatModeMessageListProps
                                     currentStreamingMessage?.id === message.id;
 
                                 return (
-                                    <motion.div
+                                    <Box
                                         key={message.id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                        style={{ width: "100%" }}
+                                        opacity={0}
+                                        style={{
+                                            width: "100%",
+                                            animation: "fadeInUp 0.2s forwards",
+                                        }}
                                     >
                                         <ChatBubble
                                             message={message}
@@ -137,7 +176,7 @@ export const ChatModeMessageList = ({ messagesEndRef }: ChatModeMessageListProps
                                             isTaskMode={false}
                                             isStreaming={isStreamingMessage}
                                         />
-                                    </motion.div>
+                                    </Box>
                                 );
                             })}
                         </Flex>
@@ -145,6 +184,20 @@ export const ChatModeMessageList = ({ messagesEndRef }: ChatModeMessageListProps
                 ))
             )}
             <div ref={messagesEndRef} />
+
+            {/* Add this style for the animation */}
+            <style jsx global>{`
+                @keyframes fadeInUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(10px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+            `}</style>
         </Box>
     );
 }; 

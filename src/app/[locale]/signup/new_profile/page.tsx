@@ -22,15 +22,8 @@ import { v4 as uuidv4 } from 'uuid';
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { setUser } from "@/store/features/userSlice";
-
-interface ProfileFormData {
-    email: string;
-    avatarUrl: string;
-}
-
-interface ProfileFormErrors {
-    email?: string;
-}
+import { ProfileFormData, ProfileFormErrors } from "@/types/signup";
+import { toaster } from "@/components/ui/toaster";
 
 // Create motion components
 const MotionBox = motion.create(Box);
@@ -124,22 +117,26 @@ export default function CreateProfilePage() {
                 email: formData.email,
                 avatar: formData.avatarUrl,
                 role: "user",
-                created_at: createAt,
-                updated_at: createAt,
+                created_at: createAt.toISOString(),
+                updated_at: createAt.toISOString(),
                 active_rooms: [],
                 archived_rooms: [],
                 username: ""
             }
 
-            const response = await axios.post("/api/user/create_user", newUser);
-            console.log("--------------------------", response);
+            await axios.post("/api/user/create_user", newUser);
 
-            // Dispatch user to Redux store
             dispatch(setUser(newUser));
 
             router.push("/");
         } catch (error) {
-            console.error("Profile creation error:", error);
+            toaster.create(
+                {
+                    title: "Profile creation error",
+                    description: "Please try again later",
+                    type: "error"
+                }
+            )
         } finally {
             setIsSubmitting(false);
         }

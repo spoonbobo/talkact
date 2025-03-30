@@ -27,7 +27,10 @@ class KBManager:
     lng_prompt = {
         "zh-HK": """
         用 {preferred_language} 回應user既問題.
-        如果你系對話既背景找不到答案, 你可以話你不懂回答
+        儘可能以友好既態度滿足user的問題
+        如果你系對話既背景完全找不到相關諮詢, 你可以話你不懂回答
+        
+        {conversation_history}
         
         以下系對話既背景:
         {context}
@@ -37,15 +40,18 @@ class KBManager:
         你回答:
         """,
         "ja": """
-        {preferred_language}で以下の質問に答えてください。
-        提供されたコンテキストに関連情報がない場合は、そう伝えてください。
+        {preferred_language}でユーザーの質問に回答してください。
+        できる限り友好的な態度でユーザーの質問に答えるよう努めてください。
+        もし会話の背景から関連情報が全く見つからない場合は、回答できないとお伝えください。
         
-        コンテキスト:
+        {conversation_history}
+        
+        以下が会話の背景です：
         {context}
         
-        質問: {query}
+        ユーザーの質問: {query}
         
-        回答:
+        あなたの回答:
         """
     }
 
@@ -129,9 +135,10 @@ class KBManager:
        results = self.query_knowledge_base(query_text, source_id, top_k)
        
        context = "Relevant information:\n\n"
+       logger.info(f"Results: {len(results)}")
        for i, result in enumerate(results):
            context += f"[Document {i+1}] {result['text']}\n\n"
-           
+        
        return context
 
     def query_knowledge_base(self, query_text: str, source_id: str, top_k: int = 5):
@@ -178,14 +185,20 @@ class KBManager:
         """
         Generate an answer using RAG
         """
-        context = self.generate_context(query.query, query.source_id, query.top_k)
+        # Handle both string and list inputs
+        query_text = query.query[-1] if isinstance(query.query, list) else query.query
+        
+        # Generate context based on the latest query
+        context = self.generate_context(query_text, query.source_id, query.top_k)
+        
         prompt_template = self.lng_prompt[query.preferred_language]
         prompt = prompt_template.format(
             preferred_language=self.lng_map[query.preferred_language],
             context=context,
-            query=query.query
+            conversation_history=query.conversation_history,
+            query=query_text
         )
-        
+                
         if query.streaming:
             # Return generator for streaming
             return self.ollama_llm.stream_complete(prompt)
@@ -248,7 +261,7 @@ class KBManager:
             source_info = DataSource(
                 id=source_name,
                 name=source_name.replace("_", " ").title(),
-                icon="FiDatabase",
+                icon="database",
                 count=len(docs)
             )
             sources.append(source_info.dict())

@@ -27,3 +27,24 @@ export interface ITask {
     status: string;
     result: string;
 }
+
+export interface TaskStatusBadgeProps {
+    status: string;
+    size?: "sm" | "md" | "lg";
+}
+
+export interface TaskSidebarProps {
+    selectedTask: ITask | null;
+    approveOrDeny: (action: 'approve' | 'deny') => Promise<void>;
+    fetchTasks: () => Promise<void>;
+}
+
+export interface MCPToolCallsProps {
+    selectedTask: ITask | null;
+    setSelectedTask: (task: ITask | null) => void;
+    fetchTasks: () => Promise<void>;
+}
+
+export interface TaskMetadataProps {
+    selectedTask: ITask | null;
+}

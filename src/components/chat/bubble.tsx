@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import React from "react";
 
 // Extend the props interface directly in the file
 interface IChatBubbleProps {
@@ -16,7 +17,7 @@ interface IChatBubbleProps {
   isStreaming?: boolean;
 }
 
-export const ChatBubble = ({
+export const ChatBubble = React.memo(({
   message,
   isUser,
   isFirstInGroup,
@@ -104,4 +105,13 @@ export const ChatBubble = ({
       </Box>
     </Box>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function to determine if re-render is needed
+  return (
+    prevProps.isUser === nextProps.isUser &&
+    prevProps.isFirstInGroup === nextProps.isFirstInGroup &&
+    prevProps.isTaskMode === nextProps.isTaskMode &&
+    prevProps.isStreaming === nextProps.isStreaming &&
+    prevProps.message.content === nextProps.message.content
+  );
+});

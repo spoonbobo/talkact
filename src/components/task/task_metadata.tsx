@@ -3,13 +3,9 @@
 import { Box, Text, Flex } from "@chakra-ui/react";
 import { useTranslations } from "next-intl";
 import { useColorModeValue } from "@/components/ui/color-mode";
-import { ITask } from "@/types/task";
+import { ITask, TaskMetadataProps } from "@/types/task";
 
-interface TaskMetadataProps {
-    selectedTask: ITask | null;
-}
-
-const TaskMetadata = ({ selectedTask }: TaskMetadataProps) => {
+export const TaskMetadata = ({ selectedTask }: TaskMetadataProps) => {
     const t = useTranslations("Tasks");
 
     // Dark mode adaptive colors
@@ -98,4 +94,3 @@ const TaskMetadata = ({ selectedTask }: TaskMetadataProps) => {
     );
 };
 
-export default TaskMetadata; 

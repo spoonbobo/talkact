@@ -92,25 +92,6 @@ const UserTable: React.FC<UserTableProps> = ({
         });
     };
 
-    // Per page options
-    const perPageOptions = createListCollection({
-        items: [
-            { label: "10 per page", value: "10" },
-            { label: "25 per page", value: "25" },
-            { label: "50 per page", value: "50" },
-            { label: "100 per page", value: "100" },
-        ],
-    });
-
-    // Handle rows per page change
-    const handleRowsPerPageChange = (value: string) => {
-        setPagination({
-            ...pagination,
-            limit: parseInt(value),
-            offset: 0 // Reset to first page
-        });
-    };
-
     return (
         <>
             <Flex
@@ -249,153 +230,124 @@ const UserTable: React.FC<UserTableProps> = ({
                         flexDirection={{ base: "column", md: "row" }}
                         gap={3}
                     >
-                        <Flex alignItems="center" gap={2}>
-                            <Text fontSize="sm" color={colors.textColor}>{t("rows_per_page")}:</Text>
-                            <Select.Root
-                                size="sm"
-                                width="120px"
-                                collection={perPageOptions}
-                                value={[pagination.limit.toString()]}
-                                onValueChange={(values) => {
-                                    if (Array.isArray(values) && values.length > 0) {
-                                        handleRowsPerPageChange(values[0]);
-                                    }
-                                }}
-                            >
-                                <Select.HiddenSelect />
-                                <Select.Control>
-                                    <Select.Trigger>
-                                        <Select.ValueText />
-                                    </Select.Trigger>
-                                    <Select.IndicatorGroup>
-                                        <Select.Indicator />
-                                    </Select.IndicatorGroup>
-                                </Select.Control>
-                                <Portal>
-                                    <Select.Positioner>
-                                        <Select.Content>
-                                            {perPageOptions.items.map((option) => (
-                                                <Select.Item item={option} key={option.value}>
-                                                    {option.label}
-                                                    <Select.ItemIndicator />
-                                                </Select.Item>
-                                            ))}
-                                        </Select.Content>
-                                    </Select.Positioner>
-                                </Portal>
-                            </Select.Root>
+                        <Flex flex="1" justifyContent="flex-start" alignItems="center">
+                            <Flex gap={1} alignItems="center">
+                                <Box
+                                    as="button"
+                                    px={2}
+                                    py={1}
+                                    borderRadius="md"
+                                    bg={currentPage === 1 ? colors.paginationDisabledBg : colors.paginationBg}
+                                    color={currentPage === 1 ? colors.paginationDisabledColor : colors.paginationColor}
+                                    _hover={{
+                                        bg: currentPage === 1 ? colors.paginationDisabledBg : colors.refreshButtonHoverBg,
+                                    }}
+                                    onClick={() => handlePageChange(1)}
+                                    aria-disabled={currentPage === 1}
+                                    pointerEvents={currentPage === 1 ? "none" : "auto"}
+                                >
+                                    «
+                                </Box>
+                                <Box
+                                    as="button"
+                                    px={2}
+                                    py={1}
+                                    borderRadius="md"
+                                    bg={currentPage === 1 ? colors.paginationDisabledBg : colors.paginationBg}
+                                    color={currentPage === 1 ? colors.paginationDisabledColor : colors.paginationColor}
+                                    _hover={{
+                                        bg: currentPage === 1 ? colors.paginationDisabledBg : colors.refreshButtonHoverBg,
+                                    }}
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    aria-disabled={currentPage === 1}
+                                    pointerEvents={currentPage === 1 ? "none" : "auto"}
+                                >
+                                    ‹
+                                </Box>
+                            </Flex>
                         </Flex>
 
-                        <Flex gap={1} alignItems="center">
-                            <Box
-                                as="button"
-                                px={2}
-                                py={1}
-                                borderRadius="md"
-                                bg={currentPage === 1 ? colors.paginationDisabledBg : colors.paginationBg}
-                                color={currentPage === 1 ? colors.paginationDisabledColor : colors.paginationColor}
-                                _hover={{
-                                    bg: currentPage === 1 ? colors.paginationDisabledBg : colors.refreshButtonHoverBg,
-                                }}
-                                onClick={() => handlePageChange(1)}
-                                aria-disabled={currentPage === 1}
-                                pointerEvents={currentPage === 1 ? "none" : "auto"}
-                            >
-                                «
-                            </Box>
-                            <Box
-                                as="button"
-                                px={2}
-                                py={1}
-                                borderRadius="md"
-                                bg={currentPage === 1 ? colors.paginationDisabledBg : colors.paginationBg}
-                                color={currentPage === 1 ? colors.paginationDisabledColor : colors.paginationColor}
-                                _hover={{
-                                    bg: currentPage === 1 ? colors.paginationDisabledBg : colors.refreshButtonHoverBg,
-                                }}
-                                onClick={() => handlePageChange(currentPage - 1)}
-                                aria-disabled={currentPage === 1}
-                                pointerEvents={currentPage === 1 ? "none" : "auto"}
-                            >
-                                ‹
-                            </Box>
-
-                            <Text mx={2} fontSize="sm" color={colors.textColor}>
+                        <Flex flex="1" justifyContent="center" alignItems="center">
+                            <Text fontSize="sm" color={colors.textColor}>
                                 {t("page")} {currentPage} {t("of")} {totalPages || 1}
                             </Text>
-
-                            <Box
-                                as="button"
-                                px={2}
-                                py={1}
-                                borderRadius="md"
-                                bg={
-                                    currentPage === totalPages || totalPages === 0
-                                        ? colors.paginationDisabledBg
-                                        : colors.paginationBg
-                                }
-                                color={
-                                    currentPage === totalPages || totalPages === 0
-                                        ? colors.paginationDisabledColor
-                                        : colors.paginationColor
-                                }
-                                _hover={{
-                                    bg:
-                                        currentPage === totalPages || totalPages === 0
-                                            ? colors.paginationDisabledBg
-                                            : colors.refreshButtonHoverBg,
-                                }}
-                                onClick={() => handlePageChange(currentPage + 1)}
-                                aria-disabled={
-                                    currentPage === totalPages || totalPages === 0
-                                }
-                                pointerEvents={
-                                    currentPage === totalPages || totalPages === 0
-                                        ? "none"
-                                        : "auto"
-                                }
-                            >
-                                ›
-                            </Box>
-                            <Box
-                                as="button"
-                                px={2}
-                                py={1}
-                                borderRadius="md"
-                                bg={
-                                    currentPage === totalPages || totalPages === 0
-                                        ? colors.paginationDisabledBg
-                                        : colors.paginationBg
-                                }
-                                color={
-                                    currentPage === totalPages || totalPages === 0
-                                        ? colors.paginationDisabledColor
-                                        : colors.paginationColor
-                                }
-                                _hover={{
-                                    bg:
-                                        currentPage === totalPages || totalPages === 0
-                                            ? colors.paginationDisabledBg
-                                            : colors.refreshButtonHoverBg,
-                                }}
-                                onClick={() => handlePageChange(totalPages)}
-                                aria-disabled={
-                                    currentPage === totalPages || totalPages === 0
-                                }
-                                pointerEvents={
-                                    currentPage === totalPages || totalPages === 0
-                                        ? "none"
-                                        : "auto"
-                                }
-                            >
-                                »
-                            </Box>
                         </Flex>
 
-                        <Text fontSize="sm" color={colors.textColor}>
-                            {t("showing")} {users.length > 0 ? pagination.offset + 1 : 0} - {Math.min(pagination.offset + pagination.limit, pagination.total)} {t("of")} {pagination.total} {t("users")}
-                        </Text>
+                        <Flex flex="1" justifyContent="flex-end" alignItems="center">
+                            <Flex gap={1} alignItems="center">
+                                <Box
+                                    as="button"
+                                    px={2}
+                                    py={1}
+                                    borderRadius="md"
+                                    bg={
+                                        currentPage === totalPages || totalPages === 0
+                                            ? colors.paginationDisabledBg
+                                            : colors.paginationBg
+                                    }
+                                    color={
+                                        currentPage === totalPages || totalPages === 0
+                                            ? colors.paginationDisabledColor
+                                            : colors.paginationColor
+                                    }
+                                    _hover={{
+                                        bg:
+                                            currentPage === totalPages || totalPages === 0
+                                                ? colors.paginationDisabledBg
+                                                : colors.refreshButtonHoverBg,
+                                    }}
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    aria-disabled={
+                                        currentPage === totalPages || totalPages === 0
+                                    }
+                                    pointerEvents={
+                                        currentPage === totalPages || totalPages === 0
+                                            ? "none"
+                                            : "auto"
+                                    }
+                                >
+                                    ›
+                                </Box>
+                                <Box
+                                    as="button"
+                                    px={2}
+                                    py={1}
+                                    borderRadius="md"
+                                    bg={
+                                        currentPage === totalPages || totalPages === 0
+                                            ? colors.paginationDisabledBg
+                                            : colors.paginationBg
+                                    }
+                                    color={
+                                        currentPage === totalPages || totalPages === 0
+                                            ? colors.paginationDisabledColor
+                                            : colors.paginationColor
+                                    }
+                                    _hover={{
+                                        bg:
+                                            currentPage === totalPages || totalPages === 0
+                                                ? colors.paginationDisabledBg
+                                                : colors.refreshButtonHoverBg,
+                                    }}
+                                    onClick={() => handlePageChange(totalPages)}
+                                    aria-disabled={
+                                        currentPage === totalPages || totalPages === 0
+                                    }
+                                    pointerEvents={
+                                        currentPage === totalPages || totalPages === 0
+                                            ? "none"
+                                            : "auto"
+                                    }
+                                >
+                                    »
+                                </Box>
+                            </Flex>
+                        </Flex>
                     </Flex>
+
+                    <Text fontSize="sm" color={colors.textColor} textAlign="center" mt={2}>
+                        {t("showing")} {users.length > 0 ? pagination.offset + 1 : 0} - {Math.min(pagination.offset + pagination.limit, pagination.total)} {t("of")} {pagination.total} {t("users")}
+                    </Text>
                 </>
             )}
         </>

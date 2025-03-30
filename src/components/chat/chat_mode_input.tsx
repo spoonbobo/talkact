@@ -6,11 +6,9 @@ import {
     IconButton,
     Flex,
     Icon,
-    Button,
 } from "@chakra-ui/react";
-import { Tooltip } from "@/components/ui/tooltip";
 import { FaPaperPlane, FaStop } from "react-icons/fa";
-import { useState, KeyboardEvent } from "react";
+import { useState, KeyboardEvent, useRef, useEffect } from "react";
 import { useChatMode } from "./chat_mode_context";
 import { User } from "@/types/user";
 import { useColorModeValue } from "@/components/ui/color-mode";
@@ -19,27 +17,45 @@ import { useTranslations } from "next-intl";
 
 interface ChatModeInputProps {
     currentUser: User | null;
+    setIsEventSourceActive: (active: boolean) => void;
+    eventSourceRef: React.MutableRefObject<EventSource | null>;
 }
 
-export const ChatModeInput = ({ currentUser }: ChatModeInputProps) => {
+export const ChatModeInput = ({
+    currentUser,
+    setIsEventSourceActive,
+    eventSourceRef
+}: ChatModeInputProps) => {
     const [inputValue, setInputValue] = useState("");
-    const { sendChatModeMessage, isStreaming, cancelGeneration } = useChatMode();
+    const { sendChatModeMessage, isStreaming } = useChatMode();
     const t = useTranslations("Chat");
     // Enhanced colors for better UI with warmer greens
     const inputBg = useColorModeValue("white", "gray.800");
     const inputBorder = useColorModeValue("green.300", "green.600");
     const buttonBg = useColorModeValue("green.600", "green.700");
     const buttonHoverBg = useColorModeValue("green.700", "green.600");
-    const cancelBg = useColorModeValue("red.500", "red.600");
     const cancelHoverBg = useColorModeValue("red.600", "red.500");
     const containerBg = useColorModeValue("rgba(240, 255, 244, 0.8)", "rgba(25, 45, 35, 0.8)");
     const placeholderColor = useColorModeValue("gray.500", "gray.500");
     const inputTextColor = useColorModeValue("gray.800", "gray.100");
 
+    // Add this ref for the messages end
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
     const handleSendMessage = () => {
         if (inputValue.trim() && currentUser && !isStreaming) {
             sendChatModeMessage(inputValue.trim(), currentUser);
             setInputValue("");
+
+            // Scroll to bottom after sending a message - with requestAnimationFrame
+            if (messagesEndRef) {
+                // Use requestAnimationFrame to avoid forced reflow
+                requestAnimationFrame(() => {
+                    if (messagesEndRef.current) {
+                        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            }
         }
     };
 
@@ -50,7 +66,39 @@ export const ChatModeInput = ({ currentUser }: ChatModeInputProps) => {
         }
     };
 
-    const MotionFlex = motion(Flex);
+    const MotionFlex = motion.create(Flex);
+
+    // Modify your event source creation to use the ref
+    const startEventSource = () => {
+        // Close any existing connection
+        if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+        }
+
+        const eventSource = new EventSource(`/api/chat/stream?query=${encodeURIComponent(inputValue)}`);
+        eventSourceRef.current = eventSource;
+        setIsEventSourceActive(true);
+
+        eventSource.onmessage = (event) => {
+            // Process message
+        };
+
+        eventSource.onerror = () => {
+            eventSource.close();
+            setIsEventSourceActive(false);
+            eventSourceRef.current = null;
+        };
+    };
+
+    // Make sure to clean up when component unmounts
+    useEffect(() => {
+        return () => {
+            if (eventSourceRef.current) {
+                eventSourceRef.current.close();
+                setIsEventSourceActive(false);
+            }
+        };
+    }, []);
 
     return (
         <Box
@@ -83,6 +131,7 @@ export const ChatModeInput = ({ currentUser }: ChatModeInputProps) => {
                     height="44px"
                     transition="all 0.2s"
                 />
+
                 <IconButton
                     aria-label="Send message"
                     onClick={handleSendMessage}
@@ -97,6 +146,7 @@ export const ChatModeInput = ({ currentUser }: ChatModeInputProps) => {
                 >
                     <Icon as={FaPaperPlane} />
                 </IconButton>
+
             </Flex>
         </Box>
     );

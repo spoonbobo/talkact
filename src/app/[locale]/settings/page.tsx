@@ -118,7 +118,7 @@ export default function SettingsPage() {
           >
             {[
               { icon: FaUserCircle, label: t("general"), id: 0 },
-              { icon: FaDatabase, label: t("system"), id: 1 },
+              // { icon: FaDatabase, label: t("system"), id: 1 },
               {
                 icon: FaTrash,
                 label: t("danger_zone"),
@@ -269,7 +269,7 @@ export default function SettingsPage() {
               )}
 
               {/* System Settings */}
-              {activeTab === 1 && (
+              {/* {activeTab === 1 && (
                 <Box>
                   <VStack align="stretch" gap={4}>
                     <Box p={4} borderWidth="1px" borderRadius="md" borderColor={borderColor}>
@@ -380,7 +380,7 @@ export default function SettingsPage() {
                     </Box>
                   </VStack>
                 </Box>
-              )}
+              )} */}
 
               {/* Danger Zone */}
               {activeTab === 2 && (

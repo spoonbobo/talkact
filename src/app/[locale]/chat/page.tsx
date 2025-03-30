@@ -41,6 +41,7 @@ import { CreateRoomForm } from "@/components/chat/create_room_form";
 import { ChatModeProvider, useChatMode } from "@/components/chat/chat_mode_context";
 import { ChatModeMessageList } from "@/components/chat/chat_mode_message_list";
 import { ChatModeInput } from "@/components/chat/chat_mode_input";
+import { toaster } from "@/components/ui/toaster";
 
 const MotionBox = motion.create(Box);
 
@@ -172,6 +173,12 @@ const ChatPageContent = () => {
   const chatModeBorder = useColorModeValue("gray.300", "gray.600");
   const chatModeHeading = useColorModeValue("teal.600", "teal.400");
 
+  // Add this new state to track if event source is active
+  const [isEventSourceActive, setIsEventSourceActive] = useState<boolean>(false);
+
+  // Add this ref to store the event source instance
+  const eventSourceRef = React.useRef<EventSource | null>(null);
+
   // Fetch rooms
   useEffect(() => {
     const fetchRooms = async () => {
@@ -180,7 +187,11 @@ const ChatPageContent = () => {
         const response = await axios.get("/api/chat/get_rooms");
         dispatch(setRooms(response.data));
       } catch (error) {
-        console.error("Error fetching chat rooms:", error);
+        toaster.create({
+          title: t("error"),
+          description: t("error_fetching_rooms"),
+          type: "error"
+        });
       } finally {
         dispatch(setLoadingRooms(false));
       }
@@ -203,7 +214,11 @@ const ChatPageContent = () => {
         const agentsResponse = await axios.get("/api/user/get_users?role=agent");
         setAgents(agentsResponse.data.users);
       } catch (error) {
-        console.error("Error fetching users and agents:", error);
+        toaster.create({
+          title: t("error"),
+          description: t("error_fetching_users_agents"),
+          type: "error"
+        });
       }
     };
 
@@ -239,7 +254,11 @@ const ChatPageContent = () => {
   // Add this new function to handle the agent API call
   const triggerAgentAPI = async (message: string, roomId: string) => {
     try {
-      console.log("Agent mentioned, triggering API call");
+      toaster.create({
+        title: t("agent_mentioned"),
+        description: t("agent_mentioned_description"),
+        type: "info"
+      });
 
       // Extract the mentioned agent username
       let assigneeId = null;
@@ -280,11 +299,14 @@ const ChatPageContent = () => {
         payload.assignee = assigneeId;
       }
 
-      const response = await axios.post(url, payload);
-      console.log("Agent API response:", response.data);
+      await axios.post(url, payload);
     }
     catch (error) {
-      console.error("Error calling agent API:", error);
+      toaster.create({
+        title: t("error"),
+        description: t("error_calling_agent_api"),
+        type: "error"
+      });
     }
   };
 
@@ -308,8 +330,18 @@ const ChatPageContent = () => {
         // Refresh rooms list
         const roomsResponse = await axios.get("/api/chat/get_rooms");
         dispatch(setRooms(roomsResponse.data));
+
+        toaster.create({
+          title: t("room_created"),
+          description: t("room_created_description"),
+          type: "success"
+        });
       } catch (error) {
-        console.error("Error creating room:", error);
+        toaster.create({
+          title: t("error"),
+          description: t("error_creating_room"),
+          type: "error"
+        });
       } finally {
         setIsCreatingRoomLoading(false);
       }
@@ -395,7 +427,11 @@ const ChatPageContent = () => {
 
             dispatch(markRoomMessagesLoaded(selectedRoomId));
           } catch (error) {
-            console.error("Error fetching messages:", error);
+            toaster.create({
+              title: t("error"),
+              description: t("error_fetching_messages"),
+              type: "error"
+            });
           } finally {
             dispatch(setLoadingMessages(false));
           }
@@ -410,10 +446,29 @@ const ChatPageContent = () => {
     setIsLayoutFlipped(!isLayoutFlipped);
   };
 
-  // Add this function to handle task mode toggle
+  // Modify the handleTaskModeToggle function to manage event source
   const handleTaskModeToggle = () => {
+    // If switching to task mode while event source is active
+    if (isTaskMode === false && isEventSourceActive) {
+      // Don't immediately clear messages, just pause the UI updates
+      chatModeContext.setPauseUpdates(true);
+    } else if (isTaskMode === true && isEventSourceActive) {
+      // Resuming updates when switching back to chat mode
+      chatModeContext.setPauseUpdates(false);
+    }
+
     setIsTaskMode(!isTaskMode);
   };
+
+  // Add this effect to clean up event source when component unmounts
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        setIsEventSourceActive(false);
+      }
+    };
+  }, []);
 
   // Get the chat mode context
   const chatModeContext = useChatMode();
@@ -774,7 +829,11 @@ const ChatPageContent = () => {
                 isTaskMode={isTaskMode}
               />
             ) : (
-              <ChatModeInput currentUser={currentUser} />
+              <ChatModeInput
+                currentUser={currentUser}
+                setIsEventSourceActive={setIsEventSourceActive}
+                eventSourceRef={eventSourceRef}
+              />
             )}
           </MotionBox>
         </Flex>

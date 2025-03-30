@@ -7,6 +7,8 @@ known_issues:
     description: Socket connection is not supported in multi-window openings
   - value: "# online users not available yet"
     description: "Online users are not available yet"
+  - value: "switching view during chat mode may cause problems"
+    description: "2025-03-29"
 
 features_implementing:
   # - value: kb

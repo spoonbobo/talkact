@@ -9,8 +9,8 @@ import {
     setUnreadCount
 } from '../features/chatSlice';
 import { IMessage } from '@/types/chat';
+import { toaster } from '@/components/ui/toaster';
 
-// This will hold our socket instance
 let socketClient: ChatSocketClient | null = null;
 
 export const socketMiddleware: Middleware = store => next => action => {
@@ -34,19 +34,30 @@ export const socketMiddleware: Middleware = store => next => action => {
         // Set up event listeners
         socketClient.onConnect(() => {
             dispatch(setSocketConnected(true));
-            console.log('Socket connected successfully');
         });
 
         socketClient.onDisconnect(() => {
             dispatch(setSocketConnected(false));
-            console.log('Socket disconnected');
+            toaster.create({
+                title: "Socket Disconnected",
+                description: "Please try reconnecting later",
+                type: "error"
+            });
         });
 
         socketClient.onMessage((message: IMessage) => {
-            console.log("MIDDLEWARE: Message received from socket:", message);
+            toaster.create({
+                title: "Message Received",
+                description: `From room ${message.room_id}: ${message.content}`,
+                type: "info"
+            });
 
             if (message && message.room_id) {
-                console.log(`MIDDLEWARE: Dispatching message to room ${message.room_id}`);
+                toaster.create({
+                    title: "Message Dispatched",
+                    description: `To room ${message.room_id}`,
+                    type: "info"
+                });
                 dispatch(addMessage({ roomId: message.room_id, message }));
 
                 // If this is not the currently selected room, update unread count
@@ -58,13 +69,21 @@ export const socketMiddleware: Middleware = store => next => action => {
                     }));
                 }
             } else {
-                console.error("MIDDLEWARE: Invalid message format received:", message);
+                toaster.create({
+                    title: "Invalid message format",
+                    description: "Please try again later",
+                    type: "error"
+                });
             }
         });
 
         socketClient.onRoomUpdate((room) => {
             dispatch(updateRoom(room));
-            console.log('Room updated:', room);
+            toaster.create({
+                title: "Room Updated",
+                description: `Room ${room.id} updated`,
+                type: "info"
+            });
         });
 
         // Initialize the connection

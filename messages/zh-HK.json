@@ -49,7 +49,10 @@
     "feature_learn_desc": "訪問資源和教程，以提升技能。",
     "announcement": "公告",
     "known_issues": "已知問題",
-    "features_implementing": "正在實現的功能"
+    "features_implementing": "正在實現的功能",
+    "no_announcements": "暫無公告",
+    "no_known_issues": "暫無已知問題",
+    "no_upcoming_features": "暫無正在實現的功能"
   },
   "Signup": {
     "signup": "註冊",
@@ -131,7 +134,9 @@
     "generating": "生成中",
     "chat_mode_welcome": "歡迎來到純聊天模式",
     "chat_mode_description": "在這裡，你可以與AI進行自由的交流，無需擔心任務的限制。",
-    "chat_mode_hint": "你可以隨時切換回任務模式，只需點擊右上角的按鈕。"
+    "chat_mode_hint": "你可以隨時切換回任務模式，只需點擊右上角的按鈕。",
+    "room_created": "已創立房間",
+    "room_created_description": "已成功創立房間"
   },
   "Tasks": {
     "tasks": "任務",
@@ -185,7 +190,9 @@
     "edit": "編輯",
     "no_mcp_tool_calls": "沒有MCP工具調用", 
     "cancel": "取消",
-    "save": "保存"
+    "save": "保存",
+    "error_fetching_tasks_title": "加載任務失敗",
+    "error_fetching_tasks_description": "無法加載任務，請稍後再試。"
   },
   "Learn": {
     "learn": "學習",
@@ -258,7 +265,9 @@
     "save_changes": "保存更改",
     "bio": "個人簡介",
     "tell_us_about_yourself": "告訴我們關於你自己",
-    "managed_by_provider": "由提供者管理"
+    "managed_by_provider": "由提供者管理",
+    "your_display_name": "你的顯示名稱",
+    "your_email": "你的電郵地址"
   },
   "Loading": {
     "loading": "加載中...",
@@ -266,6 +275,8 @@
   },
   "Auth": {
     "signout_success": "登出成功",
+    "signin_success": "登入成功",
+    "signin_success_description": "已成功登入",
     "signout_success_description": "已成功登出",
     "signout_error": "登出錯誤",
     "signout_error_description": "登出失敗",

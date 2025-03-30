@@ -148,7 +148,7 @@ services:
   kakashi-app:
     build:
       context: .
-      dockerfile: docker/Dockerfile.next
+      dockerfile: docker/Dockerfile.next.prod
     container_name: kakashi-app
     ports:
       - "3000:3000"

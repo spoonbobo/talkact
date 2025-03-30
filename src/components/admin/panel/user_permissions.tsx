@@ -57,18 +57,6 @@ const UserPermissions: React.FC<UserPermissionsProps> = ({
             >
                 <Flex direction="column" gap={3}>
                     <Flex justify="space-between" align="center">
-                        <Text fontSize="sm" color={colors.textColorStrong}>{t("admin_access")}</Text>
-                        <Badge colorScheme={selectedUser.role === 'admin' ? 'green' : 'gray'}>
-                            {selectedUser.role === 'admin' ? t("enabled") : t("disabled")}
-                        </Badge>
-                    </Flex>
-                    <Separator />
-                    <Flex justify="space-between" align="center">
-                        <Text fontSize="sm" color={colors.textColorStrong}>{t("can_create_rooms")}</Text>
-                        <Badge colorScheme="green">{t("enabled")}</Badge>
-                    </Flex>
-                    <Separator />
-                    <Flex justify="space-between" align="center">
                         <Text fontSize="sm" color={colors.textColorStrong}>{t("can_manage_tasks")}</Text>
                         <Badge colorScheme="green">{t("enabled")}</Badge>
                     </Flex>

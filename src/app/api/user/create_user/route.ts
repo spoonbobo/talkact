@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db'; // knex
 import { User } from '@/types/user';
+import { toaster } from '@/components/ui/toaster';
 
 export async function POST(request: Request) {
     try {
@@ -36,7 +37,11 @@ export async function POST(request: Request) {
             user: newUser
         }, { status: 201 });
     } catch (error) {
-        console.error('Unhandled error in create_user route:', error);
+        toaster.create({
+            title: "Error creating user",
+            description: "Failed to create user. Please try again later.",
+            type: "error"
+        })
 
         // Check for duplicate key violations (username or email already exists)
         if (error instanceof Error) {

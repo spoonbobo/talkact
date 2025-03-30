@@ -5,6 +5,7 @@ import { IMessage } from "@/types/chat";
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '@/types/user';
 import { useParams } from 'next/navigation';
+import { toaster } from '@/components/ui/toaster';
 
 interface ChatModeContextType {
     chatModeMessages: IMessage[];
@@ -13,6 +14,8 @@ interface ChatModeContextType {
     sendChatModeMessage: (content: string, user: User) => void;
     clearChatModeMessages: () => void;
     cancelGeneration: () => void;
+    pauseUpdates: boolean;
+    setPauseUpdates: (pause: boolean) => void;
 }
 
 const ChatModeContext = createContext<ChatModeContextType | undefined>(undefined);
@@ -36,6 +39,8 @@ export const ChatModeProvider: React.FC<ChatModeProviderProps> = ({ children, cu
     const [currentStreamingMessage, setCurrentStreamingMessage] = useState<IMessage | null>(null);
     const [eventSource, setEventSource] = useState<EventSource | null>(null);
     const locale = useParams().locale;
+    const lastScrollEventTime = React.useRef(0);
+    const [pauseUpdates, setPauseUpdates] = useState<boolean>(false);
 
     // Clean up event source on unmount
     useEffect(() => {
@@ -66,6 +71,7 @@ export const ChatModeProvider: React.FC<ChatModeProviderProps> = ({ children, cu
         const aiMessage: IMessage = {
             id: uuidv4(),
             room_id: 'chat-mode',
+            // @ts-ignore
             sender: {
                 user_id: 'ai',
                 username: 'AI Assistant',
@@ -97,8 +103,12 @@ export const ChatModeProvider: React.FC<ChatModeProviderProps> = ({ children, cu
             // Create a new EventSource for streaming
             const url = `http://${window.location.hostname}:35430/api/query`;
 
-            // Since EventSource doesn't support POST with body directly,
-            // we'll use fetch to create a streaming response
+            // Get the last 10 messages for context (excluding the new AI message)
+            const lastMessages = chatModeMessages.slice(-10).concat(userMessage);
+            const conversationContext = lastMessages.map(msg =>
+                `${msg.sender.username}: ${msg.content}`
+            ).join('\n');
+
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -106,6 +116,7 @@ export const ChatModeProvider: React.FC<ChatModeProviderProps> = ({ children, cu
                 },
                 body: JSON.stringify({
                     query: content,
+                    conversation_history: conversationContext,
                     source_id: "local_store",
                     streaming: true,
                     top_k: 5,
@@ -120,13 +131,19 @@ export const ChatModeProvider: React.FC<ChatModeProviderProps> = ({ children, cu
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let accumulatedContent = '';
+            let updateTimer: NodeJS.Timeout | null = null;
+            let lastUpdateTime = Date.now();
 
-            // Process the stream
+            // Process the stream with debounced updates
             const processStream = async () => {
                 while (true) {
                     const { done, value } = await reader.read();
 
                     if (done) {
+                        // Final update to ensure we have the complete message
+                        updateMessageContent(accumulatedContent);
+                        setIsStreaming(false);
+                        setCurrentStreamingMessage(null);
                         break;
                     }
 
@@ -149,32 +166,36 @@ export const ChatModeProvider: React.FC<ChatModeProviderProps> = ({ children, cu
                                 if (data.token) {
                                     accumulatedContent += data.token;
 
-                                    // Update the streaming message with new content
-                                    setCurrentStreamingMessage(prev => {
-                                        if (!prev) return null;
-                                        return {
-                                            ...prev,
-                                            content: accumulatedContent
-                                        };
-                                    });
-
-                                    // Also update in the messages array
-                                    setChatModeMessages(prev => {
-                                        const newMessages = [...prev];
-                                        const lastIndex = newMessages.length - 1;
-                                        if (lastIndex >= 0) {
-                                            newMessages[lastIndex] = {
-                                                ...newMessages[lastIndex],
-                                                content: accumulatedContent
-                                            };
-                                        }
-                                        return newMessages;
-                                    });
+                                    // Throttle UI updates to reduce performance impact
+                                    const currentTime = Date.now();
+                                    if (currentTime - lastUpdateTime > 100) { // Update UI at most every 100ms
+                                        updateMessageContent(accumulatedContent);
+                                        lastUpdateTime = currentTime;
+                                    } else if (updateTimer === null) {
+                                        // Schedule an update if we haven't already
+                                        updateTimer = setTimeout(() => {
+                                            updateMessageContent(accumulatedContent);
+                                            lastUpdateTime = Date.now();
+                                            updateTimer = null;
+                                        }, 100);
+                                    }
                                 }
                             } catch (e) {
-                                console.error('Error parsing SSE data:', e);
+                                toaster.create({
+                                    title: "Parsing Error",
+                                    description: "Error parsing server-sent event data",
+                                    type: "error"
+                                });
                             }
                         } else if (eventType === 'end') {
+                            // Clear any pending update
+                            if (updateTimer) {
+                                clearTimeout(updateTimer);
+                                updateTimer = null;
+                            }
+
+                            // Final update
+                            updateMessageContent(accumulatedContent);
                             setIsStreaming(false);
                             setCurrentStreamingMessage(null);
                             break;
@@ -183,14 +204,54 @@ export const ChatModeProvider: React.FC<ChatModeProviderProps> = ({ children, cu
                 }
             };
 
+            // Helper function to update message content
+            const updateMessageContent = (content: string) => {
+                setCurrentStreamingMessage(prev => {
+                    if (!prev) return null;
+                    return {
+                        ...prev,
+                        content: content
+                    };
+                });
+
+                setChatModeMessages(prev => {
+                    const newMessages = [...prev];
+                    const lastIndex = newMessages.length - 1;
+                    if (lastIndex >= 0) {
+                        newMessages[lastIndex] = {
+                            ...newMessages[lastIndex],
+                            content: content
+                        };
+                    }
+                    return newMessages;
+                });
+
+                // Throttle scroll events to reduce performance impact
+                const now = Date.now();
+                if (now - lastScrollEventTime.current > 150) { // Throttle to max once per 150ms
+                    lastScrollEventTime.current = now;
+                    // Dispatch a custom event to trigger scrolling
+                    const scrollEvent = new CustomEvent('chatMessageUpdated');
+                    window.dispatchEvent(scrollEvent);
+                }
+            };
+
             processStream().catch(error => {
-                console.error('Error processing stream:', error);
+                toaster.create({
+                    title: "Stream Processing Error",
+                    description: "Error processing response stream",
+                    type: "error"
+                });
                 setIsStreaming(false);
                 setCurrentStreamingMessage(null);
             });
 
         } catch (error) {
-            console.error('Error with streaming request:', error);
+            toaster.create({
+                title: "Request Failed",
+                description: "Error with streaming request. Please try again.",
+                type: "error"
+            });
             setIsStreaming(false);
             setCurrentStreamingMessage(null);
 
@@ -200,6 +261,7 @@ export const ChatModeProvider: React.FC<ChatModeProviderProps> = ({ children, cu
                 {
                     id: uuidv4(),
                     room_id: 'chat-mode',
+                    // @ts-ignore
                     sender: {
                         user_id: 'ai',
                         username: 'AI Assistant',
@@ -219,7 +281,7 @@ export const ChatModeProvider: React.FC<ChatModeProviderProps> = ({ children, cu
                 }
             ]);
         }
-    }, [eventSource]);
+    }, [eventSource, chatModeMessages, locale]);
 
     const clearChatModeMessages = useCallback(() => {
         setChatModeMessages([]);
@@ -261,8 +323,10 @@ export const ChatModeProvider: React.FC<ChatModeProviderProps> = ({ children, cu
         currentStreamingMessage,
         sendChatModeMessage,
         clearChatModeMessages,
-        cancelGeneration
-    }), [chatModeMessages, isStreaming, currentStreamingMessage, sendChatModeMessage, clearChatModeMessages, cancelGeneration]);
+        cancelGeneration,
+        pauseUpdates,
+        setPauseUpdates
+    }), [chatModeMessages, isStreaming, currentStreamingMessage, sendChatModeMessage, clearChatModeMessages, cancelGeneration, pauseUpdates, setPauseUpdates]);
 
     return (
         <ChatModeContext.Provider value={contextValue}>

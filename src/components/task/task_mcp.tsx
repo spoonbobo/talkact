@@ -5,15 +5,10 @@ import { Box, Text, Flex, Input, Button, Icon } from "@chakra-ui/react";
 import { FaEdit, FaSave, FaTimes } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 import { useColorModeValue } from "@/components/ui/color-mode";
-import { ITask } from "@/types/task";
+import { ITask, MCPToolCallsProps } from "@/types/task";
+import { toaster } from "@/components/ui/toaster";
 
-interface MCPToolCallsProps {
-    selectedTask: ITask | null;
-    setSelectedTask: (task: ITask | null) => void;
-    fetchTasks: () => Promise<void>;
-}
-
-const MCPToolCalls = ({ selectedTask, setSelectedTask, fetchTasks }: MCPToolCallsProps) => {
+export const MCPToolCalls = ({ selectedTask, setSelectedTask, fetchTasks }: MCPToolCallsProps) => {
     const t = useTranslations("Tasks");
 
     // Create a local copy of the tools_called for editing
@@ -122,7 +117,11 @@ const MCPToolCalls = ({ selectedTask, setSelectedTask, fetchTasks }: MCPToolCall
             fetchTasks();
             setIsEditing(false);
         } catch (error) {
-            console.error('Error updating task:', error);
+            toaster.create({
+                title: "Error updating task",
+                description: "Failed to update task. Please try again later.",
+                type: "error"
+            })
         } finally {
             setIsSaving(false);
         }
@@ -291,5 +290,3 @@ const MCPToolCalls = ({ selectedTask, setSelectedTask, fetchTasks }: MCPToolCall
         </Box>
     );
 };
-
-export default MCPToolCalls; 

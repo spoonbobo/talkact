@@ -39,11 +39,6 @@ export default function ThirdPartyLoginRedirect() {
 
                 if (!response.ok) {
                     if (response.status === 404) {
-                        // User not found, redirect to signup
-                        toaster.create({
-                            title: t('user_not_found'),
-                            description: t('please_register_first'),
-                        });
                         router.push(`/${locale}/signup/new_profile?email=${encodeURIComponent(email)}`);
                         return;
                     }
@@ -59,20 +54,15 @@ export default function ThirdPartyLoginRedirect() {
                     toaster.create({
                         title: t('signin_success'),
                         description: t('signin_success_description'),
+                        type: "info"
                     });
 
                     // Redirect to dashboard or home with locale
                     router.push(`/${locale}`);
                 } else {
-                    // This is a fallback, but should be handled by the 404 check above
-                    toaster.create({
-                        title: t('user_not_found'),
-                        description: t('please_register_first'),
-                    });
                     router.push(`/${locale}/signup/new_profile?email=${encodeURIComponent(email)}`);
                 }
             } catch (err) {
-                console.error('Authentication redirect error:', err);
                 setError((err as Error).message);
 
                 toaster.create({

@@ -39,7 +39,6 @@ export default function SignOutPage() {
                 // Finally redirect to home page
                 router.push(`/${locale}`);
             } catch (error) {
-                console.error("Sign out error:", error);
                 toaster.create({
                     title: t("signout_error"),
                     description: t("signout_error_description"),

@@ -113,10 +113,6 @@ export default function SigninPage() {
             onClick={(e) => {
               e.preventDefault();
               signIn("github", { callbackUrl: `/api/redirect/third_party_login?locale=${locale}` });
-              toaster.create({
-                title: t("signin_success"),
-                description: t("signin_success_description"),
-              });
             }}
           >
             <Icon as={FaGithub} boxSize={6} />

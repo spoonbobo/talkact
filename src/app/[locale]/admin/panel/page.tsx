@@ -9,17 +9,9 @@ import {
   Flex,
   Icon,
   Separator,
-  Input,
   Container,
-  Spinner,
-  Table,
-  Portal,
-  Select,
   createListCollection,
   Tabs,
-  Badge,
-  Avatar,
-  Button
 } from "@chakra-ui/react";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
@@ -35,6 +27,7 @@ import UserTable from "@/components/admin/panel/user_table";
 import UserDetails from "@/components/admin/panel/user_details"
 import UserPermissions from "@/components/admin/panel/user_permissions";
 import { CreateUserModal } from '@/components/admin/panel/user_modal';
+import { toaster } from "@/components/ui/toaster";
 
 // Create motion components
 const MotionBox = motion.create(Box);
@@ -142,7 +135,11 @@ export default function AdminPanelPage() {
       setPagination(data.pagination);
       setError(null);
     } catch (err) {
-      console.error("Error fetching users:", err);
+      toaster.create({
+        title: "Error fetching users",
+        description: "Failed to fetch users. Please try again later.",
+        type: "error"
+      })
       setError((err as Error).message);
     } finally {
       setLoading(false);

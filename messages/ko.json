@@ -93,7 +93,12 @@
       "feature_task_management_desc": "효율적으로 태스크를 구성하고 추적합니다.",
       "feature_learn": "학습",
       "feature_learn_desc": "기술 향상을 위한 리소스와 튜토리얼에 접근합니다.",
-      "announcement": "카카시 공지사항"
+      "announcement": "카카시 공지사항",
+      "known_issues": "알려진 문제",
+      "features_implementing": "구현 중인 기능",
+      "no_announcements": "공지사항 없음",
+      "no_known_issues": "알려진 문제 없음",
+      "no_upcoming_features": "구현 예정 기능 없음"
     },
     "Footer": {
       "privacy_policy": "개인정보 처리방침",
@@ -119,7 +124,19 @@
       "task_log": "태스크 로그",
       "switch_to_task_view": "태스크 로그로 전환",
       "switch_to_room_view": "채팅방으로 전환",
-      "task_log_empty": "태스크 로그 없음"
+      "task_log_empty": "태스크 로그 없음",
+      "switch_to_chat_mode": "채팅 모드로 전환",
+      "switch_to_task_mode": "태스크 모드로 돌아가기",
+      "chat_mode": "채팅만",
+      "reset_chat_mode": "채팅 초기화",
+      "ask_anything": "메시지를 입력하세요...",
+      "chat_generating": "생성 중",
+      "generating": "생성 중",
+      "chat_mode_welcome": "채팅 모드에 오신 것을 환영합니다",
+      "chat_mode_description": "여기서는 태스크 제약 없이 AI와 자유롭게 대화할 수 있습니다.",
+      "chat_mode_hint": "오른쪽 상단의 버튼을 클릭하여 언제든지 태스크 모드로 돌아갈 수 있습니다.",
+      "room_created": "채팅방 생성됨",
+      "room_created_description": "채팅방이 성공적으로 생성되었습니다"
     },
     "Tasks": {
       "tasks": "태스크",
@@ -171,7 +188,11 @@
       "end_time": "종료 시간",
       "close": "닫기",
       "edit": "편집",
-      "no_mcp_tool_calls": "MCP 도구 호출 없음"
+      "no_mcp_tool_calls": "MCP 도구 호출 없음",
+      "cancel": "취소",
+      "save": "저장",
+      "error_fetching_tasks_title": "태스크 로딩 실패",
+      "error_fetching_tasks_description": "태스크를 로드할 수 없습니다. 나중에 다시 시도하세요."
     },
     "Learn": {
       "learn": "학습",
@@ -192,7 +213,11 @@
       "kb": {
         "document_categories": "문서 카테고리",
         "upload_document": "문서 업로드",
-        "search_placeholder": "문서 검색"
+        "search_placeholder": "문서 검색",
+        "data_sources": "데이터 소스",
+        "folder_structure": "폴더 구조",
+        "search_data_sources": "데이터 소스 검색",
+        "search_folders": "폴더 검색"
       }
     },
     "AdminPanel": {
@@ -240,7 +265,9 @@
       "save_changes": "변경사항 저장",
       "bio": "자기소개",
       "tell_us_about_yourself": "자신에 대해 알려주세요",
-      "managed_by_provider": "제공자에 의해 관리됩니다"
+      "managed_by_provider": "제공자에 의해 관리됩니다",
+      "your_display_name": "표시 이름",
+      "your_email": "이메일 주소"
     },
     "Loading": {
       "loading": "로딩 중...",
@@ -248,6 +275,8 @@
     },
     "Auth": {
       "signout_success": "로그아웃 성공",
+      "signin_success": "로그인 성공",
+      "signin_success_description": "성공적으로 로그인되었습니다",
       "signout_success_description": "성공적으로 로그아웃되었습니다",
       "signout_error": "로그아웃 오류",
       "signout_error_description": "로그아웃 실패",

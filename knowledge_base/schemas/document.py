@@ -1,4 +1,4 @@
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Union
 from pydantic import BaseModel, Field
 from datetime import datetime
 import uuid
@@ -44,7 +44,8 @@ class DataSource(BaseModel):
 
 
 class QueryRequest(BaseModel):
-    query: str
+    query: Union[str, List[str]]  # Can be a single string or list of strings
+    conversation_history: Union[str, List[str]] = ""
     source_id: str
     streaming: bool = False
     top_k: int = 5

@@ -193,7 +193,6 @@ export const MCPResourceExplorer: React.FC<ServerListProps> = () => {
                     throw new Error(`Failed to fetch servers: ${response.statusText}`);
                 }
                 const data = await response.json();
-                console.log(data);
 
                 // Process server descriptions to remove leading "You "
                 Object.values(data as Record<string, Server>).forEach((server) => {

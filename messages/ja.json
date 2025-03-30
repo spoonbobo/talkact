@@ -5,7 +5,8 @@
     "home": "ホーム",
     "how_it_works": "仕組み",
     "features": "機能",
-    "pricing": "料金"
+    "pricing": "料金",
+    "create_account": "アカウント作成"
   },
   "Navbar": {
     "kakashi": "Kakashi",
@@ -95,7 +96,10 @@
     "create_account": "アカウント作成",
     "announcement": "お知らせ",
     "known_issues": "既知の問題",
-    "features_implementing": "実装予定の機能"
+    "features_implementing": "実装予定の機能",
+    "no_announcements": "お知らせはありません",
+    "no_known_issues": "既知の問題はありません",
+    "no_upcoming_features": "実装予定の機能はありません"
   },
   "Footer": {
     "privacy_policy": "プライバシーポリシー",
@@ -131,7 +135,9 @@
     "generating": "生成中",
     "chat_mode_welcome": "チャットモードへようこそ",
     "chat_mode_description": "ここでは、タスクの制限を気にせずにAIと自由に会話できます。",
-    "chat_mode_hint": "右上のボタンをクリックすると、いつでもタスクモードに切り替えることができます。"
+    "chat_mode_hint": "右上のボタンをクリックすると、いつでもタスクモードに切り替えることができます。",
+    "room_created": "ルームが作成されました",
+    "room_created_description": "チャットルームが正常に作成されました"
   },
   "Tasks": {
     "tasks": "タスク",
@@ -184,7 +190,10 @@
     "close": "閉じる",
     "edit": "編集",
     "no_mcp_tool_calls": "MCPツール呼び出しなし",
-    "cancel": "キャンセル"
+    "cancel": "キャンセル",
+    "save": "保存",
+    "error_fetching_tasks_title": "タスクの読み込みに失敗しました",
+    "error_fetching_tasks_description": "タスクを読み込めませんでした。後でもう一度お試しください。"
   },
   "Learn": {
     "learn": "学ぶ",
@@ -257,7 +266,9 @@
     "save_changes": "変更を保存",
     "bio": "自己紹介",
     "tell_us_about_yourself": "自己紹介を教えてください",
-    "managed_by_provider": "プロバイダーによって管理されています"
+    "managed_by_provider": "プロバイダーによって管理されています",
+    "your_display_name": "あなたの表示名",
+    "your_email": "あなたのメールアドレス"
   },
   "Loading": {
     "loading": "読み込み中...",
@@ -271,6 +282,8 @@
     "signing_out": "ログアウト中...",
     "please_wait_while_we_sign_you_out": "ログアウト中です。しばらくしてから再度お試しください。",
     "loading_authentication": "認証中...",
-    "please_wait_while_we_verify_your_account": "アカウントの検証中です。しばらくしてから再度お試しください。"
+    "please_wait_while_we_verify_your_account": "アカウントの検証中です。しばらくしてから再度お試しください。",
+    "signin_success": "ログイン成功",
+    "signin_success_description": "正常にログインしました"
   }
 }

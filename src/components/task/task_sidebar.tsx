@@ -4,16 +4,10 @@ import { Box, Text, Flex, Icon } from "@chakra-ui/react";
 import { FaSync } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 import { useColorModeValue } from "@/components/ui/color-mode";
-import TaskStatusBadge from "@/components/task/task_badge";
-import { ITask } from "@/types/task";
+import { TaskStatusBadge } from "@/components/task";
+import { ITask, TaskSidebarProps } from "@/types/task";
 
-interface TaskSidebarProps {
-    selectedTask: ITask | null;
-    approveOrDeny: (action: 'approve' | 'deny') => Promise<void>;
-    fetchTasks: () => Promise<void>;
-}
-
-const TaskSidebar = ({ selectedTask, approveOrDeny, fetchTasks }: TaskSidebarProps) => {
+export const TaskSidebar = ({ selectedTask, approveOrDeny, fetchTasks }: TaskSidebarProps) => {
     const t = useTranslations("Tasks");
 
     // Dark mode adaptive colors
@@ -91,6 +85,8 @@ const TaskSidebar = ({ selectedTask, approveOrDeny, fetchTasks }: TaskSidebarPro
                         _hover={{ bg: approveButtonHoverBg }}
                         _active={{ bg: approveButtonActiveBg }}
                         _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+                        // TODO:
+                        // @ts-ignore
                         disabled={!selectedTask || selectedTask.status !== "pending"}
                         onClick={() => approveOrDeny('approve')}
                     >
@@ -109,6 +105,8 @@ const TaskSidebar = ({ selectedTask, approveOrDeny, fetchTasks }: TaskSidebarPro
                         _hover={{ bg: denyButtonHoverBg }}
                         _active={{ bg: denyButtonActiveBg }}
                         _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+                        // TODO:
+                        // @ts-ignore
                         disabled={!selectedTask || selectedTask.status !== "pending"}
                         onClick={() => approveOrDeny('deny')}
                     >
@@ -140,4 +138,3 @@ const TaskSidebar = ({ selectedTask, approveOrDeny, fetchTasks }: TaskSidebarPro
     );
 };
 
-export default TaskSidebar; 

@@ -3,6 +3,8 @@
 import io from "socket.io-client";
 import { User } from "@/types/user";
 import { IMessage } from "@/types/chat";
+import { toaster } from '@/components/ui/toaster';
+
 
 class ChatSocketClient {
     socket: any;
@@ -22,8 +24,6 @@ class ChatSocketClient {
             ? window.location.origin
             : `${window.location.protocol}//${window.location.hostname}:3001`;
 
-        console.log("Initializing socket connection to:", socketUrl);
-
         this.socket = io(socketUrl, {
             auth: {
                 user: this.user
@@ -36,23 +36,36 @@ class ChatSocketClient {
 
         // Add direct event listeners for debugging
         this.socket.on('connect', () => {
-            console.log("Socket connected with ID:", this.socket.id);
-
             // Set up message listener after connection is established
             if (this.messageCallback) {
                 this.setupMessageListener(this.messageCallback);
             }
         });
 
-        this.socket.on('connect_error', (err: any) => console.error("Socket connection error:", err));
-        this.socket.on('error', (err: any) => console.error("Socket error:", err));
+        this.socket.on('connect_error', (err: any) => {
+            toaster.create({
+                title: "Connection Error",
+                description: "Failed to connect to chat server",
+                type: "error"
+            });
+        });
+
+        this.socket.on('error', (err: any) => {
+            toaster.create({
+                title: "Socket Error",
+                description: "An error occurred with the chat connection",
+                type: "error"
+            });
+        });
 
         // Add a direct listener for messages to debug
         this.socket.on('message', (data: any) => {
-            console.log("DIRECT MESSAGE LISTENER TRIGGERED:", data);
+            toaster.create({
+                title: "Message Received",
+                description: "Direct message listener triggered",
+                type: "info"
+            });
         });
-
-        console.log("Socket instance created:", this.socket);
     }
 
     onConnect(callback: () => void): void {
@@ -64,9 +77,8 @@ class ChatSocketClient {
     joinRoom(roomId: string): void {
         if (this.socket && this.socket.connected) {
             this.socket.emit('join_room', roomId);
-            console.log(`Joined room: ${roomId}`);
         } else {
-            console.warn(`Cannot join room ${roomId} - socket not connected`);
+            // 
         }
     }
 
@@ -83,31 +95,40 @@ class ChatSocketClient {
         if (this.socket && this.socket.connected) {
             this.setupMessageListener(callback);
         } else {
-            console.log("Socket not connected yet, message listener will be set up after connection");
+            // console.log("Socket not connected yet, message listener will be set up after connection");
         }
     }
 
     private setupMessageListener(callback: (message: IMessage) => void): void {
-        console.log("Setting up message listener on socket:", this.socket.id);
-
         // Remove any existing listeners to prevent duplicates
         this.socket.off('message');
 
         this.socket.on('message', (data: any) => {
-            console.log("MESSAGE RECEIVED RAW:", data);
 
             try {
                 // Handle both string and object formats
                 const messageData = typeof data === 'string' ? JSON.parse(data) : data;
 
                 if (messageData && messageData.room_id) {
-                    console.log("Valid message received:", messageData);
+                    toaster.create({
+                        title: "Message Processed",
+                        description: "Valid message received",
+                        type: "success"
+                    });
                     callback(messageData);
                 } else {
-                    console.error("Received malformed message structure:", messageData);
+                    toaster.create({
+                        title: "Invalid Message",
+                        description: "Received malformed message structure",
+                        type: "error"
+                    });
                 }
             } catch (error) {
-                console.error("Error processing received message:", error, data);
+                toaster.create({
+                    title: "Message Error",
+                    description: "Error processing received message",
+                    type: "error"
+                });
             }
         });
     }
@@ -122,14 +143,22 @@ class ChatSocketClient {
         if (this.socket && this.socket.connected) {
             this.socket.emit('message', message);
         } else {
-            console.error("Cannot send message - socket not connected");
+            toaster.create({
+                title: "Cannot Send Message",
+                description: "Socket not connected",
+                type: "error"
+            });
         }
     }
 
     disconnect(): void {
         if (this.socket) {
             this.socket.disconnect();
-            console.log("Socket disconnected successfully");
+            toaster.create({
+                title: "Disconnected",
+                description: "Socket disconnected successfully",
+                type: "info"
+            });
         }
     }
 }

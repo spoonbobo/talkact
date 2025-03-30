@@ -1,3 +1,5 @@
+"use client"
+
 import {
     Box, Text, VStack, HStack, Input, Button, Flex,
     Icon, Badge, Heading,
@@ -16,39 +18,17 @@ import {
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { useTranslations } from 'next-intl';
 import { toaster } from "@/components/ui/toaster";
-
+import { DataSource, Folder, Document } from "@/types/kb";
 const MotionBox = motion.create(Box) as React.FC<Omit<React.ComponentProps<typeof Box>, "transition"> & HTMLMotionProps<"div">>;
 const MotionFlex = motion.create(Flex);
 
-// Define data source types
-interface DataSource {
-    id: string;
-    name: string;
-    icon: React.ComponentType;
-    count: number;
-}
-
-// Define folder structure
-interface Folder {
-    id: string;
-    name: string;
-    folders?: Folder[];
-    files?: string[];
-    isOpen?: boolean;
-}
-
-// Define document structure
-interface Document {
-    id: string;
-    title: string;
-    type: string;
-    date: string;
-    tags: string[];
-    source: string;
-    description: string;
-    url: string;
-    folderId: string;
-}
+// Create an icon mapping
+const iconMap = {
+    'database': FiDatabase,
+    'file': FiFile,
+    'folder': FiFolder,
+    // Add other mappings as needed
+};
 
 export const KnowledgeBase = () => {
     // Add state for search and data source selection
@@ -71,8 +51,6 @@ export const KnowledgeBase = () => {
     const textColorStrong = useColorModeValue("gray.700", "gray.300");
     const textColorHeading = useColorModeValue("gray.800", "gray.100");
     const borderColor = useColorModeValue("gray.200", "gray.700");
-    const searchBg = useColorModeValue("white", "gray.700");
-    const searchFocusBg = useColorModeValue("gray.50", "gray.600");
     const categoryHeaderBg = useColorModeValue("gray.50", "gray.700");
     const selectedCategoryBg = useColorModeValue("blue.50", "blue.800");
     const selectedCategoryBorderColor = useColorModeValue("blue.500", "blue.300");
@@ -106,11 +84,10 @@ export const KnowledgeBase = () => {
                 setSelectedSource(data.dataSources[0].id);
             }
         } catch (error) {
-            console.error('Error fetching knowledge base:', error);
             toaster.create({
                 title: "Error loading knowledge base",
                 description: "Could not load documents. Please try again later.",
-                duration: 5000,
+                type: "error"
             });
         } finally {
             setIsLoading(false);
@@ -133,7 +110,6 @@ export const KnowledgeBase = () => {
                 duration: 3000,
             });
         } catch (error) {
-            console.error('Error syncing knowledge base:', error);
             toaster.create({
                 title: "Sync failed",
                 description: "Could not synchronize knowledge base. Please try again later.",
@@ -209,6 +185,8 @@ export const KnowledgeBase = () => {
                     return true;
                 }
 
+                // TODO:
+                // @ts-ignore
                 if (folders[i].folders && toggleFolderInStructure(folders[i].folders)) {
                     return true;
                 }
@@ -415,7 +393,9 @@ export const KnowledgeBase = () => {
                                     >
                                         <Flex justify="space-between" align="center">
                                             <HStack>
-                                                <Icon as={source.icon} color={textColorStrong} />
+                                                {/* // TODO: it's working fine */}
+                                                {/* @ts-ignore */}
+                                                <Icon as={iconMap[source.icon] || FiFile} color="blue.500" />
                                                 <Text fontSize="sm" color={textColorStrong}>{source.name}</Text>
                                             </HStack>
                                             <HStack>
@@ -612,7 +592,7 @@ export const KnowledgeBase = () => {
                                                 bg={cardBg}
                                                 border="1px"
                                                 borderColor={cardBorderColor}
-                                                boxShad ow="sm"
+                                                boxShadow="sm"
                                                 _hover={{ boxShadow: "md", borderColor: cardHoverBorderColor }}
                                                 transition={{ duration: 0.3 }}
                                                 height="200px"
@@ -624,6 +604,8 @@ export const KnowledgeBase = () => {
                                                 cursor="pointer"
                                                 onClick={() => handleDocumentClick(doc.url)}
                                                 as="a"
+                                                // TODO:
+                                                // @ts-ignore
                                                 href={doc.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
@@ -655,7 +637,7 @@ export const KnowledgeBase = () => {
 
                                                 <Heading size="sm" color={cardHeadingColor} mb={2}>{doc.title}</Heading>
 
-                                                <Text fontSize="sm" color={textColorStrong} mb={3} flex="1" noOfLines={2}>
+                                                <Text fontSize="sm" color={textColorStrong} mb={3} flex="1" lineClamp={2}>
                                                     {doc.description}
                                                 </Text>
 
