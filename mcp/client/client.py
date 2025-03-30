@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
 
-from api.mcp.routes import router as mcp_router
+from api.routes import router as mcp_router
 from service.mcp_client import MCPClient
 from service.bypasser import Bypasser
 

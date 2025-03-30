@@ -81,7 +81,7 @@ class MCPClient:
         self, 
         summon: MCPSummon, 
     ) -> None:
-        client_url = f"http://{summon.client_host}:3000"
+        client_url = os.environ.get("CLIENT_URL", "")
         
         logger.info(f"mcp client url: {summon}")
         async with httpx.AsyncClient() as client:

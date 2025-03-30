@@ -11,12 +11,14 @@ import {
   IconButton,
   Heading,
 } from "@chakra-ui/react";
-import { useParams } from "next/navigation";
+import { redirect, useParams } from "next/navigation";
 import { FaGithub, FaGoogle, FaSignInAlt } from "react-icons/fa";
 import { signIn } from "next-auth/react";
 import { toaster } from "@/components/ui/toaster";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { motion } from "framer-motion";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 // Create motion components
 const MotionBox = motion.create(Box);
@@ -25,6 +27,7 @@ const MotionVStack = motion.create(VStack);
 export default function SigninPage() {
   const t = useTranslations("Signin");
   const [error, setError] = useState("");
+  const { isAuthenticated } = useSelector((state: RootState) => state.user);
 
   // Color mode values - matching settings page
   const accentColor = "blue.500";
@@ -55,6 +58,10 @@ export default function SigninPage() {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
   };
+
+  if (isAuthenticated) {
+    return redirect("/");
+  }
 
   return (
     <MotionBox
@@ -98,7 +105,14 @@ export default function SigninPage() {
             disabled={true}
             onClick={(e) => {
               e.preventDefault();
-              signIn("google", { callbackUrl: "/" });
+              try {
+                signIn("google", {
+                  callbackUrl: "http://kakashi-dev.com/api/auth/callback/google",
+                  redirect: true
+                });
+              } catch (error) {
+                console.error("Error signing in with Google:", error);
+              }
             }}
           >
             <Icon as={FaGoogle} boxSize={6} />
@@ -112,7 +126,11 @@ export default function SigninPage() {
             borderRadius="full"
             onClick={(e) => {
               e.preventDefault();
-              signIn("github", { callbackUrl: `/api/redirect/third_party_login?locale=${locale}` });
+
+              signIn("github", {
+                callbackUrl: `http://kakashi-dev.com/api/redirect/third_party_login?locale=${locale}`,
+                redirect: true
+              });
             }}
           >
             <Icon as={FaGithub} boxSize={6} />

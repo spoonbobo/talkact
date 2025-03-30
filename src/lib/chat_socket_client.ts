@@ -20,10 +20,7 @@ class ChatSocketClient {
             return;
         }
 
-        const socketUrl = process.env.NODE_ENV === 'production'
-            ? window.location.origin
-            : `${window.location.protocol}//${window.location.hostname}:3001`;
-
+        const socketUrl = window.location.origin;
         this.socket = io(socketUrl, {
             auth: {
                 user: this.user

@@ -228,7 +228,7 @@ export const MCPResourceExplorer: React.FC<ServerListProps> = () => {
     const fetchServers = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`http://${window.location.hostname}:34430/api/app/get_servers`);
+            const response = await fetch(`/api/mcp/get_servers`);
             if (!response.ok) {
                 throw new Error(`Failed to fetch servers: ${response.statusText}`);
             }

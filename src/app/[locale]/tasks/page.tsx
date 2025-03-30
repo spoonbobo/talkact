@@ -143,8 +143,8 @@ export default function TasksPage() {
     try {
       if (action === 'approve') {
         // Only make API call for approve action
-        const url = `http://${window.location.hostname}:34430/api/agent/approve`;
-        const response = await axios.post(url, selectedTask);
+        const url = `/api/mcp/approve`;
+        await axios.post(url, selectedTask);
         toaster.create({
           title: t("approved"),
           description: `${t("task_id")}: ${selectedTask.task_id}`,

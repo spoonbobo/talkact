@@ -37,6 +37,7 @@ interface NoticeData {
 export default function HomePage() {
   const t = useTranslations("Home");
   const { data: session } = useSession();
+  console.log(session);
   const router = useRouter();
   const { currentUser, isAuthenticated, isLoading, isSigningOut } = useSelector(
     (state: RootState) => state.user

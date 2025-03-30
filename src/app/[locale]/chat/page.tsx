@@ -287,7 +287,7 @@ const ChatPageContent = () => {
         }
       }
 
-      const url = `http://${window.location.hostname}:34430/api/agent/summon`;
+      const url = `/api/mcp/summon`;
       const payload = {
         summoner: currentUser?.email,
         query: message,

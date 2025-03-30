@@ -35,7 +35,7 @@ export const userSlice = createSlice({
         setUser: (state, action: PayloadAction<User>) => {
             state.currentUser = action.payload;
             state.isAuthenticated = true;
-            state.isOwner = action.payload.email === "seasonluke@gmail1.com";
+            state.isOwner = action.payload.email === "seasonluke@gmail.com";
             state.error = null;
         },
         clearUser: (state) => {

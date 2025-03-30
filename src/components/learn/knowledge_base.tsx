@@ -71,7 +71,8 @@ export const KnowledgeBase = () => {
     const fetchKnowledgeBase = async () => {
         try {
             setIsLoading(true);
-            const url = `http://${window.location.hostname}:35430/api/list_documents`;
+            // Use a relative path that will be routed by Nginx
+            const url = `/api/kb/list_documents`;
             const response = await axios.get(url);
             const data = response.data;
 
@@ -98,7 +99,7 @@ export const KnowledgeBase = () => {
     const syncKnowledgeBase = async () => {
         try {
             setIsSyncing(true);
-            const url = `http://${window.location.hostname}:35430/api/sync`;
+            const url = `/api/kb/sync`;
             await axios.post(url);
 
             // Refetch data after sync

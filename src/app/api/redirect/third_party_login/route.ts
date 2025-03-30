@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
         const email = session?.user?.email;
         const locale = request.nextUrl.searchParams.get('locale');
 
-        return NextResponse.redirect(new URL(`/${locale}/redirect/third_party_login?email=${email}`, request.url));
+        return NextResponse.redirect(new URL(`http://kakashi-dev.com/${locale}/redirect/third_party_login?email=${email}`, request.url));
     } catch (error) {
         console.error("Error in third_party_login redirect:", error);
         return NextResponse.redirect(new URL("/signin", request.url));

@@ -101,7 +101,7 @@ export const ChatModeProvider: React.FC<ChatModeProviderProps> = ({ children, cu
 
         try {
             // Create a new EventSource for streaming
-            const url = `http://${window.location.hostname}:35430/api/query`;
+            const url = `/api/kb/query`;
 
             // Get the last 10 messages for context (excluding the new AI message)
             const lastMessages = chatModeMessages.slice(-10).concat(userMessage);
