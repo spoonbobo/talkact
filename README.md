@@ -21,6 +21,7 @@ docker compose up
 docker exec -it kakashi-llm bash
 ollama pull gemma3:4b
 ollama pull llama3.2:latest
+ollama pull nomic-embed-text
 ```
 
 Only Ollama is supported now for LLM service. Roadmap is to support more LLM services.
