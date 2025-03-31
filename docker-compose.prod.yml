@@ -173,6 +173,7 @@ services:
     volumes:
       - .:/app
     restart: always
+    command: sh -c "npm run build && npm start"
     depends_on:
       # - kakashi-chat_server
       - kakashi-psqldb

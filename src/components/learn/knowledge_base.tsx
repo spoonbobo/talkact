@@ -45,6 +45,10 @@ export const KnowledgeBase = () => {
     const [dataSources, setDataSources] = useState<DataSource[]>([]);
     const [documents, setDocuments] = useState<Record<string, Document[]>>({});
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 25;
+
     // Color mode values - MOVED HERE to ensure consistent hook order
     const bgColor = useColorModeValue("white", "gray.800");
     const textColor = useColorModeValue("gray.600", "gray.400");
@@ -137,6 +141,18 @@ export const KnowledgeBase = () => {
         return matchesSearch && matchesFolder;
     });
 
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredDocuments.length / itemsPerPage);
+    const paginatedDocuments = filteredDocuments.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    // Reset to first page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, selectedSource, selectedFolder]);
+
     // Filter folders based on folder search query
     const filteredFolders = (folderStructures[selectedSource] || []).filter(folder =>
         folderSearchQuery === "" ||
@@ -178,7 +194,7 @@ export const KnowledgeBase = () => {
         // Create a deep copy of the folder structures
         const updatedFolderStructures = JSON.parse(JSON.stringify(folderStructures));
 
-        // Helper function to find and toggle the folder
+        // Helper function to find and toggle the folder recursively
         const toggleFolderInStructure = (folders: Folder[]): boolean => {
             for (let i = 0; i < folders.length; i++) {
                 if (folders[i].id === folderId) {
@@ -186,8 +202,7 @@ export const KnowledgeBase = () => {
                     return true;
                 }
 
-                // TODO:
-                // @ts-ignore
+                // Recursively check nested folders
                 if (folders[i].folders && toggleFolderInStructure(folders[i].folders)) {
                     return true;
                 }
@@ -203,9 +218,9 @@ export const KnowledgeBase = () => {
     };
 
     // Render folder structure recursively
-    const renderFolders = (folders: Folder[]) => {
+    const renderFolders = (folders: Folder[], depth = 0) => {
         return folders.map((folder) => (
-            <VStack key={folder.id} align="stretch" pl={2} gap={1}>
+            <VStack key={folder.id} align="stretch" pl={depth > 0 ? 2 : 0} gap={1}>
                 <HStack
                     p={2}
                     borderRadius="md"
@@ -228,7 +243,7 @@ export const KnowledgeBase = () => {
                             />
                         )}
                         <Icon as={FiFolder} color={selectedFolder === folder.id ? folderActiveColor : "blue.400"} />
-                        <Text fontSize="sm" fontWeight={selectedFolder === folder.id ? "medium" : "normal"} ml={2}>
+                        <Text fontSize="sm" fontWeight={selectedFolder === folder.id ? "medium" : "normal"} ml={2} noOfLines={1}>
                             {folder.name}
                         </Text>
                     </Flex>
@@ -241,14 +256,14 @@ export const KnowledgeBase = () => {
                 {folder.folders && folder.folders.length > 0 && folder.isOpen && (
                     <AnimatePresence>
                         <MotionBox
-                            pl={4}
+                            pl={2}
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
                             transition={{ duration: 0.2 }}
                             overflow="hidden"
                         >
-                            {renderFolders(folder.folders)}
+                            {renderFolders(folder.folders, depth + 1)}
                         </MotionBox>
                     </AnimatePresence>
                 )}
@@ -574,94 +589,132 @@ export const KnowledgeBase = () => {
                     >
                         <AnimatePresence>
                             {filteredDocuments.length > 0 ? (
-                                <Flex flexWrap="wrap" gap={4} p={1}>
-                                    {filteredDocuments.map((doc, index) => (
-                                        <motion.div
-                                            key={doc.id}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{
-                                                duration: 0.3,
-                                                delay: 0.05 * index,
-                                                ease: "easeOut"
-                                            }}
-                                            style={{ width: 'calc(33.33% - 11px)' }}
-                                        >
-                                            <MotionBox
-                                                p={4}
-                                                borderRadius="md"
-                                                bg={cardBg}
-                                                border="1px"
-                                                borderColor={cardBorderColor}
-                                                boxShadow="sm"
-                                                _hover={{ boxShadow: "md", borderColor: cardHoverBorderColor }}
-                                                transition={{ duration: 0.3 }}
-                                                height="200px"
-                                                display="flex"
-                                                flexDirection="column"
-                                                position="relative"
-                                                overflow="hidden"
-                                                whileHover={{ y: -4 }}
-                                                cursor="pointer"
-                                                onClick={() => handleDocumentClick(doc.url)}
-                                                as="a"
-                                                // TODO:
-                                                // @ts-ignore
-                                                href={doc.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                <>
+                                    <Flex flexWrap="wrap" gap={4} p={1}>
+                                        {paginatedDocuments.map((doc, index) => (
+                                            <motion.div
+                                                key={doc.id}
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{
+                                                    duration: 0.3,
+                                                    delay: 0.05 * index,
+                                                    ease: "easeOut"
+                                                }}
+                                                style={{ width: 'calc(33.33% - 11px)' }}
                                             >
-                                                <Flex justifyContent="space-between" mb={3}>
-                                                    <Icon
-                                                        as={doc.type === "PDF" ? FiFileText : FiFile}
-                                                        color={
-                                                            doc.type === "PDF" ? "red.500" :
-                                                                doc.type === "DOCX" ? "blue.500" :
-                                                                    doc.type === "XLSX" ? "green.500" :
-                                                                        doc.type === "PPTX" ? "orange.500" : "gray.500"
-                                                        }
-                                                        w={5}
-                                                        h={5}
-                                                    />
-                                                    <Badge
-                                                        colorScheme={
-                                                            doc.type === "PDF" ? "red" :
-                                                                doc.type === "DOCX" ? "blue" :
-                                                                    doc.type === "XLSX" ? "green" :
-                                                                        doc.type === "PPTX" ? "orange" : "gray"
-                                                        }
-                                                        fontSize="xs"
-                                                    >
-                                                        {doc.type}
-                                                    </Badge>
-                                                </Flex>
+                                                <MotionBox
+                                                    p={4}
+                                                    borderRadius="md"
+                                                    bg={cardBg}
+                                                    border="1px"
+                                                    borderColor={cardBorderColor}
+                                                    boxShadow="sm"
+                                                    _hover={{ boxShadow: "md", borderColor: cardHoverBorderColor }}
+                                                    transition={{ duration: 0.3 }}
+                                                    height="200px"
+                                                    display="flex"
+                                                    flexDirection="column"
+                                                    position="relative"
+                                                    overflow="hidden"
+                                                    whileHover={{ y: -4 }}
+                                                    cursor="pointer"
+                                                    onClick={() => handleDocumentClick(doc.url)}
+                                                    as="a"
+                                                    href={doc.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    <Flex justifyContent="space-between" mb={3}>
+                                                        <Icon
+                                                            as={doc.type === "PDF" ? FiFileText : FiFile}
+                                                            color={
+                                                                doc.type === "PDF" ? "red.500" :
+                                                                    doc.type === "DOCX" ? "blue.500" :
+                                                                        doc.type === "XLSX" ? "green.500" :
+                                                                            doc.type === "PPTX" ? "orange.500" : "gray.500"
+                                                            }
+                                                            w={5}
+                                                            h={5}
+                                                        />
+                                                        <Badge
+                                                            colorScheme={
+                                                                doc.type === "PDF" ? "red" :
+                                                                    doc.type === "DOCX" ? "blue" :
+                                                                        doc.type === "XLSX" ? "green" :
+                                                                            doc.type === "PPTX" ? "orange" : "gray"
+                                                            }
+                                                            fontSize="xs"
+                                                        >
+                                                            {doc.type}
+                                                        </Badge>
+                                                    </Flex>
 
-                                                <Heading size="sm" color={cardHeadingColor} mb={2}>{doc.title}</Heading>
+                                                    <Heading size="sm" color={cardHeadingColor} mb={2}>{doc.title}</Heading>
 
-                                                <Text fontSize="sm" color={textColorStrong} mb={3} flex="1" lineClamp={2}>
-                                                    {doc.description}
-                                                </Text>
-
-                                                <Flex wrap="wrap" gap={1} mb={3}>
-                                                    {doc.tags.map((tag, idx) => (
-                                                        <Tag.Root key={idx} size="sm" colorScheme="blue" variant="subtle">
-                                                            <Tag.Label fontSize="xs">{tag}</Tag.Label>
-                                                        </Tag.Root>
-                                                    ))}
-                                                </Flex>
-
-                                                <Flex justify="space-between" align="center" mt="auto">
-                                                    <Text fontSize="xs" color={textColor}>
-                                                        <Icon as={FiClock} mr={1} />
-                                                        {doc.date}
+                                                    <Text fontSize="sm" color={textColorStrong} mb={3} flex="1" lineClamp={2}>
+                                                        {doc.description}
                                                     </Text>
 
-                                                    <Icon as={FiExternalLink} color="blue.500" />
-                                                </Flex>
-                                            </MotionBox>
-                                        </motion.div>
-                                    ))}
-                                </Flex>
+                                                    <Flex wrap="wrap" gap={1} mb={3}>
+                                                        {doc.tags.map((tag, idx) => (
+                                                            <Tag.Root key={idx} size="sm" colorScheme="blue" variant="subtle">
+                                                                <Tag.Label fontSize="xs">{tag}</Tag.Label>
+                                                            </Tag.Root>
+                                                        ))}
+                                                    </Flex>
+
+                                                    <Flex justify="space-between" align="center" mt="auto">
+                                                        <Text fontSize="xs" color={textColor}>
+                                                            <Icon as={FiClock} mr={1} />
+                                                            {doc.date}
+                                                        </Text>
+
+                                                        <Icon as={FiExternalLink} color="blue.500" />
+                                                    </Flex>
+                                                </MotionBox>
+                                            </motion.div>
+                                        ))}
+                                    </Flex>
+
+                                    {/* Pagination Controls */}
+                                    {totalPages > 1 && (
+                                        <Flex justify="center" mt={6} mb={2} align="center">
+                                            <IconButton
+                                                aria-label="Previous Page"
+                                                size="sm"
+                                                colorScheme="blue"
+                                                variant="outline"
+                                                disabled={currentPage === 1}
+                                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                mr={2}
+                                                _hover={{ bg: "blue.50", color: "blue.600" }}
+                                            >
+                                                <Icon as={FiChevronRight} transform="rotate(180deg)" />
+                                            </IconButton>
+
+                                            <Text fontSize="sm" mx={4}>
+                                                Page {currentPage} of {totalPages}
+                                                <Text as="span" ml={2} color={textColor}>
+                                                    ({filteredDocuments.length} items)
+                                                </Text>
+                                            </Text>
+
+                                            <IconButton
+                                                aria-label="Next Page"
+                                                size="sm"
+                                                colorScheme="blue"
+                                                variant="outline"
+                                                disabled={currentPage === totalPages}
+                                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                                ml={2}
+                                                _hover={{ bg: "blue.50", color: "blue.600" }}
+                                            >
+                                                <Icon as={FiChevronRight} />
+                                            </IconButton>
+                                        </Flex>
+                                    )}
+                                </>
                             ) : (
                                 <Box p={6} textAlign="center" bg={emptyStateBg} borderRadius="md" flex="1" display="flex" alignItems="center" justifyContent="center" flexDirection="column">
                                     <Icon as={FiInfo} w={8} h={8} color={textColor} mb={3} />

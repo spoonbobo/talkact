@@ -22,6 +22,8 @@ class KBManager:
     lng_map = {
         "zh-HK": "廣東話",
         "ja": "日本語",
+        "en": "English",
+        "ko": "한국어",
     }
     
     lng_prompt = {
@@ -52,6 +54,34 @@ class KBManager:
         ユーザーの質問: {query}
         
         あなたの回答:
+        """,
+        "en": """
+        Please respond to the user's question in {preferred_language}.
+        Try to answer the user's question in a friendly manner.
+        If you cannot find relevant information in the conversation context, you can state that you don't know the answer.
+        
+        {conversation_history}
+        
+        Here is the context for the conversation:
+        {context}
+        
+        User's question: {query}
+        
+        Your answer:
+        """,
+        "ko": """
+        {preferred_language}로 사용자의 질문에 답변해 주세요.
+        가능한 한 친절한 태도로 사용자의 질문에 답변하도록 노력하세요.
+        대화 배경에서 관련 정보를 전혀 찾을 수 없는 경우, 답변할 수 없다고 말할 수 있습니다.
+        
+        {conversation_history}
+        
+        다음은 대화의 배경입니다:
+        {context}
+        
+        사용자의 질문: {query}
+        
+        당신의 답변:
         """
     }
 

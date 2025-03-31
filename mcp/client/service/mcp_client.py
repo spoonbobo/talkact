@@ -159,7 +159,7 @@ Server purpose: {server_description}"""
             "assignee": summon.assignee,
             "task_summarization": summarization.message.content,
             "room_id": summon.room_id,
-            "context": tools_called,
+            "context": conversations + [summarize_query],
             "tools_called": tools_called,
             "status": "pending",
             "result": ""
@@ -178,44 +178,41 @@ Server purpose: {server_description}"""
         self,
         task: Task,
     ):
-        logger.info(f"Executing task: {task}")
-        pass
-    # async def call_tool(
-    #     self, 
-    #     approval: MCPApproval
-    # ) -> MCPResponse:
-    #     results = []
-    #     for tool_call in approval.tools_called:
-    #         session = self.servers[tool_call.mcp_server]
-    #         tool_response = await session.call_tool(tool_call.tool_name, tool_call.args)
-    #         logger.info(f"Tool response: {tool_response}")
-    #         results.append(tool_response.content[0].text)
+        results = []
+        for tool_call in task.tools_called:
+            session = self.servers[tool_call.mcp_server]
+            tool_response = await session.call_tool(tool_call.tool_name, tool_call.args)
+            results.append(tool_response.content[0].text)
         
-    #     logger.info(f"Reuslts: {results}")
+        query = {
+            "role": "user",
+            "content": f"""
+Based on the context: "{task.context}", you executed the following tools:
+{', '.join([f"{tool.tool_name}" for tool in task.tools_called])}
 
-    #     query = {
-    #         "role": "user",
-    #         "content": f"""
-    #         Given the results {results},
-            
-    #         Provide an analysis of the result, and answer the user's query
-    #         {approval.conversation[-1]["content"]}
-            
-    #         Context for your reference:
-    #         {approval.conversation[:-1]}
-    #         """
-    #     }
+Here are the results from those tool executions:
+{results}
+
+Please provide a helpful, conversational response directly to the user that:
+1. Explains what tools you used and why
+2. Summarizes the key information obtained from the tools
+3. Addresses the user's original request completely
+4. Uses a friendly, helpful tone as if speaking directly to the user
+
+Your response should be comprehensive but concise, focusing on the most relevant information.
+"""
+        }
         
-    #     summarization = self.ollama_client.chat(
-    #         model=self.ollama_model,
-    #         messages=[query],
-    #     )
-
-    #     return MCPResponse(
-    #         sender="agent",
-    #         text=summarization.message.content, # type: ignore
-    #         is_tool_call=False,
-    #     )
+        logger.info(f"Query: {query}")
+        
+        summarization = self.ollama_client.generate(
+            model=self.ollama_model,
+            prompt=query["content"],
+        )
+        
+        logger.info(f"Summarization: {summarization}")
+        
+        # TODO: create a message to server as assignee.
 
     async def get_servers(self) -> Dict[str, MCPServer]:
         server_information = {}

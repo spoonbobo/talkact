@@ -12,8 +12,8 @@ import {
 } from "@chakra-ui/react";
 import { FaPlus } from "react-icons/fa";
 import { IChatRoom } from "@/types/chat";
-import { useColorModeValue } from "@/components/ui/color-mode";
 import { useTranslations } from "next-intl";
+import { useChatRoomColors } from "@/utils/colors";
 
 interface ChatRoomListProps {
     rooms: IChatRoom[];
@@ -33,17 +33,7 @@ export const ChatRoomList = ({
     isCreatingRoomLoading,
 }: ChatRoomListProps) => {
     const t = useTranslations("Chat");
-
-    // Dark mode adaptive colors
-    const bgSubtle = useColorModeValue("bg.subtle", "gray.800");
-    const textColor = useColorModeValue("gray.600", "gray.400");
-    const textColorHeading = useColorModeValue("gray.800", "gray.100");
-    const borderColor = useColorModeValue("gray.200", "gray.700");
-    const selectedRoomBg = useColorModeValue("blue.50", "blue.900");
-    const selectedRoomBorder = useColorModeValue("blue.300", "blue.600");
-    const roomHoverBg = useColorModeValue("gray.50", "gray.700");
-    const buttonHoverBg = useColorModeValue("gray.300", "gray.600");
-    const buttonActiveBg = useColorModeValue("gray.400", "gray.500");
+    const colors = useChatRoomColors();
 
     const sortedRooms = [...rooms].sort((a, b) => {
         return (
@@ -59,7 +49,7 @@ export const ChatRoomList = ({
             pr={3}
         >
             <Flex justifyContent="space-between" alignItems="center" mb={4}>
-                <Text fontSize="xl" fontWeight="bold" textAlign="left" color={textColorHeading}>
+                <Text fontSize="xl" fontWeight="bold" textAlign="left" color={colors.textColorHeading}>
                     {t("rooms")}
                 </Text>
                 <Box
@@ -67,12 +57,12 @@ export const ChatRoomList = ({
                     py={2}
                     px={3}
                     borderRadius="md"
-                    bg={bgSubtle}
-                    color={textColor}
+                    bg={colors.bgSubtle}
+                    color={colors.textColor}
                     fontWeight="medium"
                     fontSize="sm"
-                    _hover={{ bg: buttonHoverBg }}
-                    _active={{ bg: buttonActiveBg }}
+                    _hover={{ bg: colors.buttonHoverBg }}
+                    _active={{ bg: colors.buttonActiveBg }}
                     _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
                     onClick={onCreateRoomClick}
                     // @ts-ignore
@@ -91,13 +81,13 @@ export const ChatRoomList = ({
                         key={room.id}
                         p={3}
                         borderRadius="lg"
-                        bg={selectedRoomId === room.id ? selectedRoomBg : bgSubtle}
+                        bg={selectedRoomId === room.id ? colors.selectedRoomBg : colors.bgSubtle}
                         borderWidth="1px"
                         borderColor={
-                            selectedRoomId === room.id ? selectedRoomBorder : borderColor
+                            selectedRoomId === room.id ? colors.selectedRoomBorder : colors.borderColor
                         }
                         _hover={{
-                            bg: selectedRoomId === room.id ? selectedRoomBg : roomHoverBg,
+                            bg: selectedRoomId === room.id ? colors.selectedRoomBg : colors.roomHoverBg,
                         }}
                         cursor="pointer"
                         onClick={() => onSelectRoom(room.id)}
@@ -106,7 +96,7 @@ export const ChatRoomList = ({
                     >
                         <Box flex="1">
                             <Flex justify="space-between" align="center" mb={1}>
-                                <Text fontWeight="medium" fontSize="md" color={textColorHeading}>
+                                <Text fontWeight="medium" fontSize="md" color={colors.textColorHeading}>
                                     {room.name}
                                 </Text>
                                 <AvatarGroup gap="0" size="xs">
@@ -127,7 +117,7 @@ export const ChatRoomList = ({
                             </Flex>
 
                             <Flex justify="space-between" align="center">
-                                <Text fontSize="sm" color={textColor} maxW="160px">
+                                <Text fontSize="sm" color={colors.textColor} maxW="160px">
                                     {new Date(room.last_updated).toLocaleString(undefined, {
                                         month: "short",
                                         day: "numeric",
