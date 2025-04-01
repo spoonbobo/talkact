@@ -99,6 +99,9 @@ export const chatSlice = createSlice({
             // This is just a placeholder action
             // The actual socket initialization happens in the middleware
         },
+        clearSelectedRoom: (state) => {
+            state.selectedRoomId = null;
+        },
     },
 });
 
@@ -114,6 +117,7 @@ export const {
     joinRoom,
     markRoomMessagesLoaded,
     initializeSocket,
+    clearSelectedRoom,
 } = chatSlice.actions;
 
 export const setLoadingRooms = createAction<boolean>('chat/setLoadingRooms');

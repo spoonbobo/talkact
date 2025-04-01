@@ -138,7 +138,14 @@
       "chat_mode_hint": "오른쪽 상단의 버튼을 클릭하여 언제든지 태스크 모드로 돌아갈 수 있습니다.",
       "room_created": "채팅방 생성됨",
       "room_created_description": "채팅방이 성공적으로 생성되었습니다",
-      "disabled_task_view_due_to_uat": "태스크 뷰는 UAT에서 사용할 수 없습니다"
+      "disabled_task_view_due_to_uat": "태스크 뷰는 UAT에서 사용할 수 없습니다",
+      "room_details": "채팅방 세부정보",
+      "exit_room": "채팅방 나가기",
+      "room_info": "채팅방 정보",
+      "created_at": "생성 시간",
+      "no_active_users": "활성 사용자 없음",
+      "close": "닫기",
+      "you": "나"
     },
     "Tasks": {
       "tasks": "태스크",
@@ -269,15 +276,16 @@
       "delete_all_rooms": "모든 채팅방 삭제",
       "delete_all_rooms_warning": "이 작업은 취소할 수 없습니다. 신중하게 진행하세요",
       "general": "일반",
-      "danger_zone": "위험 구역",
+      "danger_zone": "위험 영역",
       "display_name": "표시 이름",
       "email": "이메일",
       "save_changes": "변경사항 저장",
       "bio": "자기소개",
       "tell_us_about_yourself": "자신에 대해 알려주세요",
-      "managed_by_provider": "제공자에 의해 관리됩니다",
-      "your_display_name": "표시 이름",
-      "your_email": "이메일 주소"
+      "managed_by_provider": "제공자에 의해 관리됨",
+      "your_display_name": "당신의 표시 이름",
+      "your_email": "당신의 이메일",
+      "select_language": "언어 선택"
     },
     "Loading": {
       "loading": "로딩 중...",

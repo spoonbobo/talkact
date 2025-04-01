@@ -113,7 +113,7 @@
     "send": "發送",
     "type_message": "請輸入消息",
     "new": "新建",
-    "active_users": "在線用戶",
+    "active_users": "成員",
     "select_room": "選擇或創建聊天室",
     "enter_room_name": "請輸入聊天室名稱",
     "create": "創建",
@@ -138,7 +138,15 @@
     "chat_mode_hint": "你可以隨時切換回任務模式，只需點擊右上角的按鈕。",
     "room_created": "已創立房間",
     "room_created_description": "已成功創立房間",
-    "disabled_task_view_due_to_uat": "任務模式在UAT中不可用"
+    "disabled_task_view_due_to_uat": "任務模式在UAT中不可用",
+    "room_details": "房間詳情",
+    "exit_room": "退出房間",
+    "room_info": "房間信息",
+    "created_at": "創建時間",
+    "no_active_users": "沒有在線用戶",
+    "close": "關閉",
+    "you": "你",
+    "refresh": "刷新"
   },
   "Tasks": {
     "tasks": "任務",
@@ -277,7 +285,8 @@
     "tell_us_about_yourself": "告訴我們關於你自己",
     "managed_by_provider": "由提供者管理",
     "your_display_name": "你的顯示名稱",
-    "your_email": "你的電郵地址"
+    "your_email": "你的電郵地址",
+    "select_language": "選擇語言"
   },
   "Loading": {
     "loading": "加載中...",

@@ -6,7 +6,8 @@ import {
     Flex,
     Icon,
     Separator,
-    Badge
+    Badge,
+    Avatar
 } from "@chakra-ui/react";
 import { FaUsers } from "react-icons/fa";
 
@@ -54,20 +55,10 @@ const UserDetails: React.FC<UserDetailsProps> = ({
     return (
         <Flex direction="column" gap={4}>
             <Flex align="center" gap={4}>
-                <Box
-                    as="div"
-                    borderRadius="full"
-                    bg="blue.500"
-                    width="60px"
-                    height="60px"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    color="white"
-                    fontWeight="bold"
-                >
-                    {selectedUser.username.charAt(0).toUpperCase()}
-                </Box>
+                <Avatar.Root size="lg">
+                    <Avatar.Fallback name={selectedUser.username || selectedUser.email} />
+                    {selectedUser.avatar && <Avatar.Image src={selectedUser.avatar} />}
+                </Avatar.Root>
                 <Box>
                     <Heading size="md" color={colors.textColorHeading}>{selectedUser.username}</Heading>
                     <Text color={colors.textColorMuted}>{selectedUser.email}</Text>

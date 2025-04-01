@@ -1,8 +1,5 @@
 "use client";
 
-// TODO: only load messages from db for first launch
-// in later, fetch unread messages from db
-
 import {
   Box,
   Text,
@@ -10,13 +7,22 @@ import {
   Icon,
   Container,
   Heading,
+  Button,
+  CloseButton,
+  Drawer,
+  Portal,
+  VStack,
+  HStack,
+  Avatar,
+  Badge,
+  Separator
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaComments, FaUsers, FaExchangeAlt, FaTasks } from "react-icons/fa";
+import { FaComments, FaUsers, FaTasks, FaEllipsisH, FaSignOutAlt } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { IMessage, IChatRoom } from "@/types/chat";
+import { IChatRoom, IMessage } from "@/types/chat";
 import { User } from "@/types/user";
 import { useSession } from "next-auth/react";
 import Loading from "@/components/loading";
@@ -29,10 +35,11 @@ import {
   setLoadingMessages,
   joinRoom,
   setMessages,
-  markRoomMessagesLoaded
+  markRoomMessagesLoaded,
+  clearSelectedRoom,
+  updateRoom
 } from '@/store/features/chatSlice';
 import { v4 as uuidv4 } from 'uuid';
-import { useColorModeValue } from "@/components/ui/color-mode"
 import React from "react";
 import { ChatRoomList } from "@/components/chat/room_list";
 import { ChatMessageList } from "@/components/chat/message_list";
@@ -42,6 +49,8 @@ import { ChatModeProvider, useChatMode } from "@/components/chat/chat_mode_conte
 import { ChatModeMessageList } from "@/components/chat/chat_mode_message_list";
 import { ChatModeInput } from "@/components/chat/chat_mode_input";
 import { toaster } from "@/components/ui/toaster";
+import { useChatPageColors } from "@/utils/colors";
+import { RoomMenu } from "@/components/chat/room_menu";
 
 
 const MotionBox = motion.create(Box);
@@ -49,20 +58,16 @@ const MotionBox = motion.create(Box);
 // Add this dummy TaskLog component
 const TaskLog = () => {
   const t = useTranslations("Chat");
-  const bgColor = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-  const bgSubtle = useColorModeValue("bg.subtle", "gray.800");
-  const textColor = useColorModeValue("gray.600", "gray.400");
-  const textColorHeading = useColorModeValue("gray.800", "gray.100");
+  const colors = useChatPageColors();
 
   return (
     <Box
       height="100%"
       width="100%"
-      bg={bgSubtle}
+      bg={colors.bgSubtle}
       borderRadius="md"
       borderWidth="1px"
-      borderColor={borderColor}
+      borderColor={colors.borderColor}
       overflow="hidden"
       display="flex"
       flexDirection="column"
@@ -72,17 +77,17 @@ const TaskLog = () => {
       <Flex
         p={4}
         borderBottomWidth="1px"
-        borderColor={borderColor}
-        bg={bgSubtle}
+        borderColor={colors.borderColor}
+        bg={colors.bgSubtle}
         align="center"
       >
         <Icon as={FaTasks} color="blue.500" mr={2} />
-        <Text fontWeight="bold" color={textColorHeading}>{t("task_log")}</Text>
+        <Text fontWeight="bold" color={colors.textColorHeading}>{t("task_log")}</Text>
       </Flex>
 
       <Box flex="1" p={4} overflow="auto">
         {/* Empty content for now - will be replaced later */}
-        <Text color={textColor} fontSize="sm" textAlign="center" mt={10}>
+        <Text color={colors.textColor} fontSize="sm" textAlign="center" mt={10}>
           {t("task_log_empty")}
         </Text>
       </Box>
@@ -111,6 +116,7 @@ const ChatPageContent = () => {
   const t = useTranslations("Chat");
   const { data: session } = useSession();
   const dispatch = useDispatch();
+  const colors = useChatPageColors();
 
   // Get chat state from Redux
   const {
@@ -126,7 +132,8 @@ const ChatPageContent = () => {
   const { currentUser, isOwner } = useSelector((state: RootState) => state.user);
 
   // UAT flag to check if user is not an owner
-  const UAT = !isOwner;
+  // const UAT = !isOwner;
+  const UAT = false;
 
   // Get messages for the selected room
   const currentMessages = selectedRoomId ? messages[selectedRoomId] || [] : [];
@@ -167,16 +174,14 @@ const ChatPageContent = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Dark mode adaptive colors
-  const bgSubtle = useColorModeValue("rgba(249, 250, 251, 0.8)", "rgba(26, 32, 44, 0.8)");
-  const textColor = useColorModeValue("gray.600", "gray.400");
-  const textColorHeading = useColorModeValue("gray.800", "gray.100");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-
-  // Add these new color variables for chat mode - making them less green and more subtle
-  const chatModeBg = useColorModeValue("rgba(245, 250, 248, 0.3)", "rgba(30, 40, 38, 0.3)");
-  const chatModeBorder = useColorModeValue("gray.300", "gray.600");
-  const chatModeHeading = useColorModeValue("teal.600", "teal.400");
+  // Use the centralized colors instead of direct useColorModeValue calls
+  const bgSubtle = colors.bgSubtle;
+  const textColor = colors.textColor;
+  const textColorHeading = colors.textColorHeading;
+  const borderColor = colors.borderColor;
+  const chatModeBg = colors.chatModeBg;
+  const chatModeBorder = colors.chatModeBorder;
+  const chatModeHeading = colors.chatModeHeading;
 
   // Add this new state to track if event source is active
   const [isEventSourceActive, setIsEventSourceActive] = useState<boolean>(false);
@@ -190,7 +195,17 @@ const ChatPageContent = () => {
       try {
         dispatch(setLoadingRooms(true));
         const response = await axios.get("/api/chat/get_rooms");
-        dispatch(setRooms(response.data));
+
+        // Make sure rooms have their active_users properly populated
+        const roomsWithUsers = response.data.map((room: IChatRoom) => {
+          // If active_users is null or undefined, initialize as empty array
+          if (!room.active_users) {
+            room.active_users = [];
+          }
+          return room;
+        });
+
+        dispatch(setRooms(roomsWithUsers));
       } catch (error) {
         toaster.create({
           title: t("error"),
@@ -332,8 +347,21 @@ const ChatPageContent = () => {
         // join the new room
         dispatch(joinRoom(roomId));
 
-        // Refresh rooms list
+        // Add the room to the user's active_rooms
+        await axios.post("/api/user/update_active_rooms", {
+          roomId: roomId,
+          action: "add"
+        });
+
+        if (currentUser) {
+          await axios.put("/api/chat/update_room", {
+            roomId: roomId,
+            active_users: [currentUser.user_id]
+          });
+        }
+
         const roomsResponse = await axios.get("/api/chat/get_rooms");
+
         dispatch(setRooms(roomsResponse.data));
 
         toaster.create({
@@ -392,6 +420,30 @@ const ChatPageContent = () => {
 
   // Update to use selectedRoomId from Redux
   const currentRoom = rooms.find((r) => r.id === selectedRoomId);
+  const [roomUsers, setRoomUsers] = useState<User[]>([]);
+
+  // Fetch user details when currentRoom changes
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      if (currentRoom?.active_users && currentRoom.active_users.length > 0) {
+        try {
+          const response = await axios.post('/api/chat/get_rooms', {
+            userIds: currentRoom.active_users
+          });
+
+          if (response.data && response.data.users) {
+            setRoomUsers(response.data.users);
+          }
+        } catch (error) {
+          console.error("Error fetching user details:", error);
+        }
+      } else {
+        setRoomUsers([]);
+      }
+    };
+
+    fetchUserDetails();
+  }, [currentRoom]);
 
   // Fetch messages when selecting a room
   useEffect(() => {
@@ -501,6 +553,15 @@ const ChatPageContent = () => {
       setIsTaskMode(false);
     }
   }, [UAT]);
+
+  // If there are no rooms but a room is selected, clear the selection
+  useEffect(() => {
+    if (rooms.length === 0 && selectedRoomId) {
+      dispatch(clearSelectedRoom());
+    }
+  }, [rooms, selectedRoomId, dispatch]);
+
+  const [isRoomDetailsOpen, setIsRoomDetailsOpen] = useState<boolean>(false);
 
   if (isLoadingRooms || isLoadingMessages || !session) {
     return <Loading />;
@@ -722,8 +783,56 @@ const ChatPageContent = () => {
                         fontSize="lg"
                         fontWeight="bold"
                         color={isTaskMode ? textColorHeading : chatModeHeading}
+                        display="flex"
+                        alignItems="center"
                       >
                         {currentRoom?.name || t("select_room")}
+                        {currentRoom && isTaskMode && (
+                          <RoomMenu
+                            onRoomDetails={() => {
+                              setIsRoomDetailsOpen(true);
+                            }}
+                            onExitRoom={async () => {
+                              try {
+                                // Call API to remove room from active rooms
+                                const response = await fetch('/api/user/update_active_rooms', {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                  },
+                                  body: JSON.stringify({
+                                    roomId: currentRoom.id,
+                                    action: 'remove'
+                                  }),
+                                });
+
+                                if (!response.ok) {
+                                  throw new Error('Failed to exit room');
+                                }
+
+                                // Clear the selected room in Redux
+                                dispatch(clearSelectedRoom());
+
+                                // Refresh the rooms list
+                                const roomsResponse = await axios.get("/api/chat/get_rooms");
+                                dispatch(setRooms(roomsResponse.data));
+
+                                toaster.create({
+                                  title: t("success"),
+                                  description: t("left_room_successfully"),
+                                  type: "info"
+                                });
+                              } catch (error) {
+                                console.error("Error exiting room:", error);
+                                toaster.create({
+                                  title: t("error"),
+                                  description: t("error_leaving_room"),
+                                  type: "error"
+                                });
+                              }
+                            }}
+                          />
+                        )}
                       </Text>
                       <AnimatePresence>
                         {isTaskMode && currentRoom && (
@@ -774,13 +883,15 @@ const ChatPageContent = () => {
                     {/* Task mode toggle - disabled for non-owners in UAT */}
                     <Text
                       as="button"
-                      color={isTaskMode ? "blue.500" : "green.500"}
+                      color={isTaskMode ? colors.taskModeColor : colors.chatModeColor}
                       fontWeight="medium"
                       cursor={UAT && !isTaskMode ? "not-allowed" : "pointer"}
                       onClick={handleTaskModeToggle}
                       opacity={UAT && !isTaskMode ? 0.6 : 1}
                       _hover={{
-                        color: UAT && !isTaskMode ? (isTaskMode ? "blue.500" : "green.500") : (isTaskMode ? "blue.600" : "green.600"),
+                        color: UAT && !isTaskMode
+                          ? (isTaskMode ? colors.taskModeColor : colors.chatModeColor)
+                          : (isTaskMode ? colors.taskModeHoverColor : colors.chatModeHoverColor),
                         textDecoration: UAT && !isTaskMode ? "none" : "underline"
                       }}
                       transition="color 0.2s ease"
@@ -797,11 +908,11 @@ const ChatPageContent = () => {
                     {!isTaskMode && (
                       <Text
                         as="button"
-                        color="green.500"
+                        color={colors.chatModeColor}
                         fontWeight="medium"
                         cursor="pointer"
                         onClick={() => chatModeContext.clearChatModeMessages()}
-                        _hover={{ color: "green.600", textDecoration: "underline" }}
+                        _hover={{ color: colors.chatModeHoverColor, textDecoration: "underline" }}
                         transition="color 0.2s ease"
                         ml={4}
                       >
@@ -861,6 +972,88 @@ const ChatPageContent = () => {
           </MotionBox>
         </Flex>
       </MotionBox>
+
+      {/* Room Details Drawer */}
+      <Drawer.Root open={isRoomDetailsOpen} onOpenChange={(e) => setIsRoomDetailsOpen(e.open)}>
+        <Portal>
+          <Drawer.Backdrop />
+          <Drawer.Positioner>
+            <Drawer.Content bg={colors.bgSubtle} borderColor={colors.borderColor}>
+              <Drawer.Header borderBottomColor={colors.borderColor}>
+                <Drawer.Title color={colors.textColorHeading}>{currentRoom?.name || t("room_details")}</Drawer.Title>
+              </Drawer.Header>
+              <Drawer.Body>
+                {currentRoom ? (
+                  <VStack align="stretch" gap={4}>
+                    <Box>
+                      <Text fontWeight="bold" mb={2} color={colors.textColorHeading}>{t("room_info")}</Text>
+                      <Text fontSize="sm" color={colors.textColor}>ID: {currentRoom.id}</Text>
+                      <Text fontSize="sm" color={colors.textColor}>{t("created_at")}: {new Date(currentRoom.created_at || Date.now()).toLocaleString()}</Text>
+                    </Box>
+
+                    <Separator />
+
+                    <Box>
+                      <Text fontWeight="bold" mb={2} color={colors.textColorHeading}>{t("active_users")}</Text>
+                      {roomUsers && roomUsers.length > 0 ? (
+                        <VStack align="stretch" gap={2}>
+                          {roomUsers.map((user: User) => (
+                            <HStack key={user.user_id} gap={3}>
+
+                              <Avatar.Root size="sm" mt={2}>
+                                <Avatar.Fallback name={user.username || user.email} />
+                                <Avatar.Image src={user.avatar || undefined} />
+                              </Avatar.Root>
+                              <Text fontSize="sm" color={colors.textColor}>{user.username || user.email}</Text>
+                              {user.email === currentUser?.email && (
+                                <Badge colorScheme="green" size="sm">{t("you")}</Badge>
+                              )}
+                            </HStack>
+                          ))}
+                        </VStack>
+                      ) : (
+                        <Text fontSize="sm" color={colors.textColorSecondary || "gray.500"}>
+                          {t("no_active_users")}
+                          <Button
+                            colorScheme="blue"
+                            size="sm"
+                            ml={2}
+                            onClick={async () => {
+                              try {
+                                // Fetch the latest room data
+                                const response = await axios.get(`/api/chat/get_room?roomId=${currentRoom.id}`);
+                                if (response.data) {
+                                  // Update the room in Redux
+                                  dispatch(updateRoom(response.data));
+                                }
+                              } catch (error) {
+                                console.error("Error refreshing room data:", error);
+                              }
+                            }}
+                          >
+                            {t("refresh")}
+                          </Button>
+                        </Text>
+                      )}
+                    </Box>
+                  </VStack>
+                ) : (
+                  <Text color={colors.textColor}>{t("no_room_selected")}</Text>
+                )}
+              </Drawer.Body>
+              <Drawer.Footer borderTopColor={colors.borderColor}>
+                <Button variant="outline" onClick={() => setIsRoomDetailsOpen(false)}
+                  borderColor={colors.borderColor} color={colors.textColor}>
+                  {t("close")}
+                </Button>
+              </Drawer.Footer>
+              <Drawer.CloseTrigger asChild>
+                <CloseButton size="sm" position="absolute" right={3} top={3} color={colors.textColor} />
+              </Drawer.CloseTrigger>
+            </Drawer.Content>
+          </Drawer.Positioner>
+        </Portal>
+      </Drawer.Root>
     </Container>
   );
 };

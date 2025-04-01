@@ -3,10 +3,10 @@
 import { Box, Text } from "@chakra-ui/react";
 import { IMessage } from "@/types/chat";
 import ReactMarkdown from "react-markdown";
-import { useColorModeValue } from "@/components/ui/color-mode";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import React from "react";
+import { useChatPageColors } from "@/utils/colors";
 
 // Extend the props interface directly in the file
 interface IChatBubbleProps {
@@ -25,14 +25,7 @@ export const ChatBubble = React.memo(({
   isStreaming = false,
 }: IChatBubbleProps) => {
   const t = useTranslations("Chat");
-
-  // Warmer but more subtle green colors for both light and dark themes
-  const userBgTask = useColorModeValue("blue.500", "blue.600");
-  const userBgChat = useColorModeValue("teal.500", "teal.600");
-  const otherBgTask = useColorModeValue("gray.100", "gray.700");
-  const otherBgChat = useColorModeValue("gray.100", "gray.700");
-  const otherTextTask = useColorModeValue("gray.800", "gray.100");
-  const otherTextChat = useColorModeValue("gray.800", "gray.200");
+  const colors = useChatPageColors();
 
   // Add blinking cursor for streaming messages
   const [showCursor, setShowCursor] = useState(true);
@@ -82,11 +75,11 @@ export const ChatBubble = React.memo(({
       maxW="100%"
       borderRadius="lg"
       bg={isUser
-        ? (isTaskMode ? userBgTask : userBgChat)
-        : (isTaskMode ? otherBgTask : otherBgChat)}
+        ? (isTaskMode ? colors.userBgTask : colors.userBgChat)
+        : (isTaskMode ? colors.otherBgTask : colors.otherBgChat)}
       color={isUser
         ? "white"
-        : (isTaskMode ? otherTextTask : otherTextChat)}
+        : (isTaskMode ? colors.otherTextTask : colors.otherTextChat)}
       mb={1}
       boxShadow="0 1px 2px rgba(0,0,0,0.05)"
       alignSelf={isUser ? "flex-end" : "flex-start"}

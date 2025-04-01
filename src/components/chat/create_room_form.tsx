@@ -1,8 +1,8 @@
 import { Flex, Input, Box } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { useColorModeValue } from "@/components/ui/color-mode";
 import { useTranslations } from "next-intl";
 import React from "react";
+import { useChatPageColors } from "@/utils/colors";
 
 interface CreateRoomFormProps {
     newRoomName: string;
@@ -20,12 +20,7 @@ export const CreateRoomForm = ({
     isCreatingRoomLoading,
 }: CreateRoomFormProps) => {
     const t = useTranslations("Chat");
-
-    const textColor = useColorModeValue("gray.600", "gray.400");
-    const buttonBg = useColorModeValue("gray.200", "gray.700");
-    const buttonHoverBg = useColorModeValue("gray.300", "gray.600");
-    const buttonActiveBg = useColorModeValue("gray.400", "gray.500");
-    const inputBg = useColorModeValue("white", "gray.700");
+    const colors = useChatPageColors();
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter") {
@@ -51,11 +46,11 @@ export const CreateRoomForm = ({
                     value={newRoomName}
                     onChange={(e) => setNewRoomName(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    color={textColor}
+                    color={colors.formTextColor}
                     autoFocus
                     mr={2}
                     flex="1"
-                    bg={inputBg}
+                    bg={colors.formInputBg}
                 />
                 <Box
                     as="button"
@@ -64,12 +59,12 @@ export const CreateRoomForm = ({
                     height="40px"
                     minWidth="80px"
                     borderRadius="md"
-                    bg="blue.500"
+                    bg={colors.createButtonBg}
                     color="white"
                     fontWeight="medium"
                     fontSize="sm"
-                    _hover={{ bg: "blue.600" }}
-                    _active={{ bg: "blue.700" }}
+                    _hover={{ bg: colors.createButtonHoverBg }}
+                    _active={{ bg: colors.createButtonActiveBg }}
                     _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
                     onClick={handleCreateRoom}
                     // @ts-ignore
@@ -85,12 +80,12 @@ export const CreateRoomForm = ({
                     height="40px"
                     minWidth="80px"
                     borderRadius="md"
-                    bg={buttonBg}
-                    color={textColor}
+                    bg={colors.formButtonBg}
+                    color={colors.formTextColor}
                     fontWeight="medium"
                     fontSize="sm"
-                    _hover={{ bg: buttonHoverBg }}
-                    _active={{ bg: buttonActiveBg }}
+                    _hover={{ bg: colors.formButtonHoverBg }}
+                    _active={{ bg: colors.formButtonActiveBg }}
                     onClick={handleCancel}
                     // @ts-ignore
                     disabled={isCreatingRoomLoading}

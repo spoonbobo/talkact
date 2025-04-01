@@ -203,6 +203,8 @@ export const ChatInput = ({
         }
     };
 
+    console.log("selectedRoomId", selectedRoomId);
+
     return (
         <Flex
             p={4}

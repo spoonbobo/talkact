@@ -47,6 +47,7 @@ export default function SettingsPage() {
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeletingAllRooms, setIsDeletingAllRooms] = useState(false);
+  const [isDeletingAllUsers, setIsDeletingAllUsers] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
   const accentColor = "blue.500";
@@ -115,6 +116,7 @@ export default function SettingsPage() {
     visible: { opacity: 1, x: 0, transition: { duration: 0.3 } },
   };
 
+  // TODO: after delete, clear current user redux state & signOut.
   const handleDeleteAllRooms = async () => {
     if (!session) return;
 
@@ -148,6 +150,47 @@ export default function SettingsPage() {
       });
     } finally {
       setIsDeletingAllRooms(false);
+    }
+  };
+
+  const handleDeleteAllUsers = async () => {
+    if (!session) return;
+
+    // Add confirmation dialog
+    if (!confirm(t("delete_all_users_confirm"))) {
+      return;
+    }
+
+    setIsDeletingAllUsers(true);
+    try {
+      const response = await fetch('/api/user/delete_user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ all: true }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toaster.create({
+          title: t("users_deleted"),
+          description: data.message,
+          duration: 5000,
+        });
+      } else {
+        throw new Error(data.error || "Failed to delete users");
+      }
+    } catch (error) {
+      console.error("Error deleting users:", error);
+      toaster.create({
+        title: t("error"),
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        duration: 5000,
+      });
+    } finally {
+      setIsDeletingAllUsers(false);
     }
   };
 
@@ -536,11 +579,51 @@ export default function SettingsPage() {
                               _active={{ bg: "red.700" }}
                               _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
                               onClick={handleDeleteAllRooms}
-                              // TODO: is fine
                               // @ts-ignore
                               disabled={isDeletingAllRooms}
                             >
                               {isDeletingAllRooms ? t("deleting") : t("delete_all_rooms")}
+                            </Box>
+                          </Box>
+                        </HStack>
+                      </Box>
+
+                      {/* Add Delete All Users section */}
+                      <Box
+                        p={4}
+                        borderWidth="1px"
+                        borderColor={dangerZoneBorder}
+                        borderRadius="md"
+                        bg={dangerZoneBg}
+                        mb={6}
+                      >
+                        <HStack align="flex-start">
+                          <Icon as={FiInfo} color="red.500" boxSize={5} mt={0.5} />
+                          <Box>
+                            <Heading size="sm" color={dangerZoneHeading} mb={1}>
+                              {t("delete_all_users")}
+                            </Heading>
+                            <Text color={dangerZoneText} fontSize="sm">
+                              {t("delete_all_users_warning")}
+                            </Text>
+                            <Box
+                              as="button"
+                              mt={3}
+                              py={2}
+                              px={4}
+                              borderRadius="md"
+                              bg="red.500"
+                              color="white"
+                              fontWeight="medium"
+                              fontSize="sm"
+                              _hover={{ bg: "red.600" }}
+                              _active={{ bg: "red.700" }}
+                              _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+                              onClick={handleDeleteAllUsers}
+                              // @ts-ignore
+                              disabled={isDeletingAllUsers}
+                            >
+                              {isDeletingAllUsers ? t("deleting") : t("delete_all_users")}
                             </Box>
                           </Box>
                         </HStack>

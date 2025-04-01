@@ -15,7 +15,7 @@ import {
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { motion } from "framer-motion";
 import { FaUpload, FaUserCircle } from "react-icons/fa";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { User } from "@/types/user";
 import { v4 as uuidv4 } from 'uuid';
@@ -34,6 +34,7 @@ export default function CreateProfilePage() {
     const router = useRouter();
     const { data: session } = useSession();
     const dispatch = useDispatch();
+    const searchParams = useSearchParams();
 
     // Color mode values - matching signin page style
     const accentColor = "blue.500";
@@ -55,15 +56,17 @@ export default function CreateProfilePage() {
     const [errors, setErrors] = useState<ProfileFormErrors>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Get email from session when component mounts
+    // Get email and avatarUrl from URL parameters when component mounts
     useEffect(() => {
-        if (session?.user?.email) {
-            setFormData(prev => ({
-                ...prev,
-                email: session.user?.email || ""
-            }));
-        }
-    }, [session]);
+        const emailParam = searchParams.get('email');
+        const avatarUrlParam = searchParams.get('avatarUrl');
+
+        setFormData(prev => ({
+            ...prev,
+            email: emailParam || session?.user?.email || "",
+            avatarUrl: avatarUrlParam || session?.user?.image || ""
+        }));
+    }, [session, searchParams]);
 
     // Animation variants
     const containerVariants = {
@@ -172,21 +175,12 @@ export default function CreateProfilePage() {
 
                 <form onSubmit={handleSubmit}>
                     <VStack align="stretch" gap={6}>
-                        {/* Avatar Upload */}
-                        <Flex justify="center" direction="column" align="center" mb={4}>
-                            <Avatar.Root size="2xl" mb={6}>
+                        {/* Avatar Display */}
+                        <Flex justify="center" direction="column" align="center" mb={6}>
+                            <Avatar.Root size="2xl" mb={4}>
                                 <Avatar.Fallback name={formData.email || "User"} />
-                                {/* <Avatar.Image src={formData.avatarUrl} /> */}
+                                {formData.avatarUrl && <Avatar.Image src={formData.avatarUrl} />}
                             </Avatar.Root>
-
-                            <IconButton
-                                aria-label="Upload avatar"
-                                size="md"
-                                colorScheme="blue"
-                                variant="outline"
-                            >
-                                <Icon as={FaUpload} />
-                            </IconButton>
                         </Flex>
 
                         <Separator bg={separatorColor} my={4} />

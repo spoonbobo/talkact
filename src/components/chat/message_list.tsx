@@ -2,8 +2,8 @@ import { Avatar, Box, Flex, Text, VStack } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { IMessage } from "@/types/chat";
 import { ChatBubble } from "@/components/chat/bubble";
-import { useColorModeValue } from "@/components/ui/color-mode";
 import React from "react";
+import { useChatPageColors } from "@/utils/colors";
 
 interface MessageGroup {
     sender: string;
@@ -19,18 +19,14 @@ interface ChatMessageListProps {
 }
 
 export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = true }: ChatMessageListProps) => {
-    const textColor = useColorModeValue("gray.600", "gray.400");
-    const scrollbarTrackBg = useColorModeValue("#f1f1f1", "#2d3748");
-    const scrollbarThumbBg = useColorModeValue("#c5c5c5", "#4a5568");
-    const scrollbarThumbHoverBg = useColorModeValue("#a8a8a8", "#718096");
-    const bgSubtle = useColorModeValue("bg.subtle", "gray.800");
+    const colors = useChatPageColors();
 
     return (
         <Box
             flex="1"
             overflowY="auto"
             p={4}
-            bg={bgSubtle}
+            bg={colors.bgSubtle}
             display="flex"
             flexDirection="column"
             gap={4}
@@ -39,15 +35,15 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                     width: "8px",
                 },
                 "&::-webkit-scrollbar-track": {
-                    background: scrollbarTrackBg,
+                    background: colors.scrollbarTrackBg,
                     borderRadius: "4px",
                 },
                 "&::-webkit-scrollbar-thumb": {
-                    background: scrollbarThumbBg,
+                    background: colors.scrollbarThumbBg,
                     borderRadius: "4px",
                 },
                 "&::-webkit-scrollbar-thumb:hover": {
-                    background: scrollbarThumbHoverBg,
+                    background: colors.scrollbarThumbHoverBg,
                 },
             }}
         >
@@ -84,7 +80,7 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                             <Text
                                 fontSize="xs"
                                 fontWeight="bold"
-                                color={textColor}
+                                color={colors.messageTextColor}
                                 ml={1}
                                 mb={0}
                             >
@@ -112,7 +108,7 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                                     {msgIndex === group.messages.length - 1 && (
                                         <Text
                                             fontSize="xs"
-                                            color={textColor}
+                                            color={colors.messageTextColor}
                                             textAlign={group.isCurrentUser ? "right" : "left"}
                                             mt={1}
                                             mr={group.isCurrentUser ? 2 : 0}

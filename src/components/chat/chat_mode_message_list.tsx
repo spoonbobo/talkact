@@ -6,9 +6,10 @@ import { IMessage } from "@/types/chat";
 import { ChatBubble } from "./bubble";
 import { useSession } from "next-auth/react";
 import { useChatMode } from "./chat_mode_context";
-import { useColorModeValue } from "@/components/ui/color-mode";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
+import { useChatPageColors } from "@/utils/colors";
+
 interface ChatModeMessageListProps {
     messagesEndRef: React.RefObject<HTMLDivElement | null>;
 }
@@ -17,6 +18,9 @@ export const ChatModeMessageList = ({ messagesEndRef }: ChatModeMessageListProps
     const { data: session } = useSession();
     const { chatModeMessages, isStreaming, currentStreamingMessage } = useChatMode();
     const t = useTranslations("Chat");
+
+    // Use the centralized colors
+    const colors = useChatPageColors();
 
     // Auto-scroll functionality with performance optimization
     const scrollToBottom = () => {
@@ -91,12 +95,6 @@ export const ChatModeMessageList = ({ messagesEndRef }: ChatModeMessageListProps
         []
     );
 
-    // Enhanced colors for better UI with more subtle greens
-    const emptyStateBg = useColorModeValue("rgba(245, 250, 248, 0.3)", "rgba(30, 40, 38, 0.3)");
-    const emptyStateTextColor = useColorModeValue("teal.700", "teal.300");
-    const emptyStateSubtleColor = useColorModeValue("teal.600", "teal.400");
-    const aiNameColor = useColorModeValue("teal.600", "teal.400");
-
     return (
         <Box
             flex="1"
@@ -114,19 +112,19 @@ export const ChatModeMessageList = ({ messagesEndRef }: ChatModeMessageListProps
                     justifyContent="center"
                     flexDirection="column"
                     opacity={0.9}
-                    bg={emptyStateBg}
+                    bg={colors.emptyStateBg}
                     borderRadius="md"
                     p={8}
                     m={4}
                     boxShadow="sm"
                 >
-                    <Text color={emptyStateTextColor} fontSize="lg" fontWeight="medium" textAlign="center">
+                    <Text color={colors.emptyStateTextColor} fontSize="lg" fontWeight="medium" textAlign="center">
                         {t("chat_mode_welcome")}
                     </Text>
-                    <Text color={emptyStateSubtleColor} fontSize="md" textAlign="center" mt={2}>
+                    <Text color={colors.emptyStateSubtleColor} fontSize="md" textAlign="center" mt={2}>
                         {t("chat_mode_description")}
                     </Text>
-                    <Text color={emptyStateSubtleColor} fontSize="sm" textAlign="center" mt={4}>
+                    <Text color={colors.emptyStateSubtleColor} fontSize="sm" textAlign="center" mt={4}>
                         {t("chat_mode_hint")}
                     </Text>
                 </Flex>
@@ -144,7 +142,7 @@ export const ChatModeMessageList = ({ messagesEndRef }: ChatModeMessageListProps
                                 as="h4"
                                 size="xs"
                                 fontWeight="bold"
-                                color={aiNameColor}
+                                color={colors.aiNameColor}
                                 ml={1}
                                 mb={1}
                             >

@@ -25,6 +25,7 @@ export default function ThirdPartyLoginRedirect() {
     const [error, setError] = useState<string | null>(null);
 
     const email = searchParams.get('email');
+    const avatarUrl = searchParams.get('avatarUrl');
 
     useEffect(() => {
         async function handleAuthRedirect() {
@@ -60,7 +61,7 @@ export default function ThirdPartyLoginRedirect() {
                     // Redirect to dashboard or home with locale
                     router.push(`/${locale}`);
                 } else {
-                    router.push(`/${locale}/signup/new_profile?email=${encodeURIComponent(email)}`);
+                    router.push(`/${locale}/signup/new_profile?email=${encodeURIComponent(email)}&avatarUrl=${avatarUrl}`);
                 }
             } catch (err) {
                 setError((err as Error).message);

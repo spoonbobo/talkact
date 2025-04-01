@@ -11,9 +11,9 @@ import { FaPaperPlane, FaStop } from "react-icons/fa";
 import { useState, KeyboardEvent, useRef, useEffect } from "react";
 import { useChatMode } from "./chat_mode_context";
 import { User } from "@/types/user";
-import { useColorModeValue } from "@/components/ui/color-mode";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { useChatPageColors } from "@/utils/colors";
 
 interface ChatModeInputProps {
     currentUser: User | null;
@@ -29,15 +29,17 @@ export const ChatModeInput = ({
     const [inputValue, setInputValue] = useState("");
     const { sendChatModeMessage, isStreaming } = useChatMode();
     const t = useTranslations("Chat");
-    // Enhanced colors for better UI with warmer greens
-    const inputBg = useColorModeValue("white", "gray.800");
-    const inputBorder = useColorModeValue("green.300", "green.600");
-    const buttonBg = useColorModeValue("green.600", "green.700");
-    const buttonHoverBg = useColorModeValue("green.700", "green.600");
-    const cancelHoverBg = useColorModeValue("red.600", "red.500");
-    const containerBg = useColorModeValue("rgba(240, 255, 244, 0.8)", "rgba(25, 45, 35, 0.8)");
-    const placeholderColor = useColorModeValue("gray.500", "gray.500");
-    const inputTextColor = useColorModeValue("gray.800", "gray.100");
+    const colors = useChatPageColors();
+
+    // Use the centralized colors
+    const inputBg = colors.cardBg;
+    const inputBorder = colors.chatModeHeading; // Using the green accent color
+    const buttonBg = colors.chatModeHeading;
+    const buttonHoverBg = "green.700"; // Keep this specific hover state
+    const cancelHoverBg = "red.600"; // Keep this specific hover state
+    const containerBg = "rgba(240, 255, 244, 0.8)"; // Keep this specific background
+    const placeholderColor = colors.textColor;
+    const inputTextColor = colors.textColorHeading;
 
     // Add this ref for the messages end
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
