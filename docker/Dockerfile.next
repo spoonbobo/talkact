@@ -1,5 +1,4 @@
-# Build stage
-FROM node:20.9-alpine AS builder
+FROM node:20.9-alpine
 WORKDIR /app
 
 # Install PostgreSQL client and build dependencies
@@ -7,31 +6,16 @@ RUN apk add --no-cache python3 make g++ postgresql-dev
 
 # Set higher limit for EventEmitter listeners to prevent warnings
 ENV NODE_OPTIONS="--max-old-space-size=4096 --max-http-header-size=16384"
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 
+# Copy package files first for better caching
 COPY package*.json ./
 RUN npm install
+
+# Copy the rest of the application code
 COPY . .
-RUN npm run build
 
-# Runtime stage
-FROM node:20.9-alpine
-WORKDIR /app
-
-# Set higher limit for EventEmitter listeners to prevent warnings
-ENV NODE_OPTIONS="--max-old-space-size=4096 --max-http-header-size=16384"
-ENV NODE_ENV=production
-
-# Copy only necessary files from builder
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/package*.json ./
-
-# Install PostgreSQL client and production dependencies
-RUN apk add --no-cache python3 make g++ postgresql-dev && \
-    npm install --omit=dev && \
-    apk del make g++
-
+# Build the Next.js application
+# RUN npx next build
 EXPOSE 3000
-# Use "start" instead of "dev" for production
 CMD ["npm", "run", "dev"]

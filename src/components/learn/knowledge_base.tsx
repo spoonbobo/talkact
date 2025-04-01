@@ -203,6 +203,7 @@ export const KnowledgeBase = () => {
                 }
 
                 // Recursively check nested folders
+                // @ts-ignore
                 if (folders[i].folders && toggleFolderInStructure(folders[i].folders)) {
                     return true;
                 }
@@ -243,7 +244,7 @@ export const KnowledgeBase = () => {
                             />
                         )}
                         <Icon as={FiFolder} color={selectedFolder === folder.id ? folderActiveColor : "blue.400"} />
-                        <Text fontSize="sm" fontWeight={selectedFolder === folder.id ? "medium" : "normal"} ml={2} noOfLines={1}>
+                        <Text fontSize="sm" fontWeight={selectedFolder === folder.id ? "medium" : "normal"} ml={2}>
                             {folder.name}
                         </Text>
                     </Flex>
@@ -621,6 +622,7 @@ export const KnowledgeBase = () => {
                                                     cursor="pointer"
                                                     onClick={() => handleDocumentClick(doc.url)}
                                                     as="a"
+                                                    // @ts-ignore
                                                     href={doc.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
