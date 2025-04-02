@@ -14,6 +14,7 @@ import { User } from "@/types/user";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useChatPageColors } from "@/utils/colors";
+import { useColorModeValue } from "@/components/ui/color-mode";
 
 interface ChatModeInputProps {
     currentUser: User | null;
@@ -32,12 +33,12 @@ export const ChatModeInput = ({
     const colors = useChatPageColors();
 
     // Use the centralized colors
-    const inputBg = colors.cardBg;
+    const inputBg = useColorModeValue("white", "#1A202C"); // Direct hex for dark mode
     const inputBorder = colors.chatModeHeading; // Using the green accent color
     const buttonBg = colors.chatModeHeading;
     const buttonHoverBg = "green.700"; // Keep this specific hover state
     const cancelHoverBg = "red.600"; // Keep this specific hover state
-    const containerBg = "rgba(240, 255, 244, 0.8)"; // Keep this specific background
+    const containerBg = useColorModeValue("rgba(240, 255, 244, 0.8)", "rgba(26, 32, 44, 0.8)"); // Dark mode background
     const placeholderColor = colors.textColor;
     const inputTextColor = colors.textColorHeading;
 

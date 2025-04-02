@@ -161,7 +161,10 @@
     "Delete": "刪除",
     "user_profile": "用戶資料",
     "user_info": "用戶信息",
-    "user_not_found": "用戶不存在"
+    "user_not_found": "用戶不存在",
+    "success": "成功",
+    "left_room_successfully": "已成功離開聊天室",
+    "users_invited_successfully": "已成功邀請用戶"
   },
   "Tasks": {
     "tasks": "任務",

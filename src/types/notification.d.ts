@@ -2,17 +2,18 @@
  * Notification type definitions
  */
 
-export interface Notification {
-    id: string;
+export interface INotification {
+    id?: string;
     notification_id: string;
     message: string;
     sender?: string;
+    receivers?: string[];
     created_at: string;
 
     // Frontend-specific properties
-    title: string;
-    read: boolean;
-    timestamp: string; // Formatted version of created_at
+    title?: string;
+    read?: boolean;
+    timestamp?: string; // Formatted version of created_at
 }
 
 export interface NotificationProps {

@@ -159,7 +159,9 @@
     "Share": "共有",
     "Translate": "翻訳",
     "Edit": "編集",
-    "Delete": "削除"
+    "Delete": "削除",
+    "user_not_found": "ユーザーが見つかりません",
+    "user_profile": "ユーザー情報"
   },
   "Tasks": {
     "tasks": "タスク",

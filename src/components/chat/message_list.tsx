@@ -20,7 +20,7 @@ interface ChatMessageListProps {
 }
 
 export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = true }: ChatMessageListProps) => {
-    console.log(messageGroups, "messageGroups");
+    // console.log(messageGroups, "messageGroups");
     const colors = useChatPageColors();
     const t = useTranslations("Chat");
 
@@ -32,7 +32,7 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
         avatar?: string;
     } | null>(null);
 
-    console.log(selectedUser, "selectedUser");
+    // console.log(selectedUser, "selectedUser");
 
     // Function to handle avatar click
     const handleUserProfileClick = (username: string, userId?: string, avatar?: string) => {
@@ -78,6 +78,7 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                         animate={{ opacity: 1, y: 0 }}
                         // @ts-ignore
                         transition={{ duration: 0.2, delay: groupIndex * 0.02 }}
+                        mb={4}
                     >
                         {/* Avatar for other users - improved positioning */}
                         {!group.isCurrentUser && (
@@ -85,6 +86,8 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                                 size="sm"
                                 mt={2}
                                 cursor="pointer"
+                                // TODO: do not delete
+                                // @ts-ignore
                                 onClick={() => handleUserProfileClick(group.sender, group.senderId, group.avatar)}
                             >
                                 <Avatar.Fallback name={group.sender} />
@@ -103,7 +106,7 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                                 <Text
                                     fontSize="xs"
                                     fontWeight="bold"
-                                    color={colors.messageTextColor}
+                                    color={colors.textColorHeading}
                                     ml={1}
                                     mb={0}
                                 >
@@ -127,11 +130,11 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                                             isTaskMode={isTaskMode}
                                         />
 
-                                        {/* Add timestamp to the last message in each group */}
+                                        {/* Timestamp with improved colors */}
                                         {msgIndex === group.messages.length - 1 && (
                                             <Text
                                                 fontSize="xs"
-                                                color={colors.messageTextColor}
+                                                color={colors.textColorSecondary}
                                                 textAlign={group.isCurrentUser ? "right" : "left"}
                                                 mt={1}
                                                 mr={group.isCurrentUser ? 2 : 0}
@@ -162,7 +165,7 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                 <div ref={messagesEndRef} />
             </Box>
 
-            {/* User Profile Drawer */}
+            {/* User Profile Drawer with improved colors */}
             <Drawer.Root open={isUserProfileOpen} onOpenChange={(e) => setIsUserProfileOpen(e.open)}>
                 <Portal>
                     <Drawer.Backdrop />

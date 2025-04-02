@@ -657,9 +657,9 @@ export default function SettingsPage() {
                               _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
                               // disabled={true}
                               onClick={handleDeleteAllUsers}
-                              // @ts-ignore
-                              // disabled={isDeletingAllUsers}
-                              disabled={true}
+                            // @ts-ignore
+                            // disabled={isDeletingAllUsers}
+                            // disabled={true}
                             >
                               {isDeletingAllUsers ? t("deleting") : t("delete_all_users")}
                             </Box>

@@ -4,12 +4,13 @@ import io from "socket.io-client";
 import { User } from "@/types/user";
 import { IMessage } from "@/types/chat";
 import { toaster } from '@/components/ui/toaster';
-
+import { INotification } from "@/types/notification";
 
 class ChatSocketClient {
     socket: any;
     private user: User;
     private messageCallback: ((message: IMessage) => void) | null = null;
+    private notificationCallback: ((notification: INotification) => void) | null = null;
 
     constructor(user: User) {
         this.user = user;
@@ -37,6 +38,9 @@ class ChatSocketClient {
             if (this.messageCallback) {
                 this.setupMessageListener(this.messageCallback);
             }
+            if (this.notificationCallback) {
+                this.setupNotificationListener(this.notificationCallback);
+            }
         });
 
         this.socket.on('connect_error', (err: any) => {
@@ -52,15 +56,6 @@ class ChatSocketClient {
                 title: "Socket Error",
                 description: "An error occurred with the chat connection",
                 type: "error"
-            });
-        });
-
-        // Add a direct listener for messages to debug
-        this.socket.on('message', (data: any) => {
-            toaster.create({
-                title: "Message Received",
-                description: "Direct message listener triggered",
-                type: "info"
             });
         });
     }
@@ -116,6 +111,18 @@ class ChatSocketClient {
         }
     }
 
+    onNotification(callback: (notification: INotification) => void): void {
+        this.notificationCallback = callback;
+
+        if (this.socket && this.socket.connected) {
+            console.log("Socket connected, setting up notification listener");
+            this.setupNotificationListener(callback);
+        } else {
+            // Add error handling or connection waiting logic here
+            console.log("Socket not connected yet, notification listener will be set up after connection");
+        }
+    }
+
     private setupMessageListener(callback: (message: IMessage) => void): void {
         // Remove any existing listeners to prevent duplicates
         this.socket.off('message');
@@ -150,6 +157,54 @@ class ChatSocketClient {
         });
     }
 
+    private setupNotificationListener(callback: (notification: INotification) => void): void {
+        // Remove any existing listeners to prevent duplicates
+        this.socket.off('notification');
+
+        this.socket.on('notification', (data: any) => {
+            try {
+                // Handle both string and object formats
+                const notificationData = typeof data === 'string' ? JSON.parse(data) : data;
+                console.log("notificationData", notificationData);
+
+                if (notificationData && notificationData.notification_id) {
+                    // Extract relevant information from the notification
+                    const processedNotification: INotification = {
+                        id: notificationData.notification_id,
+                        message: notificationData.message,
+                        sender: notificationData.sender,
+                        timestamp: new Date().toISOString(),
+                        notification_id: notificationData.notification_id,
+                        created_at: notificationData.created_at,
+                    };
+
+                    // Show toast for mentions
+                    if (notificationData.message && notificationData.message.includes('@')) {
+                        toaster.create({
+                            title: `Mention from ${notificationData.sender?.username || 'Someone'}`,
+                            description: notificationData.message || "You were mentioned",
+                            type: "info"
+                        });
+                    }
+
+                    callback(processedNotification);
+                } else {
+                    toaster.create({
+                        title: "Invalid Notification",
+                        description: "Received malformed notification structure",
+                        type: "error"
+                    });
+                }
+            } catch (error) {
+                toaster.create({
+                    title: "Notification Error",
+                    description: "Error processing received notification",
+                    type: "error"
+                });
+            }
+        });
+    }
+
     onRoomUpdate(callback: (room: any) => void): void {
         if (this.socket) {
             this.socket.on('room_update', callback);
@@ -162,6 +217,18 @@ class ChatSocketClient {
         } else {
             toaster.create({
                 title: "Cannot Send Message",
+                description: "Socket not connected",
+                type: "error"
+            });
+        }
+    }
+
+    sendNotification(notification: INotification): void {
+        if (this.socket && this.socket.connected) {
+            this.socket.emit('notification', notification);
+        } else {
+            toaster.create({
+                title: "Cannot Send Notification",
                 description: "Socket not connected",
                 type: "error"
             });

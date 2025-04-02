@@ -1,40 +1,70 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { Flex, Input, Box, Icon } from "@chakra-ui/react";
 import { FaPaperPlane } from "react-icons/fa";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { User } from "@/types/user";
-import { IChatRoom } from "@/types/chat";
+import { IChatRoom, IMessage } from "@/types/chat";
+import { v4 as uuidv4 } from "uuid";
 
 const MotionBox = motion.create(Box);
 
+// do not change
 interface MentionState {
     isActive: boolean;
     startPosition: number;
     searchText: string;
 }
 
+// do not change
 interface ChatInputProps {
     messageInput: string;
     setMessageInput: (value: string) => void;
-    handleSendMessage: () => void;
+    handleSendMessage: (message: IMessage) => void;
     selectedRoomId: string | null;
     users?: User[];
     agents?: User[];
-    currentUser?: {
-        id?: string;
-        username?: string;
-        token?: string;
-        tokenCreatedAt?: number;
-        user_id?: string;
-    } | null;
+    currentUser?: User | null;
     isTaskMode?: boolean;
     currentRoom?: IChatRoom | null;
     roomUsers?: User[];
 }
 
-export const ChatInput = ({
+// Extract color values to a custom hook to prevent recalculation on every render
+const useInputColors = (isTaskMode = true) => {
+    const borderColor = useColorModeValue("gray.200", "gray.700");
+    const bgSubtle = useColorModeValue("bg.subtle", "gray.800");
+    const textColor = useColorModeValue("gray.600", "gray.400");
+    const textColorStrong = useColorModeValue("gray.700", "gray.300");
+    const inputBg = useColorModeValue("white", "#1A202C");
+    const mentionBg = useColorModeValue("white", "#1A202C");
+    const mentionHoverBg = useColorModeValue("gray.100", "gray.800");
+    const mentionSelectedBg = useColorModeValue("blue.100", "blue.900");
+    const buttonBg = useColorModeValue(
+        isTaskMode ? "blue.500" : "green.500",
+        isTaskMode ? "blue.600" : "green.600"
+    );
+    const buttonHoverBg = useColorModeValue(
+        isTaskMode ? "blue.600" : "green.600",
+        isTaskMode ? "blue.700" : "green.700"
+    );
+
+    return {
+        borderColor,
+        bgSubtle,
+        textColor,
+        textColorStrong,
+        inputBg,
+        mentionBg,
+        mentionHoverBg,
+        mentionSelectedBg,
+        buttonBg,
+        buttonHoverBg
+    };
+};
+
+export const ChatInput = React.memo(({
     messageInput,
     setMessageInput,
     handleSendMessage,
@@ -53,99 +83,57 @@ export const ChatInput = ({
         searchText: ''
     });
     const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
+    const [activeMentions, setActiveMentions] = useState<User[]>([]);
 
-    const borderColor = useColorModeValue("gray.200", "gray.700");
-    const bgSubtle = useColorModeValue("bg.subtle", "gray.800");
-    const textColor = useColorModeValue("gray.600", "gray.400");
-    const textColorStrong = useColorModeValue("gray.700", "gray.300");
-    const inputBg = useColorModeValue("white", "gray.700");
-    const mentionBg = useColorModeValue("white", "gray.800");
-    const mentionBorderColor = useColorModeValue("gray.200", "gray.600");
-    const mentionHoverBg = useColorModeValue("gray.100", "gray.600");
-    const mentionSelectedBg = useColorModeValue("blue.100", "blue.700");
+    // Use memoized colors
+    const colors = useInputColors(isTaskMode);
 
-    // New color variables for mention avatars
-    const agentAvatarBg = useColorModeValue("green.100", "green.800");
-    const agentAvatarColor = useColorModeValue("green.700", "green.200");
-    const userAvatarBg = useColorModeValue("blue.100", "blue.800");
-    const userAvatarColor = useColorModeValue("blue.700", "blue.200");
+    // Memoize current room users to prevent recalculations
+    const currentRoomUsers = useMemo(() => {
+        return roomUsers.length > 0
+            ? roomUsers.filter(user => user.user_id !== currentUser?.user_id)
+            : users.filter(user => currentRoom?.active_users?.includes(user.user_id || ''));
+    }, [roomUsers, users, currentRoom?.active_users, currentUser?.user_id]);
+
+    // Memoize all users to prevent array recreation on every render
+    const allUsers = useMemo(() => {
+        const combined = [...currentRoomUsers, ...agents];
+        return Array.from(new Map(combined.map(user => [user.username, user])).values());
+    }, [currentRoomUsers, agents]);
 
     const getMentionSuggestions = useCallback(() => {
         if (!mentionState.isActive) return [];
 
-        // Use roomUsers directly if available, otherwise fall back to filtering users
-        const currentRoomUsers = roomUsers.length > 0
-            ? roomUsers.filter(user =>
-                user.user_id !== currentUser?.user_id &&
-                user.id !== currentUser?.id?.toString()
-            )
-            : users.filter(user =>
-                currentRoom?.active_users?.includes(user.user_id || '') &&
-                user.user_id !== currentUser?.user_id &&
-                user.id !== currentUser?.id?.toString()
-            );
+        return mentionState.searchText.trim() === ''
+            ? allUsers
+            : allUsers.filter(user =>
+                user.username.toLowerCase().includes(mentionState.searchText.toLowerCase())
+            ).sort((a, b) => {
+                const aIsAgent = a.role === "agent";
+                const bIsAgent = b.role === "agent";
+                if (aIsAgent && !bIsAgent) return -1;
+                if (!aIsAgent && bIsAgent) return 1;
+                return a.username.localeCompare(b.username);
+            });
+    }, [mentionState.isActive, mentionState.searchText, allUsers]);
 
-        // Get other users who are not in the current room
-        // const otherUsers = users.filter(user =>
-        //     !currentRoomUsers.some(roomUser => roomUser.user_id === user.user_id) &&
-        //     user.user_id !== currentUser?.user_id &&
-        //     user.id !== currentUser?.id?.toString()
-        // );
+    // Memoize suggestions to prevent recalculation
+    const suggestions = useMemo(() => {
+        return getMentionSuggestions();
+    }, [getMentionSuggestions]);
 
-        // Combine filtered users with agents
-        // const allUsers = [...currentRoomUsers, ...otherUsers, ...agents];
-
-        const allUsers = [...currentRoomUsers, ...agents];
-        // No longer adding default "agent" mention when no agents are available
-
-        const uniqueUsers = Array.from(new Map(allUsers.map(user => [user.username, user])).values());
-
-        // If search text is empty, return all users
-        // If search text is not empty, filter by username
-        // Always prioritize agents by putting them first in the list
-        const filteredSuggestions = mentionState.searchText.trim() === ''
-            ? uniqueUsers
-            : uniqueUsers.filter(user =>
-                user.username.toLowerCase().includes(mentionState.searchText.toLowerCase()));
-
-        // Sort to put agents at the top of the list
-        return filteredSuggestions.sort((a, b) => {
-            // First check if either is an agent (by role or username)
-            const aIsAgent = a.role === "agent" || a.username === "agent";
-            const bIsAgent = b.role === "agent" || b.username === "agent";
-
-            if (aIsAgent && !bIsAgent) return -1;
-            if (!aIsAgent && bIsAgent) return 1;
-
-            // If both or neither are agents, sort alphabetically
-            return a.username.localeCompare(b.username);
-        });
-    }, [users, agents, mentionState, currentUser, currentRoom, roomUsers]);
-
-    // Set selection index to the last item when search text changes
-    useEffect(() => {
-        const suggestions = getMentionSuggestions();
-        setSelectedSuggestionIndex(Math.max(0, suggestions.length - 1));
-    }, [mentionState.searchText, getMentionSuggestions]);
-
-    // Set selection index to the last item when mention becomes active
     useEffect(() => {
         if (mentionState.isActive) {
-            const suggestions = getMentionSuggestions();
             setSelectedSuggestionIndex(Math.max(0, suggestions.length - 1));
         }
-    }, [mentionState.isActive, getMentionSuggestions]);
+    }, [mentionState.searchText, suggestions.length, mentionState.isActive]);
 
-    // Prevent scrolling when mention dropdown is active
     useEffect(() => {
         if (mentionState.isActive) {
-            // Prevent scrolling on the parent container
             const parentElement = document.querySelector('[data-scroll-container="true"]');
             if (parentElement) {
                 parentElement.setAttribute('style', 'overflow: hidden;');
             }
-
-            // Also prevent horizontal scrolling on the body
             document.body.style.overflowX = 'hidden';
 
             return () => {
@@ -157,44 +145,74 @@ export const ChatInput = ({
         }
     }, [mentionState.isActive]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = e.target.value;
         setMessageInput(newValue);
 
-        // Handle @ mentions
         const lastAtIndex = newValue.lastIndexOf('@');
         if (lastAtIndex >= 0 && (lastAtIndex === 0 || newValue[lastAtIndex - 1] === ' ')) {
-            // Extract search text after @
             const searchText = newValue.substring(lastAtIndex + 1);
-
-            // If there's a space after the search text, disable mention
             if (searchText.includes(' ')) {
-                setMentionState({ isActive: false, startPosition: 0, searchText: '' });
+                if (mentionState.isActive) {
+                    setMentionState({ isActive: false, startPosition: 0, searchText: '' });
+                }
             } else {
-                setMentionState({
-                    isActive: true,
-                    startPosition: lastAtIndex,
-                    searchText: searchText
-                });
+                if (!mentionState.isActive ||
+                    mentionState.startPosition !== lastAtIndex ||
+                    mentionState.searchText !== searchText) {
+                    setMentionState({
+                        isActive: true,
+                        startPosition: lastAtIndex,
+                        searchText: searchText
+                    });
+                }
             }
-        } else {
+        } else if (mentionState.isActive) {
             setMentionState({ isActive: false, startPosition: 0, searchText: '' });
         }
-    };
+    }, [mentionState.isActive, mentionState.startPosition, mentionState.searchText, setMessageInput]);
 
-    const handleSelectMention = useCallback((username: string) => {
+    const handleSelectMention = useCallback((user: User) => {
         const beforeMention = messageInput.substring(0, mentionState.startPosition);
         const afterMention = messageInput.substring(mentionState.startPosition + mentionState.searchText.length + 1);
 
-        setMessageInput(`${beforeMention}@${username} ${afterMention}`);
+        setMessageInput(`${beforeMention}@${user.username} ${afterMention}`);
+
+        setActiveMentions(prev => {
+            if (!prev.some(u => u.user_id === user.user_id)) {
+                return [...prev, user];
+            }
+            return prev;
+        });
+
         setMentionState({ isActive: false, startPosition: 0, searchText: '' });
-    }, [messageInput, mentionState, setMessageInput]);
+    }, [messageInput, mentionState.startPosition, mentionState.searchText, setMessageInput]);
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        const suggestions = getMentionSuggestions();
+    const createNewMessage = useCallback((content: string): IMessage => {
+        return {
+            id: uuidv4(),
+            room_id: selectedRoomId || '',
+            sender: {
+                user_id: currentUser?.user_id || '',
+                username: currentUser?.username || '',
+                email: currentUser?.email || '',
+                created_at: currentUser?.created_at || new Date().toISOString(),
+                updated_at: currentUser?.updated_at || new Date().toISOString(),
+                active_rooms: currentUser?.active_rooms || [],
+                archived_rooms: currentUser?.archived_rooms || [],
+                avatar: currentUser?.avatar || '',
+                role: currentUser?.role || 'user',
+                id: currentUser?.id
+            },
+            content,
+            created_at: new Date().toISOString(),
+            avatar: currentUser?.avatar || "",
+            mentions: activeMentions.length > 0 ? activeMentions : undefined,
+        };
+    }, [selectedRoomId, currentUser, activeMentions]);
 
+    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (mentionState.isActive && suggestions.length > 0) {
-            // Handle arrow key navigation for mention suggestions
             if (e.key === "ArrowDown") {
                 e.preventDefault();
                 setSelectedSuggestionIndex(prev =>
@@ -205,7 +223,7 @@ export const ChatInput = ({
                 setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : 0);
             } else if (e.key === "Enter" && mentionState.isActive) {
                 e.preventDefault();
-                handleSelectMention(suggestions[selectedSuggestionIndex].username);
+                handleSelectMention(suggestions[selectedSuggestionIndex]);
                 return;
             } else if (e.key === "Escape") {
                 e.preventDefault();
@@ -214,19 +232,166 @@ export const ChatInput = ({
             }
         }
 
-        // Only send message on Enter if not handling mentions
         if (e.key === "Enter" && !e.shiftKey && !mentionState.isActive) {
             e.preventDefault();
-            handleSendMessage();
+            if (messageInput.trim() && selectedRoomId) {
+                const newMessage = createNewMessage(messageInput);
+                handleSendMessage(newMessage);
+                setActiveMentions([]);
+            }
         }
-    };
+    }, [
+        mentionState.isActive,
+        suggestions,
+        selectedSuggestionIndex,
+        handleSelectMention,
+        messageInput,
+        selectedRoomId,
+        createNewMessage,
+        handleSendMessage
+    ]);
+
+    const handleSendButtonClick = useCallback(() => {
+        if (messageInput.trim() && selectedRoomId) {
+            const newMessage = createNewMessage(messageInput);
+            handleSendMessage(newMessage);
+            setActiveMentions([]);
+        }
+    }, [messageInput, selectedRoomId, createNewMessage, handleSendMessage]);
+
+    // Memoize the mention suggestion list to prevent rerenders
+    const renderSuggestions = useMemo(() => {
+        if (!mentionState.isActive) return null;
+
+        return (
+            <MotionBox
+                position="absolute"
+                bottom="100%"
+                left="10px"
+                width="250px"
+                bg={colors.mentionBg}
+                borderRadius="md"
+                boxShadow="lg"
+                zIndex={1000}
+                maxHeight="200px"
+                overflowY="auto"
+                overflowX="hidden"
+                border="1px solid"
+                borderColor="gray.200"
+                mb={2}
+                variants={{
+                    hidden: { opacity: 0, y: 10, scale: 0.95 },
+                    visible: {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        transition: {
+                            type: "spring",
+                            stiffness: 500,
+                            damping: 30,
+                            staggerChildren: 0.03
+                        }
+                    },
+                    exit: {
+                        opacity: 0,
+                        y: 10,
+                        scale: 0.95,
+                        transition: { duration: 0.2 }
+                    }
+                }}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+            >
+                {suggestions.length > 0 ? (
+                    suggestions.map((user, index) => (
+                        <MotionBox
+                            key={user.user_id}
+                            p={2}
+                            cursor="pointer"
+                            bg={index === selectedSuggestionIndex ? colors.mentionSelectedBg : "transparent"}
+                            _hover={{ bg: colors.mentionHoverBg }}
+                            onClick={() => handleSelectMention(user)}
+                            variants={{
+                                hidden: { opacity: 0, x: -5 },
+                                visible: { opacity: 1, x: 0 },
+                                exit: { opacity: 0, x: 5 }
+                            }}
+                            display="flex"
+                            alignItems="center"
+                            borderBottom={index < suggestions.length - 1 ? "1px solid" : "none"}
+                            borderColor="gray.200"
+                            color={colors.textColorStrong}
+                        >
+                            <Box
+                                borderRadius="full"
+                                bg={user.username.startsWith('agent') ? "green.100" : "blue.100"}
+                                color={user.username.startsWith('agent') ? "green.700" : "blue.700"}
+                                p={1}
+                                mr={2}
+                                fontSize="xs"
+                                width="24px"
+                                height="24px"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                            >
+                                {user.username[0].toUpperCase()}
+                            </Box>
+                            <Flex flex="1" alignItems="center" justifyContent="space-between">
+                                <Box>{user.username}</Box>
+                                {user.role && (
+                                    <Box
+                                        ml={2}
+                                        px={2}
+                                        py={0.5}
+                                        borderRadius="full"
+                                        fontSize="xs"
+                                        fontWeight="medium"
+                                        bg={user.role === "agent" ? "green.100" : "blue.100"}
+                                        color={user.role === "agent" ? "green.700" : "blue.700"}
+                                        _dark={{
+                                            bg: user.role === "agent" ? "green.800" : "blue.800",
+                                            color: user.role === "agent" ? "green.200" : "blue.200"
+                                        }}
+                                    >
+                                        {user.role}
+                                    </Box>
+                                )}
+                            </Flex>
+                        </MotionBox>
+                    ))
+                ) : (
+                    <MotionBox
+                        p={2}
+                        color={colors.textColor}
+                        variants={{
+                            hidden: { opacity: 0 },
+                            visible: { opacity: 1 },
+                            exit: { opacity: 0 }
+                        }}
+                        textAlign="center"
+                    >
+                        {t("no_users_found")}
+                    </MotionBox>
+                )}
+            </MotionBox>
+        );
+    }, [
+        mentionState.isActive,
+        suggestions,
+        selectedSuggestionIndex,
+        colors,
+        handleSelectMention,
+        t
+    ]);
 
     return (
         <Flex
             p={4}
             borderTopWidth="1px"
-            borderColor={isTaskMode ? borderColor : "green.200"}
-            bg={isTaskMode ? bgSubtle : "rgba(236, 253, 245, 0.4)"}
+            borderColor={isTaskMode ? colors.borderColor : "green.200"}
+            bg={isTaskMode ? colors.bgSubtle : "rgba(236, 253, 245, 0.4)"}
             align="center"
             position="relative"
         >
@@ -241,9 +406,9 @@ export const ChatInput = ({
                 size="md"
                 disabled={!selectedRoomId}
                 _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-                bg={inputBg}
-                color={textColorStrong}
-                _placeholder={{ color: textColor }}
+                bg={colors.inputBg}
+                color={colors.textColorStrong}
+                _placeholder={{ color: colors.textColor }}
                 borderColor={isTaskMode ? "inherit" : "green.200"}
                 _focus={{
                     borderColor: isTaskMode ? "blue.500" : "green.400",
@@ -264,11 +429,10 @@ export const ChatInput = ({
                 fontSize="sm"
                 _hover={{ bg: isTaskMode ? "blue.600" : "green.600" }}
                 _active={{ bg: isTaskMode ? "blue.700" : "green.700" }}
-                // @ts-ignore
-                // TODO: is fine
-                disabled={!messageInput.trim() || !selectedRoomId}
-                _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-                onClick={handleSendMessage}
+                opacity={!messageInput.trim() || !selectedRoomId ? 0.5 : 1}
+                cursor={!messageInput.trim() || !selectedRoomId ? "not-allowed" : "pointer"}
+                pointerEvents={!messageInput.trim() || !selectedRoomId ? "none" : "auto"}
+                onClick={handleSendButtonClick}
             >
                 <Flex align="center" justify="center">
                     <Icon as={FaPaperPlane} mr={2} />
@@ -276,130 +440,36 @@ export const ChatInput = ({
                 </Flex>
             </Box>
 
-            {/* Mention suggestions dropdown */}
             <AnimatePresence onExitComplete={() => {
-                // Ensure overflow is properly reset after animation completes
                 const parentElement = document.querySelector('[data-scroll-container="true"]');
                 if (parentElement) {
                     parentElement.setAttribute('style', 'overflow: auto;');
                 }
                 document.body.style.overflowX = '';
             }}>
-                {mentionState.isActive && (
-                    <MotionBox
-                        position="absolute"
-                        bottom="100%"
-                        left="10px"
-                        width="250px"
-                        bg={mentionBg}
-                        borderRadius="md"
-                        boxShadow="lg"
-                        zIndex={1000}
-                        maxHeight="200px"
-                        overflowY="auto"
-                        overflowX="hidden"
-                        border="1px solid"
-                        borderColor={mentionBorderColor}
-                        mb={2}
-                        variants={{
-                            hidden: { opacity: 0, y: 10, scale: 0.95 },
-                            visible: {
-                                opacity: 1,
-                                y: 0,
-                                scale: 1,
-                                transition: {
-                                    type: "spring",
-                                    stiffness: 500,
-                                    damping: 30,
-                                    staggerChildren: 0.03
-                                }
-                            },
-                            exit: {
-                                opacity: 0,
-                                y: 10,
-                                scale: 0.95,
-                                transition: { duration: 0.2 }
-                            }
-                        }}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                    >
-                        {getMentionSuggestions().length > 0 ? (
-                            getMentionSuggestions().map((user, index) => (
-                                <MotionBox
-                                    key={user.user_id}
-                                    p={2}
-                                    cursor="pointer"
-                                    bg={index === selectedSuggestionIndex ? mentionSelectedBg : "transparent"}
-                                    _hover={{ bg: mentionHoverBg }}
-                                    onClick={() => handleSelectMention(user.username)}
-                                    variants={{
-                                        hidden: { opacity: 0, x: -5 },
-                                        visible: { opacity: 1, x: 0 },
-                                        exit: { opacity: 0, x: 5 }
-                                    }}
-                                    display="flex"
-                                    alignItems="center"
-                                    borderBottom={index < getMentionSuggestions().length - 1 ? "1px solid" : "none"}
-                                    borderColor={mentionBorderColor}
-                                    color={textColorStrong}
-                                >
-                                    <Box
-                                        borderRadius="full"
-                                        bg={user.username.startsWith('agent') ? agentAvatarBg : userAvatarBg}
-                                        color={user.username.startsWith('agent') ? agentAvatarColor : userAvatarColor}
-                                        p={1}
-                                        mr={2}
-                                        fontSize="xs"
-                                        width="24px"
-                                        height="24px"
-                                        display="flex"
-                                        alignItems="center"
-                                        justifyContent="center"
-                                    >
-                                        {user.username[0].toUpperCase()}
-                                    </Box>
-                                    <Flex flex="1" alignItems="center" justifyContent="space-between">
-                                        <Box>{user.username}</Box>
-                                        {user.role && (
-                                            <Box
-                                                ml={2}
-                                                px={2}
-                                                py={0.5}
-                                                borderRadius="full"
-                                                fontSize="xs"
-                                                fontWeight="medium"
-                                                bg={user.role === "agent" ? "green.100" : "blue.100"}
-                                                color={user.role === "agent" ? "green.700" : "blue.700"}
-                                                _dark={{
-                                                    bg: user.role === "agent" ? "green.800" : "blue.800",
-                                                    color: user.role === "agent" ? "green.200" : "blue.200"
-                                                }}
-                                            >
-                                                {user.role}
-                                            </Box>
-                                        )}
-                                    </Flex>
-                                </MotionBox>
-                            ))
-                        ) : (
-                            <MotionBox
-                                p={2}
-                                color={textColor}
-                                variants={{
-                                    hidden: { opacity: 0 },
-                                    visible: { opacity: 1 },
-                                    exit: { opacity: 0 }
-                                }}
-                                textAlign="center"
-                            >
-                                {t("no_users_found")}
-                            </MotionBox>
-                        )}
-                    </MotionBox>
-                )}
+                {mentionState.isActive && renderSuggestions}
             </AnimatePresence>
         </Flex>
     );
-};
+}, (prevProps, nextProps) => {
+    // Custom comparison function for React.memo
+    // Return true if props are equal (no re-render), false if they're not equal (trigger re-render)
+
+    // Simple comparison for primitive props
+    if (prevProps.messageInput !== nextProps.messageInput) return false;
+    if (prevProps.selectedRoomId !== nextProps.selectedRoomId) return false;
+    if (prevProps.isTaskMode !== nextProps.isTaskMode) return false;
+
+    // Deep comparison for complex objects when needed
+    if (prevProps.currentRoom?.id !== nextProps.currentRoom?.id) return false;
+
+    // No need to deeply compare functions since they should be memoized in the parent
+
+    // Compare arrays length as a quick check
+    if (prevProps.roomUsers?.length !== nextProps.roomUsers?.length) return false;
+    if (prevProps.users?.length !== nextProps.users?.length) return false;
+    if (prevProps.agents?.length !== nextProps.agents?.length) return false;
+
+    // By default, assume props are equal
+    return true;
+});

@@ -8,7 +8,6 @@ function setupSocketIO(io, client) {
     // console.log(`Client connected: ${socket.id}`);
     
     // Get user information from socket handshake
-    console.log("socket.handshake.auth", socket.handshake.auth);
     const userId = socket.handshake.auth.user.user_id;
     
     if (!userId) {
@@ -104,6 +103,35 @@ function setupSocketIO(io, client) {
         }
       } catch (error) {
         console.error("Error processing message:", error);
+      }
+    });
+
+    socket.on("notification", async (data) => {
+      console.log("notification", data);
+      // Check if receivers array exists
+      if (data.receivers && Array.isArray(data.receivers)) {
+        // For each receiver in the notification
+        for (const receiverId of data.receivers) {
+          try {
+            // Get the receiver's socket ID from Redis
+            const socketId = await client.get(`user:${receiverId}:socket`);
+            
+            if (socketId) {
+              console.log("socketId", socketId);
+              // User is online, send notification directly
+              io.to(socketId).emit("notification", data);
+              // console.log(`Notification sent to user ${receiverId} via socket ${socketId}`);
+            } else {
+              console.log("socketId not found for", receiverId);
+              // // User is offline, store notification for later delivery
+              // // You might want to implement a storage mechanism similar to unread messages
+              // await client.lpush(`user:${receiverId}:unread_notifications`, JSON.stringify(data));
+              // console.log(`Notification stored for offline user ${receiverId}`);
+            }
+          } catch (error) {
+            console.error(`Error sending notification to user ${receiverId}:`, error);
+          }
+        }
       }
     });
 

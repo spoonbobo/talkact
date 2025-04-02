@@ -8,6 +8,7 @@ export interface IMessage {
     content: string;
     avatar: string;
     room_id: string;
+    mentions?: User[];  // Array of mentioned users
 }
 
 export interface IChatBubbleProps {

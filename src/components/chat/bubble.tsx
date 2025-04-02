@@ -3,7 +3,7 @@
 import { Box, Text, Menu, Portal, Group } from "@chakra-ui/react";
 import { IMessage } from "@/types/chat";
 import ReactMarkdown from "react-markdown";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import React from "react";
 import { useChatPageColors } from "@/utils/colors";
@@ -28,19 +28,79 @@ export const ChatBubble = React.memo(({
 }: IChatBubbleProps) => {
   const t = useTranslations("Chat");
   const colors = useChatPageColors();
-  // const toast = useToast();
 
   // Add blinking cursor for streaming messages
   const [showCursor, setShowCursor] = useState(true);
   const [dotCount, setDotCount] = useState(1);
   const [isVisible, setIsVisible] = useState(false);
 
+  // Softer, more glowing mention colors for user bubbles (dark backgrounds)
+  const agentMentionBgInUserBubble = useColorModeValue("rgba(154, 230, 180, 0.3)", "rgba(74, 222, 128, 0.2)");
+  const agentMentionColorInUserBubble = useColorModeValue("#e6ffed", "#d9f7be");
+  const agentMentionBorderInUserBubble = useColorModeValue("rgba(154, 230, 180, 0.5)", "rgba(74, 222, 128, 0.4)");
+
+  const userMentionBgInUserBubble = useColorModeValue("rgba(173, 216, 230, 0.3)", "rgba(96, 165, 250, 0.2)");
+  const userMentionColorInUserBubble = useColorModeValue("#e6f7ff", "#d6e4ff");
+  const userMentionBorderInUserBubble = useColorModeValue("rgba(173, 216, 230, 0.5)", "rgba(96, 165, 250, 0.4)");
+
+  // Softer, more glowing mention colors for other bubbles (light backgrounds)
+  const agentMentionBgInOtherBubble = useColorModeValue("rgba(154, 230, 180, 0.15)", "rgba(74, 222, 128, 0.15)");
+  const agentMentionColorInOtherBubble = useColorModeValue("#2c7a7b", "#9ae6b4");
+  const agentMentionBorderInOtherBubble = useColorModeValue("rgba(154, 230, 180, 0.4)", "rgba(74, 222, 128, 0.3)");
+
+  const userMentionBgInOtherBubble = useColorModeValue("rgba(173, 216, 230, 0.15)", "rgba(96, 165, 250, 0.15)");
+  const userMentionColorInOtherBubble = useColorModeValue("#2b6cb0", "#90cdf4");
+  const userMentionBorderInOtherBubble = useColorModeValue("rgba(173, 216, 230, 0.4)", "rgba(96, 165, 250, 0.3)");
+
+  // Even lighter bubble colors
+  const userBgTask = useColorModeValue("rgba(66, 153, 225, 0.85)", "rgba(56, 161, 105, 0.85)"); // Blue for light, Green for dark
+  const userBgChat = useColorModeValue("rgba(72, 187, 120, 0.85)", "rgba(49, 130, 206, 0.85)"); // Green for light, Blue for dark
+
+  // Pre-process the message content to highlight mentions with glowing effect
+  const processedContent = useMemo(() => {
+    if (!message.content) return "";
+
+    // Replace @mentions with HTML spans that have glowing styling
+    return message.content.replace(/@(\w+)/g, (match, username) => {
+      const isAgent = username.startsWith('agent');
+
+      // Select appropriate colors based on bubble type and mention type
+      const bgColor = isUser
+        ? (isAgent ? agentMentionBgInUserBubble : userMentionBgInUserBubble)
+        : (isAgent ? agentMentionBgInOtherBubble : userMentionBgInOtherBubble);
+
+      const textColor = isUser
+        ? (isAgent ? agentMentionColorInUserBubble : userMentionColorInUserBubble)
+        : (isAgent ? agentMentionColorInOtherBubble : userMentionColorInOtherBubble);
+
+      const borderColor = isUser
+        ? (isAgent ? agentMentionBorderInUserBubble : userMentionBorderInUserBubble)
+        : (isAgent ? agentMentionBorderInOtherBubble : userMentionBorderInOtherBubble);
+
+      // Create a span with glowing styling for the mention
+      return `<span class="mention" data-mention="${username}" style="
+        background-color: ${bgColor}; 
+        color: ${textColor}; 
+        padding: 0.125rem 0.375rem; 
+        border-radius: 0.25rem; 
+        font-weight: 500; 
+        margin: 0 0.125rem;
+        border: 1px solid ${borderColor};
+        box-shadow: 0 0 4px ${borderColor};
+        text-shadow: 0 0 1px ${isUser ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.1)'};
+      ">${match}</span>`;
+    });
+  }, [message.content, isUser,
+    agentMentionBgInUserBubble, userMentionBgInUserBubble, agentMentionBgInOtherBubble, userMentionBgInOtherBubble,
+    agentMentionColorInUserBubble, userMentionColorInUserBubble, agentMentionColorInOtherBubble, userMentionColorInOtherBubble,
+    agentMentionBorderInUserBubble, userMentionBorderInUserBubble, agentMentionBorderInOtherBubble, userMentionBorderInOtherBubble]);
+
   // Content with cursor for streaming messages or generating text
   const contentWithCursor = isStreaming
     ? message.content
-      ? message.content + (showCursor ? '|' : ' ')
+      ? processedContent + (showCursor ? '|' : ' ')
       : t("generating") + '.'.repeat(dotCount)
-    : message.content;
+    : processedContent;
 
   // Blinking cursor effect for streaming messages
   useEffect(() => {
@@ -71,7 +131,6 @@ export const ChatBubble = React.memo(({
 
   const handleCopy = () => {
     console.log("handleCopy", message.content);
-
   };
 
   // Define horizontal menu items with emojis
@@ -109,7 +168,7 @@ export const ChatBubble = React.memo(({
           maxW="100%"
           borderRadius="xl"
           bg={isUser
-            ? (isTaskMode ? colors.userBgTask : colors.userBgChat)
+            ? (isTaskMode ? userBgTask : userBgChat) // Even lighter bubble colors
             : (isTaskMode ? colors.otherBgTask : colors.otherBgChat)}
           color={isUser
             ? "white"
@@ -118,17 +177,16 @@ export const ChatBubble = React.memo(({
           boxShadow="0 2px 4px rgba(0,0,0,0.08)"
           alignSelf={isUser ? "flex-end" : "flex-start"}
           wordBreak="break-word"
+          textAlign="left"
           style={{
             opacity: isVisible ? 1 : 0,
-            transition: "opacity 0.5s ease-in-out"
+            transition: "opacity 0.5s ease-in-out",
+            userSelect: "text"
           }}
         >
-          <Box position="relative">
-            {isStreaming ? (
-              <ReactMarkdown>{contentWithCursor}</ReactMarkdown>
-            ) : (
-              <ReactMarkdown>{message.content}</ReactMarkdown>
-            )}
+          <Box position="relative" textAlign="left">
+            {/* Use dangerouslySetInnerHTML to render the processed content with styled mentions */}
+            <div dangerouslySetInnerHTML={{ __html: contentWithCursor }} />
           </Box>
         </Box>
       </Menu.ContextTrigger>
@@ -163,8 +221,6 @@ export const ChatBubble = React.memo(({
                   height="10"
                   gap="0"
                   flexDirection="column"
-                  justifyContent="center"
-                  alignItems="center"
                   fontSize="lg"
                   borderRadius="md"
                   _hover={{ bg: useColorModeValue("gray.50", "gray.700") }}

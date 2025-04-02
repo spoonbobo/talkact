@@ -10,11 +10,13 @@ import {
     clearSelectedRoom
 } from '../features/chatSlice';
 import { IMessage } from '@/types/chat';
+import { INotification } from '@/types/notification';
 import { toaster } from '@/components/ui/toaster';
+import { v4 as uuidv4 } from 'uuid';
+import { addNotification } from '../features/notificationSlice';
 
 let socketClient: ChatSocketClient | null = null;
 
-// Define action types
 interface ChatAction {
     type: string;
     payload?: any;
@@ -28,7 +30,7 @@ export const socketMiddleware: Middleware = store => next => (action: unknown) =
     if (chatAction.type === 'chat/initializeSocket') {
         const user: User = chatAction.payload;
 
-        // Clean up existing socket if needed
+        // clean up if needed.
         if (socketClient) {
             socketClient.disconnect();
             socketClient = null;
@@ -81,6 +83,13 @@ export const socketMiddleware: Middleware = store => next => (action: unknown) =
                     type: "error"
                 });
             }
+        });
+
+        socketClient.onNotification((notification: INotification) => {
+            console.log("Notification received in middleware:", notification);
+
+            // Dispatch the notification to the store
+            dispatch(addNotification(notification));
         });
 
         socketClient.onRoomUpdate((room) => {
@@ -147,6 +156,19 @@ export const socketMiddleware: Middleware = store => next => (action: unknown) =
         return next(action);
     }
 
+    if (chatAction.type === 'chat/mentionUser') {
+        const { message } = chatAction.payload;
+        const notification: INotification = {
+            notification_id: uuidv4(),
+            message: message.content,
+            sender: message.sender,
+            receivers: message.mentions?.map((user: User) => user.user_id),
+            created_at: new Date().toISOString(),
+        }
+        if (socketClient && socketClient.socket && socketClient.socket.connected) {
+            socketClient.sendNotification(notification);
+        }
+    }
     // Pass all other actions to the next middleware
     return next(action);
 }; 

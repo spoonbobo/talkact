@@ -1,3 +1,5 @@
+"use client";
+
 import { Flex, Input, Box } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";

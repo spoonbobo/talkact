@@ -19,9 +19,9 @@ import {
   IconButton
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaComments, FaUsers, FaTasks, FaEllipsisH, FaSignOutAlt, FaUserPlus } from "react-icons/fa";
+import { FaComments, FaUsers, FaTasks, FaUserPlus } from "react-icons/fa";
 import { useTranslations } from "next-intl";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
 import { IChatRoom, IMessage } from "@/types/chat";
 import { User } from "@/types/user";
@@ -42,7 +42,6 @@ import {
   updateRoom,
   removeUserFromRoom
 } from '@/store/features/chatSlice';
-import { v4 as uuidv4 } from 'uuid';
 import React from "react";
 import { ChatRoomList } from "@/components/chat/room_list";
 import { ChatMessageList } from "@/components/chat/message_list";
@@ -122,19 +121,17 @@ const ChatPageContent = () => {
   const dispatch = useDispatch();
   const colors = useChatPageColors();
 
-  // Get chat state from Redux
-  const {
-    rooms,
-    selectedRoomId,
-    messages,
-    unreadCounts,
-    isLoadingRooms,
-    isLoadingMessages,
-    messagesLoaded
-  } = useSelector((state: RootState) => state.chat);
-  console.log("rooms", rooms);
+  // Get chat state from Redux - use individual selectors for better performance
+  const rooms = useSelector((state: RootState) => state.chat.rooms);
+  const selectedRoomId = useSelector((state: RootState) => state.chat.selectedRoomId);
+  const messages = useSelector((state: RootState) => state.chat.messages);
+  const unreadCounts = useSelector((state: RootState) => state.chat.unreadCounts);
+  const isLoadingRooms = useSelector((state: RootState) => state.chat.isLoadingRooms);
+  const isLoadingMessages = useSelector((state: RootState) => state.chat.isLoadingMessages);
+  const messagesLoaded = useSelector((state: RootState) => state.chat.messagesLoaded);
 
-  const { currentUser, isOwner } = useSelector((state: RootState) => state.user);
+  const currentUser = useSelector((state: RootState) => state.user.currentUser);
+  const isOwner = useSelector((state: RootState) => state.user.isOwner);
 
   // UAT flag to check if user is not an owner
   // const UAT = !isOwner;
@@ -188,6 +185,10 @@ const ChatPageContent = () => {
   const chatModeBorder = colors.chatModeBorder;
   const chatModeHeading = colors.chatModeHeading;
 
+  // Add new color variables for message list consistency
+  const messageListBg = bgSubtle;
+  const messageTextColor = colors.messageTextColor || textColor;
+
   // Add this new state to track if event source is active
   const [isEventSourceActive, setIsEventSourceActive] = useState<boolean>(false);
 
@@ -198,9 +199,8 @@ const ChatPageContent = () => {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        dispatch(setLoadingRooms(true));
         const response = await axios.get("/api/chat/get_rooms");
-
+        console.log("response", response);
         // Make sure rooms have their active_users properly populated
         const roomsWithUsers = response.data.map((room: IChatRoom) => {
           // If active_users is null or undefined, initialize as empty array
@@ -251,30 +251,6 @@ const ChatPageContent = () => {
       fetchUsersAndAgents();
     }
   }, [session]);
-
-  const handleSendMessage = () => {
-    if (messageInput.trim() && selectedRoomId && isTaskMode) {
-      const newMessage: IMessage = {
-        id: uuidv4(),
-        room_id: selectedRoomId,
-        sender: session?.user as User,
-        content: messageInput,
-        created_at: new Date().toISOString(),
-        avatar: session?.user?.image || "",
-      };
-
-      dispatch({
-        type: 'chat/sendMessage',
-        payload: { message: newMessage }
-      });
-
-      if (messageInput.includes("@agent")) {
-        triggerAgentAPI(messageInput, selectedRoomId);
-      }
-
-      setMessageInput("");
-    }
-  };
 
   // Add this new function to handle the agent API call
   const triggerAgentAPI = async (message: string, roomId: string) => {
@@ -571,6 +547,56 @@ const ChatPageContent = () => {
   const [isRoomDetailsOpen, setIsRoomDetailsOpen] = useState<boolean>(false);
   const [isInvitingUsers, setIsInvitingUsers] = useState<boolean>(false);
 
+  const handleSendMessage = useCallback((newMessage: IMessage) => {
+    if (newMessage.content.trim() && selectedRoomId && isTaskMode) {
+
+      dispatch({
+        type: 'chat/sendMessage',
+        payload: { message: newMessage }
+      });
+
+      if (newMessage.mentions?.some(user => user.role === "agent")) {
+        triggerAgentAPI(newMessage.content, selectedRoomId);
+      }
+
+      if (newMessage.mentions?.some(user => user.role === "user")) {
+        dispatch({
+          type: 'chat/mentionUser',
+          payload: {
+            message: newMessage,
+          }
+        });
+      }
+
+      setMessageInput("");
+    }
+  }, [dispatch, isTaskMode, selectedRoomId, setMessageInput, triggerAgentAPI]);
+
+  // Memoize the ChatInput props to prevent unnecessary re-renders
+  const chatInputProps = useMemo(() => ({
+    messageInput,
+    setMessageInput,
+    handleSendMessage,
+    selectedRoomId,
+    users,
+    agents,
+    currentUser,
+    isTaskMode,
+    currentRoom,
+    roomUsers,
+  }), [
+    messageInput,
+    setMessageInput,
+    handleSendMessage,
+    selectedRoomId,
+    users,
+    agents,
+    currentUser,
+    isTaskMode,
+    currentRoom,
+    roomUsers
+  ]);
+
   if (isLoadingRooms || isLoadingMessages || !session) {
     return <Loading />;
   }
@@ -840,7 +866,6 @@ const ChatPageContent = () => {
 
                                 // refresh room list
                                 const roomsResponse = await axios.get("/api/chat/get_rooms");
-                                console.log("roomsResponse", roomsResponse);
                                 dispatch(setRooms(roomsResponse.data));
 
                                 toaster.create({
@@ -971,25 +996,28 @@ const ChatPageContent = () => {
                 messageGroups={groupedMessages}
                 messagesEndRef={messagesEndRef}
                 isTaskMode={isTaskMode}
+                // TODO: do not delete
+                // @ts-ignore
+                style={{
+                  backgroundColor: messageListBg,
+                  color: messageTextColor,
+                }}
               />
             ) : (
-              <ChatModeMessageList messagesEndRef={messagesEndRef} />
+              <ChatModeMessageList
+                messagesEndRef={messagesEndRef}
+                // TODO: do not delete
+                // @ts-ignore
+                style={{
+                  backgroundColor: chatModeBg,
+                  color: messageTextColor,
+                }}
+              />
             )}
 
             {/* Input area - conditionally render based on mode */}
             {isTaskMode ? (
-              <ChatInput
-                messageInput={messageInput}
-                setMessageInput={setMessageInput}
-                handleSendMessage={handleSendMessage}
-                selectedRoomId={selectedRoomId}
-                users={users}
-                agents={agents}
-                currentUser={currentUser}
-                isTaskMode={isTaskMode}
-                currentRoom={currentRoom}
-                roomUsers={roomUsers}
-              />
+              <ChatInput {...chatInputProps} />
             ) : (
               <ChatModeInput
                 currentUser={currentUser}
