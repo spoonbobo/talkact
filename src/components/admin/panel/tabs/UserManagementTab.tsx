@@ -4,11 +4,11 @@ import React, { useState } from "react";
 import { Box, Flex, Heading, Icon, Separator, Tabs, Text, VStack } from "@chakra-ui/react";
 import { FaUserEdit } from "react-icons/fa";
 import { motion } from "framer-motion";
-import UserTable from "@/components/admin/panel/user_table";
-import UserDetails from "@/components/admin/panel/user_details";
-import UserPermissions from "@/components/admin/panel/user_permissions";
-import UserLogger from "@/components/admin/panel/user_logger";
-import { CreateUserModal } from "@/components/admin/panel/user_modal";
+import UserTable from "@/components/admin/users/user_table";
+import UserDetails from "@/components/admin/users/user_details";
+import UserPermissions from "@/components/admin/users/user_permissions";
+import UserLogger from "@/components/admin/users/user_logger";
+import { CreateUserModal } from "@/components/admin/users/user_modal";
 import ResizableContainer from "../layout/ResizableContainer";
 
 // Define the User interface if it's not already defined in your types/user.d.ts

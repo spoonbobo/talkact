@@ -79,6 +79,26 @@ class ChatSocketClient {
         }
     }
 
+    inviteToRoom(roomId: string, userIds: string[]): void {
+        console.log("inviteToRoom", roomId, userIds);
+        console.log("this.socket", this.socket);
+        console.log("this.socket.connected", this.socket.connected);
+        if (this.socket && this.socket.connected) {
+            this.socket.emit('invite_to_room', { roomId, userIds });
+        } else {
+            //
+        }
+        // console.log("invite_to_room", roomId, userIds);
+    }
+
+    quitRoom(roomId: string): void {
+        if (this.socket && this.socket.connected) {
+            this.socket.emit('quit_room', roomId);
+        } else {
+            //
+        }
+    }
+
     onDisconnect(callback: () => void): void {
         if (this.socket) {
             this.socket.on('disconnect', callback);

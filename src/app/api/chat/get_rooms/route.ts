@@ -4,7 +4,7 @@ import db from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         // Get the current user session
         const session = await getServerSession(authOptions);
@@ -22,14 +22,10 @@ export async function GET() {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        // Get all rooms
-        let rooms = await db('chat_rooms').select('*');
-        console.log(rooms);
-
-        // If user has active_rooms, filter to only include those rooms
-        if (user.active_rooms && user.active_rooms.length > 0) {
-            rooms = rooms.filter(room => user.active_rooms.includes(room.id));
-        }
+        // Get only the rooms that are in the user's active_rooms array
+        const rooms = await db('chat_rooms')
+            .select('*')
+            .whereIn('id', user.active_rooms);
 
         // Format rooms to match IChatRoom interface
         const formattedRooms = rooms.map(room => ({
@@ -39,8 +35,6 @@ export async function GET() {
             name: room.name,
             unread: room.unread,
             // Convert active_users from string array to User array
-            // In the database, active_users is stored as string[]
-            // For now, we'll return an empty array as we need to fetch actual user data
             active_users: room.active_users || []
         }));
 

@@ -24,7 +24,7 @@ export interface IChatRoom {
     last_updated: string;
     name: string;
     unread: number;
-    active_users: User[];
+    active_users: string[];
 }
 
 // server -> client message

@@ -4,25 +4,26 @@ import React, { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { User } from '@/types/user';
+// import { User } from '@/types/user';
 
 export default function SocketProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   const dispatch = useDispatch();
   const isSocketConnected = useSelector((state: RootState) => state.chat.isSocketConnected);
+  const currentUser = useSelector((state: RootState) => state.user.currentUser);
 
   useEffect(() => {
     // Initialize socket when session is available and socket is not already connected
     if (session && !isSocketConnected) {
       const user = {
-        id: 1, // You might want to get this from your session
-        username: session?.user?.name || "",
-        email: session?.user?.email || "",
+        user_id: currentUser?.user_id,
+        username: currentUser?.username || "",
+        email: currentUser?.email || "",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         active_rooms: [],
         archived_rooms: [],
-        avatar: session?.user?.image || "",
+        avatar: currentUser?.avatar || "",
       };
 
       // Dispatch action to initialize socket

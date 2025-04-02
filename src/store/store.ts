@@ -4,12 +4,14 @@ import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage'; // defaults to localStorage for web
 import chatReducer from './features/chatSlice';
 import userReducer from './features/userSlice';
+import notificationReducer from './features/notificationSlice';
 import { socketMiddleware } from './middleware/socketMiddleware';
 
 // Combine all reducers
 const rootReducer = combineReducers({
     chat: chatReducer,
     user: userReducer,
+    notification: notificationReducer,
     // Add other reducers here
 });
 
@@ -17,7 +19,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
     key: 'root',
     storage,
-    whitelist: ['chat', 'user'], // Persist both chat and user state
+    whitelist: ['chat', 'user', 'notification'], // Persist notification state too
 };
 
 // Create a persisted reducer

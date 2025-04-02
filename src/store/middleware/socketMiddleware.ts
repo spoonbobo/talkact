@@ -6,21 +6,27 @@ import {
     addMessage,
     updateRoom,
     setSelectedRoom,
-    setUnreadCount
+    setUnreadCount,
+    clearSelectedRoom
 } from '../features/chatSlice';
 import { IMessage } from '@/types/chat';
 import { toaster } from '@/components/ui/toaster';
 
 let socketClient: ChatSocketClient | null = null;
 
-export const socketMiddleware: Middleware = store => next => action => {
+// Define action types
+interface ChatAction {
+    type: string;
+    payload?: any;
+}
+
+export const socketMiddleware: Middleware = store => next => (action: unknown) => {
     const { dispatch, getState } = store;
+    const chatAction = action as ChatAction;
 
     // Handle socket initialization
-    // @ts-ignore
-    if (action.type === 'chat/initializeSocket') {
-        // @ts-ignore
-        const user: User = action.payload;
+    if (chatAction.type === 'chat/initializeSocket') {
+        const user: User = chatAction.payload;
 
         // Clean up existing socket if needed
         if (socketClient) {
@@ -93,8 +99,7 @@ export const socketMiddleware: Middleware = store => next => action => {
     }
 
     // Handle socket disconnection
-    // @ts-ignore
-    if (action.type === 'chat/disconnectSocket') {
+    if (chatAction.type === 'chat/disconnectSocket') {
         if (socketClient) {
             socketClient.disconnect();
             socketClient = null;
@@ -105,13 +110,9 @@ export const socketMiddleware: Middleware = store => next => action => {
     }
 
     // Handle sending messages
-    // @ts-ignore
-    if (action.type === 'chat/sendMessage') {
-        // TODO: fix this
-        // @ts-ignore
-        const { message } = action.payload;
+    if (chatAction.type === 'chat/sendMessage') {
+        const { message } = chatAction.payload;
         if (socketClient) {
-            // @ts-ignore
             socketClient.sendMessage(message);
         }
 
@@ -119,16 +120,29 @@ export const socketMiddleware: Middleware = store => next => action => {
     }
 
     // Handle joining a room
-    // @ts-ignore
-    if (action.type === 'chat/joinRoom') {
-        // @ts-ignore
-        const roomId = action.payload;
-        // @ts-ignore
+    if (chatAction.type === 'chat/joinRoom') {
+        const roomId = chatAction.payload;
         if (socketClient && socketClient.socket && socketClient.socket.connected) {
-            // @ts-ignore
             socketClient.joinRoom(roomId);
-            // Optionally select the room after joining
             dispatch(setSelectedRoom(roomId));
+        }
+        return next(action);
+    }
+
+    if (chatAction.type === 'chat/inviteToRoom') {
+        const { roomId, userIds } = chatAction.payload;
+        console.log("MIDDLEWARE: Inviting users to room:", roomId, userIds);
+        if (socketClient && socketClient.socket && socketClient.socket.connected) {
+            socketClient.inviteToRoom(roomId, userIds);
+        }
+        return next(action);
+    }
+
+    if (chatAction.type === 'chat/quitRoom') {
+        const roomId = chatAction.payload;
+        if (socketClient && socketClient.socket && socketClient.socket.connected) {
+            socketClient.quitRoom(roomId);
+            dispatch(clearSelectedRoom(roomId));
         }
         return next(action);
     }

@@ -48,6 +48,7 @@ export default function SettingsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeletingAllRooms, setIsDeletingAllRooms] = useState(false);
   const [isDeletingAllUsers, setIsDeletingAllUsers] = useState(false);
+  const [isDeletingAllTasks, setIsDeletingAllTasks] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
   const accentColor = "blue.500";
@@ -191,6 +192,41 @@ export default function SettingsPage() {
       });
     } finally {
       setIsDeletingAllUsers(false);
+    }
+  };
+
+  const handleDeleteAllTasks = async () => {
+    if (!session) return;
+
+    setIsDeletingAllTasks(true);
+    try {
+      const response = await fetch('/api/task/delete_task?deleteAll=true', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toaster.create({
+          title: t("tasks_deleted"),
+          description: data.message,
+          duration: 5000,
+        });
+      } else {
+        throw new Error(data.error || "Failed to delete tasks");
+      }
+    } catch (error) {
+      console.error("Error deleting tasks:", error);
+      toaster.create({
+        title: t("error"),
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        duration: 5000,
+      });
+    } finally {
+      setIsDeletingAllTasks(false);
     }
   };
 
@@ -619,11 +655,54 @@ export default function SettingsPage() {
                               _hover={{ bg: "red.600" }}
                               _active={{ bg: "red.700" }}
                               _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+                              // disabled={true}
                               onClick={handleDeleteAllUsers}
                               // @ts-ignore
-                              disabled={isDeletingAllUsers}
+                              // disabled={isDeletingAllUsers}
+                              disabled={true}
                             >
                               {isDeletingAllUsers ? t("deleting") : t("delete_all_users")}
+                            </Box>
+                          </Box>
+                        </HStack>
+                      </Box>
+
+                      {/* Add Delete All Tasks section */}
+                      <Box
+                        p={4}
+                        borderWidth="1px"
+                        borderColor={dangerZoneBorder}
+                        borderRadius="md"
+                        bg={dangerZoneBg}
+                        mb={6}
+                      >
+                        <HStack align="flex-start">
+                          <Icon as={FiInfo} color="red.500" boxSize={5} mt={0.5} />
+                          <Box>
+                            <Heading size="sm" color={dangerZoneHeading} mb={1}>
+                              {t("delete_all_tasks")}
+                            </Heading>
+                            <Text color={dangerZoneText} fontSize="sm">
+                              {t("delete_all_tasks_warning")}
+                            </Text>
+                            <Box
+                              as="button"
+                              mt={3}
+                              py={2}
+                              px={4}
+                              borderRadius="md"
+                              bg="red.500"
+                              color="white"
+                              fontWeight="medium"
+                              fontSize="sm"
+                              _hover={{ bg: "red.600" }}
+                              _active={{ bg: "red.700" }}
+                              _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+                              onClick={handleDeleteAllTasks}
+                              // @ts-ignore
+                              disabled={isDeletingAllTasks}
+                            >
+                              {isDeletingAllTasks ? t("deleting") : t("delete_all_tasks")}
                             </Box>
                           </Box>
                         </HStack>

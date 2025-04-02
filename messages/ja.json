@@ -146,7 +146,20 @@
     "created_at": "作成日時",
     "no_active_users": "アクティブユーザーがいません",
     "close": "閉じる",
-    "you": "あなた"
+    "you": "あなた",
+    "refresh": "更新",
+    "no_room_selected": "チャットルームが選択されていません",
+    "invite_to_room": "ルームに招待",
+    "invite": "招待",
+    "invite_users": "ユーザーを招待",
+    "search_users": "ユーザーを検索",
+    "selected_users": "選択されたユーザー",
+    "Copy": "コピー",
+    "Quote": "引用",
+    "Share": "共有",
+    "Translate": "翻訳",
+    "Edit": "編集",
+    "Delete": "削除"
   },
   "Tasks": {
     "tasks": "タスク",
@@ -262,7 +275,16 @@
     "updated_at": "更新日時",
     "cancel": "キャンセル",
     "leave_blank_to_use_email_prefix": "空欄の場合はメールアドレスのプレフィックスを使用",
-    "create_new_user": "新しいユーザーを作成"
+    "create_new_user": "新しいユーザーを作成",
+    "chatroom": "チャットルーム",
+    "name": "名前",
+    "select_chatroom_to_view_details": "詳細を表示するチャットルームを選択",
+    "select_chatroom_to_view_users": "活動を表示するチャットルームを選択",
+    "chatroom_management": "チャットルーム管理",
+    "active_users": "メンバー",
+    "last_updated": "最終更新",
+    "refresh": "更新",
+    "search_chatrooms": "チャットルーム検索"
   },
   "Settings": {
     "settings": "設定",
@@ -281,7 +303,9 @@
     "managed_by_provider": "プロバイダーによって管理されています",
     "your_display_name": "あなたの表示名",
     "your_email": "あなたのメールアドレス",
-    "select_language": "言語を選択"
+    "select_language": "言語を選択",
+    "delete_all_users": "すべてのユーザーを削除",
+    "delete_all_users_warning": "この操作は元に戻すことができません、慎重に進めてください"
   },
   "Loading": {
     "loading": "読み込み中...",

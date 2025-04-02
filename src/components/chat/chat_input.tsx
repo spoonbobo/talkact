@@ -5,6 +5,7 @@ import { useColorModeValue } from "@/components/ui/color-mode";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { User } from "@/types/user";
+import { IChatRoom } from "@/types/chat";
 
 const MotionBox = motion.create(Box);
 
@@ -29,6 +30,8 @@ interface ChatInputProps {
         user_id?: string;
     } | null;
     isTaskMode?: boolean;
+    currentRoom?: IChatRoom | null;
+    roomUsers?: User[];
 }
 
 export const ChatInput = ({
@@ -40,6 +43,8 @@ export const ChatInput = ({
     agents = [],
     currentUser = null,
     isTaskMode = true,
+    currentRoom = null,
+    roomUsers = [],
 }: ChatInputProps) => {
     const t = useTranslations("Chat");
     const [mentionState, setMentionState] = useState<MentionState>({
@@ -68,16 +73,29 @@ export const ChatInput = ({
     const getMentionSuggestions = useCallback(() => {
         if (!mentionState.isActive) return [];
 
-        // Filter out current user and include only other users plus agents
-        const filteredUsers = users.filter(user =>
-            user.user_id !== currentUser?.user_id &&
-            // @ts-ignore
-            user.id !== currentUser?.id?.toString()
-        );
+        // Use roomUsers directly if available, otherwise fall back to filtering users
+        const currentRoomUsers = roomUsers.length > 0
+            ? roomUsers.filter(user =>
+                user.user_id !== currentUser?.user_id &&
+                user.id !== currentUser?.id?.toString()
+            )
+            : users.filter(user =>
+                currentRoom?.active_users?.includes(user.user_id || '') &&
+                user.user_id !== currentUser?.user_id &&
+                user.id !== currentUser?.id?.toString()
+            );
+
+        // Get other users who are not in the current room
+        // const otherUsers = users.filter(user =>
+        //     !currentRoomUsers.some(roomUser => roomUser.user_id === user.user_id) &&
+        //     user.user_id !== currentUser?.user_id &&
+        //     user.id !== currentUser?.id?.toString()
+        // );
 
         // Combine filtered users with agents
-        const allUsers = [...filteredUsers, ...agents];
+        // const allUsers = [...currentRoomUsers, ...otherUsers, ...agents];
 
+        const allUsers = [...currentRoomUsers, ...agents];
         // No longer adding default "agent" mention when no agents are available
 
         const uniqueUsers = Array.from(new Map(allUsers.map(user => [user.username, user])).values());
@@ -102,7 +120,7 @@ export const ChatInput = ({
             // If both or neither are agents, sort alphabetically
             return a.username.localeCompare(b.username);
         });
-    }, [users, agents, mentionState, currentUser]);
+    }, [users, agents, mentionState, currentUser, currentRoom, roomUsers]);
 
     // Set selection index to the last item when search text changes
     useEffect(() => {
@@ -202,8 +220,6 @@ export const ChatInput = ({
             handleSendMessage();
         }
     };
-
-    console.log("selectedRoomId", selectedRoomId);
 
     return (
         <Flex
@@ -344,7 +360,27 @@ export const ChatInput = ({
                                     >
                                         {user.username[0].toUpperCase()}
                                     </Box>
-                                    {user.username}
+                                    <Flex flex="1" alignItems="center" justifyContent="space-between">
+                                        <Box>{user.username}</Box>
+                                        {user.role && (
+                                            <Box
+                                                ml={2}
+                                                px={2}
+                                                py={0.5}
+                                                borderRadius="full"
+                                                fontSize="xs"
+                                                fontWeight="medium"
+                                                bg={user.role === "agent" ? "green.100" : "blue.100"}
+                                                color={user.role === "agent" ? "green.700" : "blue.700"}
+                                                _dark={{
+                                                    bg: user.role === "agent" ? "green.800" : "blue.800",
+                                                    color: user.role === "agent" ? "green.200" : "blue.200"
+                                                }}
+                                            >
+                                                {user.role}
+                                            </Box>
+                                        )}
+                                    </Flex>
                                 </MotionBox>
                             ))
                         ) : (

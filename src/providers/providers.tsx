@@ -13,6 +13,7 @@ import Navbar from "@/components/navbar";
 import { Toaster } from "@/components/ui/toaster";
 import { defaultSystem } from "@chakra-ui/react"
 import { ColorModeProvider } from "@/components/ui/color-mode"
+import Notification from "@/components/notification";
 
 
 export default function Providers({
@@ -80,6 +81,7 @@ export default function Providers({
                     >
                       {children}
                     </Container>
+                    <Notification />
                   </Box>
                   {/* <Footer /> */}
                 </Flex>

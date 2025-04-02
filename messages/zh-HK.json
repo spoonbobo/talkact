@@ -146,7 +146,22 @@
     "no_active_users": "沒有在線用戶",
     "close": "關閉",
     "you": "你",
-    "refresh": "刷新"
+    "refresh": "刷新",
+    "no_room_selected": "未選擇聊天室",
+    "invite_to_room": "邀請成員",
+    "invite": "邀請",
+    "invite_users": "邀請成員",
+    "search_users": "搜索成員",
+    "selected_users": "已選擇成員",
+    "Copy": "複製",
+    "Quote": "引用",
+    "Share": "分享",
+    "Translate": "翻譯",
+    "Edit": "編輯",
+    "Delete": "刪除",
+    "user_profile": "用戶資料",
+    "user_info": "用戶信息",
+    "user_not_found": "用戶不存在"
   },
   "Tasks": {
     "tasks": "任務",
@@ -267,7 +282,16 @@
     "updated_at": "更新時間",
     "cancel": "取消",
     "leave_blank_to_use_email_prefix": "留空使用電郵前綴",
-    "create_new_user": "創建新用戶"
+    "create_new_user": "創建新用戶",
+    "chatroom": "聊天室",
+    "name": "名稱",
+    "select_chatroom_to_view_details": "選擇聊天室查看詳情",
+    "select_chatroom_to_view_users": "選擇聊天室查看活動",
+    "chatroom_management": "聊天室管理",
+    "active_users": "成員",
+    "last_updated": "最後更新",
+    "refresh": "刷新",
+    "search_chatrooms": "搜索聊天室"
   },
   "Settings": {
     "settings": "設定",
@@ -286,7 +310,9 @@
     "managed_by_provider": "由提供者管理",
     "your_display_name": "你的顯示名稱",
     "your_email": "你的電郵地址",
-    "select_language": "選擇語言"
+    "select_language": "選擇語言",
+    "delete_all_users": "刪除所有用戶",
+    "delete_all_users_warning": "這個操作無法撤銷，請謹慎操作"
   },
   "Loading": {
     "loading": "加載中...",

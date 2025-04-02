@@ -3,7 +3,6 @@ import { persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { IChatRoom, IMessage } from '@/types/chat';
 import { User } from '@/types/user';
-// import { User } from '@/types/user';
 
 interface ChatState {
     isSocketConnected: boolean;
@@ -53,6 +52,27 @@ export const chatSlice = createSlice({
                 state.rooms[index] = action.payload;
             }
         },
+        removeUserFromRoom: (state, action: PayloadAction<{ roomId: string, userId: string }>) => {
+            const { roomId, userId } = action.payload;
+            const roomIndex = state.rooms.findIndex(room => room.id === roomId);
+
+            if (roomIndex !== -1) {
+                // Make sure active_users is an array before filtering
+                if (Array.isArray(state.rooms[roomIndex].active_users)) {
+                    state.rooms[roomIndex].active_users = state.rooms[roomIndex].active_users.filter(
+                        (id) => {
+                            // Handle both string IDs and User objects
+                            if (typeof id === 'string') {
+                                return id !== userId;
+                            } else if (typeof id === 'object' && id !== null) {
+                                return id.user_id !== userId;
+                            }
+                            return true;
+                        }
+                    );
+                }
+            }
+        },
         setSelectedRoom: (state, action: PayloadAction<string | null>) => {
             state.selectedRoomId = action.payload;
             // Reset unread count when selecting a room
@@ -92,6 +112,18 @@ export const chatSlice = createSlice({
             const roomId = action.payload;
             // You could add any state changes needed when joining a room
         },
+
+        inviteToRoom: (state, action: PayloadAction<{ roomId: string, userIds: string[] }>) => {
+            const { roomId, userIds } = action.payload;
+            console.log("REDUCER: Inviting users to room:", roomId, userIds);
+            // handle in middleware
+        },
+
+        quitRoom: (state, action: PayloadAction<string>) => {
+            const roomId = action.payload;
+            // Implement quit room logic here
+        },
+
         markRoomMessagesLoaded: (state, action: PayloadAction<string>) => {
             state.messagesLoaded[action.payload] = true;
         },
@@ -110,11 +142,14 @@ export const {
     setRooms,
     addRoom,
     updateRoom,
+    removeUserFromRoom,
     setSelectedRoom,
     addMessage,
     setMessages,
     setUnreadCount,
     joinRoom,
+    inviteToRoom,
+    quitRoom,
     markRoomMessagesLoaded,
     initializeSocket,
     clearSelectedRoom,
@@ -122,7 +157,7 @@ export const {
 
 export const setLoadingRooms = createAction<boolean>('chat/setLoadingRooms');
 export const setLoadingMessages = createAction<boolean>('chat/setLoadingMessages');
-
+createAction<{ roomId: string, userIds: string[] }>('chat/inviteToRoom');
 // Create a persisted reducer
 const persistedChatReducer = persistReducer(chatPersistConfig, chatSlice.reducer);
 

@@ -15,10 +15,11 @@ import {
   HStack,
   Avatar,
   Badge,
-  Separator
+  Separator,
+  IconButton
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaComments, FaUsers, FaTasks, FaEllipsisH, FaSignOutAlt } from "react-icons/fa";
+import { FaComments, FaUsers, FaTasks, FaEllipsisH, FaSignOutAlt, FaUserPlus } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
 import axios from "axios";
@@ -37,7 +38,9 @@ import {
   setMessages,
   markRoomMessagesLoaded,
   clearSelectedRoom,
-  updateRoom
+  quitRoom,
+  updateRoom,
+  removeUserFromRoom
 } from '@/store/features/chatSlice';
 import { v4 as uuidv4 } from 'uuid';
 import React from "react";
@@ -51,6 +54,7 @@ import { ChatModeInput } from "@/components/chat/chat_mode_input";
 import { toaster } from "@/components/ui/toaster";
 import { useChatPageColors } from "@/utils/colors";
 import { RoomMenu } from "@/components/chat/room_menu";
+import { RoomInvitation } from "@/components/chat/room_invitation";
 
 
 const MotionBox = motion.create(Box);
@@ -128,6 +132,7 @@ const ChatPageContent = () => {
     isLoadingMessages,
     messagesLoaded
   } = useSelector((state: RootState) => state.chat);
+  console.log("rooms", rooms);
 
   const { currentUser, isOwner } = useSelector((state: RootState) => state.user);
 
@@ -364,6 +369,7 @@ const ChatPageContent = () => {
 
         dispatch(setRooms(roomsResponse.data));
 
+
         toaster.create({
           title: t("room_created"),
           description: t("room_created_description"),
@@ -385,7 +391,7 @@ const ChatPageContent = () => {
   const groupedMessages = selectedRoomId
     ? (messages[selectedRoomId]?.reduce(
       (
-        acc: { sender: string; avatar: string; messages: IMessage[]; isCurrentUser: boolean }[],
+        acc: { sender: string; senderId?: string; avatar: string; messages: IMessage[]; isCurrentUser: boolean }[],
         message,
         index
       ) => {
@@ -406,6 +412,7 @@ const ChatPageContent = () => {
           // Create a new group
           acc.push({
             sender: message.sender.username,
+            senderId: message.sender.user_id,
             avatar: message.avatar,
             messages: [message],
             isCurrentUser: isCurrentUser
@@ -562,6 +569,7 @@ const ChatPageContent = () => {
   }, [rooms, selectedRoomId, dispatch]);
 
   const [isRoomDetailsOpen, setIsRoomDetailsOpen] = useState<boolean>(false);
+  const [isInvitingUsers, setIsInvitingUsers] = useState<boolean>(false);
 
   if (isLoadingRooms || isLoadingMessages || !session) {
     return <Loading />;
@@ -806,6 +814,20 @@ const ChatPageContent = () => {
                                   }),
                                 });
 
+                                // Call the remove_user_from_room endpoint
+                                await axios.put(`/api/chat/remove_user_from_room`, {
+                                  roomId: currentRoom.id,
+                                  userId: currentUser?.user_id
+                                });
+
+                                // Only dispatch if currentUser and user_id exist
+                                if (currentUser?.user_id) {
+                                  dispatch(removeUserFromRoom({
+                                    roomId: currentRoom.id,
+                                    userId: currentUser.user_id
+                                  }));
+                                }
+
                                 if (!response.ok) {
                                   throw new Error('Failed to exit room');
                                 }
@@ -813,8 +835,12 @@ const ChatPageContent = () => {
                                 // Clear the selected room in Redux
                                 dispatch(clearSelectedRoom());
 
-                                // Refresh the rooms list
+                                // notice server to quit room
+                                dispatch(quitRoom(currentRoom.id));
+
+                                // refresh room list
                                 const roomsResponse = await axios.get("/api/chat/get_rooms");
+                                console.log("roomsResponse", roomsResponse);
                                 dispatch(setRooms(roomsResponse.data));
 
                                 toaster.create({
@@ -961,6 +987,8 @@ const ChatPageContent = () => {
                 agents={agents}
                 currentUser={currentUser}
                 isTaskMode={isTaskMode}
+                currentRoom={currentRoom}
+                roomUsers={roomUsers}
               />
             ) : (
               <ChatModeInput
@@ -989,6 +1017,36 @@ const ChatPageContent = () => {
                       <Text fontWeight="bold" mb={2} color={colors.textColorHeading}>{t("room_info")}</Text>
                       <Text fontSize="sm" color={colors.textColor}>ID: {currentRoom.id}</Text>
                       <Text fontSize="sm" color={colors.textColor}>{t("created_at")}: {new Date(currentRoom.created_at || Date.now()).toLocaleString()}</Text>
+                    </Box>
+
+                    <Separator />
+
+                    {/* Invite Users Section */}
+                    <Box>
+                      <HStack justifyContent="space-between" mb={2}>
+                        <Text fontWeight="bold" color={colors.textColorHeading}>{t("invite_users")}</Text>
+                        <IconButton
+                          aria-label={isInvitingUsers ? t("cancel") : t("invite")}
+                          size="sm"
+                          variant="outline"
+                          borderRadius="full"
+                          onClick={() => setIsInvitingUsers(!isInvitingUsers)}
+                          colorScheme="blue"
+                        >
+                          {/* Icon is provided via the icon prop */}
+                          <Icon as={FaUserPlus} />
+                        </IconButton>
+                      </HStack>
+
+                      {isInvitingUsers && currentRoom && (
+                        <Box mt={2} mb={4}>
+                          <RoomInvitation
+                            roomId={currentRoom.id}
+                            currentUsers={roomUsers}
+                            onClose={() => setIsInvitingUsers(false)}
+                          />
+                        </Box>
+                      )}
                     </Box>
 
                     <Separator />

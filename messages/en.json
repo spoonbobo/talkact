@@ -145,7 +145,20 @@
     "created_at": "Created At",
     "no_active_users": "No Active Users",
     "close": "Close",
-    "you": "You"
+    "you": "You",
+    "refresh": "Refresh",
+    "no_room_selected": "No chat room selected",
+    "invite_to_room": "Invite to Room",
+    "invite": "Invite",
+    "invite_users": "Invite Users",
+    "search_users": "Search Users",
+    "selected_users": "Selected Users",
+    "Copy": "Copy",
+    "Quote": "Quote",
+    "Share": "Share",
+    "Translate": "Translate",
+    "Edit": "Edit",
+    "Delete": "Delete"
   },
   "Tasks": {
     "tasks": "Tasks",
@@ -261,7 +274,16 @@
     "updated_at": "Updated At",
     "cancel": "Cancel",
     "leave_blank_to_use_email_prefix": "Leave blank to use email prefix",
-    "create_new_user": "Create New User"
+    "create_new_user": "Create New User",
+    "chatroom": "Chat Room",
+    "name": "Name",
+    "select_chatroom_to_view_details": "Select a chat room to view details",
+    "select_chatroom_to_view_users": "Select a chat room to view activity",
+    "chatroom_management": "Chat Room Management",
+    "active_users": "Members",
+    "last_updated": "Last Updated",
+    "refresh": "Refresh",
+    "search_chatrooms": "Search Chat Rooms"
   },
   "Settings": {
     "settings": "Settings",
@@ -280,7 +302,9 @@
     "managed_by_provider": "Managed by provider",
     "your_display_name": "Your display name",
     "your_email": "Your email address",
-    "select_language": "Select Language"
+    "select_language": "Select Language",
+    "delete_all_users": "Delete All Users",
+    "delete_all_users_warning": "This action cannot be undone, please proceed with caution"
   },
   "Loading": {
     "loading": "Loading, please wait...",

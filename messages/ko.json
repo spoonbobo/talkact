@@ -145,7 +145,20 @@
       "created_at": "생성 시간",
       "no_active_users": "활성 사용자 없음",
       "close": "닫기",
-      "you": "나"
+      "you": "나",
+      "refresh": "새로고침",
+      "no_room_selected": "선택된 채팅방이 없습니다",
+      "invite_to_room": "채팅방에 초대",
+      "invite": "초대",
+      "invite_users": "사용자 초대",
+      "search_users": "사용자 검색",
+      "selected_users": "선택된 사용자",
+      "Copy": "복사",
+      "Quote": "인용",
+      "Share": "공유",
+      "Translate": "번역",
+      "Edit": "편집",
+      "Delete": "삭제"
     },
     "Tasks": {
       "tasks": "태스크",
@@ -266,7 +279,16 @@
       "updated_at": "업데이트 시간",
       "cancel": "취소",
       "leave_blank_to_use_email_prefix": "이메일 접두사를 사용하려면 비워두세요",
-      "create_new_user": "새 사용자 생성"
+      "create_new_user": "새 사용자 생성",
+      "chatroom": "채팅방",
+      "name": "이름",
+      "select_chatroom_to_view_details": "세부 정보를 볼 채팅방 선택",
+      "select_chatroom_to_view_users": "활동을 볼 채팅방 선택",
+      "chatroom_management": "채팅방 관리",
+      "active_users": "멤버",
+      "last_updated": "마지막 업데이트",
+      "refresh": "새로고침",
+      "search_chatrooms": "채팅방 검색"
     },
     "Settings": {
       "settings": "설정",
@@ -285,7 +307,9 @@
       "managed_by_provider": "제공자에 의해 관리됨",
       "your_display_name": "당신의 표시 이름",
       "your_email": "당신의 이메일",
-      "select_language": "언어 선택"
+      "select_language": "언어 선택",
+      "delete_all_users": "모든 사용자 삭제",
+      "delete_all_users_warning": "이 작업은 취소할 수 없습니다. 신중하게 진행하세요"
     },
     "Loading": {
       "loading": "로딩 중...",

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FaUsers } from "react-icons/fa";
+import { FaUsers, FaComments } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import { useSelector } from 'react-redux';
@@ -12,6 +12,7 @@ import { useColorModeValue } from "@/components/ui/color-mode";
 import { toaster } from "@/components/ui/toaster";
 import AdminPanelLayout from "@/components/admin/panel/layout/AdminPanelLayout";
 import UserManagementTab from "@/components/admin/panel/tabs/UserManagementTab";
+import ChatroomTab from "@/components/admin/panel/tabs/ChatroomTab";
 
 // Define the User interface if it's not already defined in your types/user.d.ts
 interface User {
@@ -74,6 +75,7 @@ export default function AdminPanelPage() {
   // Define the tab items with proper typing
   const tabItems = [
     { icon: FaUsers, label: t("users"), id: 0 },
+    { icon: FaComments, label: t("chatroom"), id: 1 },
     // More tabs can be added here in the future
   ];
 
@@ -208,6 +210,28 @@ export default function AdminPanelPage() {
             bgSubtle
           }}
           handleUserCreated={handleUserCreated}
+        />
+      )}
+      {activeTab === 1 && (
+        <ChatroomTab
+          colors={{
+            textColor,
+            textColorHeading,
+            textColorStrong,
+            textColorMuted,
+            cardBg,
+            borderColor,
+            bgSubtle,
+            inputBgColor: bgSubtle,
+            inputBorderHoverColor: borderColor,
+            tableHeaderBg: bgSubtle,
+            errorBg: "red.50",
+            errorText: "red.500",
+            emptyBg: bgSubtle,
+            hoverBg: "gray.50",
+            refreshButtonHoverBg: "gray.100"
+          }}
+          t={t}
         />
       )}
     </AdminPanelLayout>
