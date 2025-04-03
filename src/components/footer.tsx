@@ -1,64 +1,54 @@
 "use client";
 
 import React from "react";
-import { Flex, Text, Stack, Link } from "@chakra-ui/react";
+import {
+  Box,
+  HStack,
+  Image,
+  Link,
+  Text,
+  Tooltip
+} from "@chakra-ui/react";
 
-const Footer = () => {
+const Footer: React.FC = () => {
   return (
-    <FooterContainer>
-      <Stack
-        align="center"
-        justify={["center", "space-between", "flex-end", "flex-end"]}
-        direction={["column", "row", "row", "row"]}
-        pt={[4, 4, 0, 0]}
-      >
-        <FooterItem to="/">Home</FooterItem>
-        <FooterItem to="/about">About Us</FooterItem>
-        <FooterItem to="/services">Services</FooterItem>
-        <FooterItem to="/contact">Contact</FooterItem>
-        <FooterItem to="/privacy">Privacy Policy</FooterItem>
-      </Stack>
-    </FooterContainer>
-  );
-};
-
-const FooterItem = ({
-  children,
-  to = "/",
-  ...rest
-}: {
-  children: React.ReactNode;
-  to?: string;
-}) => {
-  return (
-    <Link href={to}>
-      <Text display="block" {...rest}>
-        {children}
-      </Text>
-    </Link>
-  );
-};
-
-const FooterContainer = ({
-  children,
-  ...props
-}: {
-  children: React.ReactNode;
-}) => {
-  return (
-    <Flex
-      as="footer"
-      align="center"
-      justify="space-between"
-      wrap="wrap"
-      w="100%"
-      p={8}
-      bg={["primary.500", "primary.500", "transparent", "transparent"]}
-      color={["white", "white", "primary.700", "primary.700"]}
-      {...props}
+    <Box
+      position="fixed"
+      bottom="20px"
+      right="20px"
+      zIndex="10"
     >
-      {children}
-    </Flex>
+      <Text mb={2}>Powered by</Text>
+      <HStack gap={4}>
+        <Link
+          href="https://deepseek.ai"
+          target="_blank"
+          rel="noopener noreferrer"
+          _hover={{ transform: "scale(1.05)" }}
+          transition="transform 0.2s"
+        >
+          <Image
+            src="https://openrouter.ai/images/icons/DeepSeek.png"
+            alt="Powered by DeepSeek"
+            height="40px"
+          />
+        </Link>
+        <Link
+          href="https://ai.google.dev/gemma"
+          target="_blank"
+          rel="noopener noreferrer"
+          _hover={{ transform: "scale(1.05)" }}
+          transition="transform 0.2s"
+        >
+          <Image
+            src="https://ai.google.dev/static/gemma/images/gemma3.png"
+            alt="Powered by Gemma 3"
+            height="40px"
+          />
+        </Link>
+      </HStack>
+      {/* </Tooltip> */}
+    </Box>
   );
 };
 

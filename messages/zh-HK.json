@@ -53,7 +53,8 @@
     "no_announcements": "暫無公告",
     "no_known_issues": "暫無已知問題",
     "no_upcoming_features": "暫無正在實現的功能",
-    "no_data": "暫無數據"
+    "no_data": "暫無數據",
+    "powered_by": "搭載"
   },
   "Signup": {
     "signup": "註冊",

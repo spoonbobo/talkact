@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Box, Container, Flex, Heading, Icon, Text, SimpleGrid } from "@chakra-ui/react";
+import { Box, Container, Flex, Heading, Icon, Text, SimpleGrid, Image } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FiMessageSquare } from "react-icons/fi";
 import { FaBook, FaTasks } from "react-icons/fa";
@@ -81,6 +81,31 @@ export function GuestHomePage({
                     <Text color={textColorSecondary} fontSize="lg" maxWidth="800px" marginX="auto">
                         {t("guest_welcome_message") || "The open protocol that standardizes how applications provide context to LLMs"}
                     </Text>
+                </MotionBox>
+
+                {/* Powered By Section */}
+                <MotionBox
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.3 }}
+                    marginBottom={8}
+                    textAlign="center"
+                >
+                    <Heading as="h2" size="lg" marginBottom={4} color={textColor}>
+                        {t("powered_by") || "Powered By"}
+                    </Heading>
+                    <Flex justifyContent="center" gap="16px">
+                        <Image
+                            src="https://openrouter.ai/images/icons/DeepSeek.png"
+                            alt="DeepSeekV3"
+                            height="60px"
+                        />
+                        <Image
+                            src="https://ai.google.dev/static/gemma/images/gemma3.png"
+                            alt="Gemma3"
+                            height="60px"
+                        />
+                    </Flex>
                 </MotionBox>
 
                 {/* Feature Cards */}

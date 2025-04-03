@@ -1,25 +1,19 @@
-from typing import List
+import httpx
 import os
 
 from fastapi import Request
 from fastapi.routing import APIRouter
 from starlette.responses import PlainTextResponse
-from loguru import logger
-import requests
 from schemas.mcp import MCPSummon
-from service.app_client import AppClient
 from schemas.mcp import Task
-
 
 router = APIRouter()
 
 @router.post("/api/summon")
 async def mcp_summon(request: Request, summon: MCPSummon):
     client_host = request.client.host if request.client else "unknown"
-    # headers = dict(request.headers)
     summon.client_host = client_host
     mcp_client  = request.app.state.mcp_client
-    # await mcp_client.receive_summon(summon)
     await mcp_client.respond(summon)
 
     return PlainTextResponse(content="OK", status_code=200)
@@ -27,8 +21,14 @@ async def mcp_summon(request: Request, summon: MCPSummon):
 @router.post("/api/approve")
 async def approve(request: Request, task: Task):
     mcp_client = request.app.state.mcp_client
-    await mcp_client.execute(task)
-    return PlainTextResponse(content="OK", status_code=200)
+    client_url = os.environ.get("CLIENT_URL")
+    async with httpx.AsyncClient() as client:
+        await client.put(
+            f"{client_url}/api/task/update_task", 
+            json={"task_id": task.task_id, "status": "running"}
+        )
+    await mcp_client.queue.put(task)  # Enqueue the task for processing
+    return PlainTextResponse(content="Task enqueued", status_code=202)
 
 
 @router.get("/api/get_servers")

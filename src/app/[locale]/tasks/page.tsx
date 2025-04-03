@@ -141,17 +141,23 @@ export default function TasksPage() {
     });
 
     try {
+      const updateUrl = `/api/task/update_task`;
+      await axios.put(updateUrl, {
+        task_id: selectedTask.task_id,
+        status: action === 'approve' ? 'approved' : 'denied'
+      });
+      // Update the task status in the database
       if (action === 'approve') {
-        // Only make API call for approve action
-        const url = `/api/mcp/approve`;
-        await axios.post(url, selectedTask);
+        const approveUrl = `/api/mcp/approve`;
+        await axios.post(approveUrl, selectedTask);
+
         toaster.create({
           title: t("approved"),
           description: `${t("task_id")}: ${selectedTask.task_id}`,
           type: "success"
         });
       } else {
-        // For deny action, just log it without making an API call
+
         toaster.create({
           title: t("denied"),
           description: `${t("task_id")}: ${selectedTask.task_id}`,

@@ -14,6 +14,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { defaultSystem } from "@chakra-ui/react"
 import { ColorModeProvider } from "@/components/ui/color-mode"
 import Notification from "@/components/notification";
+import Footer from "@/components/footer";
 
 
 export default function Providers({
@@ -83,7 +84,7 @@ export default function Providers({
                     </Container>
                     <Notification />
                   </Box>
-                  {/* <Footer /> */}
+                  <Footer />
                 </Flex>
               </ColorModeProvider>
             </ChakraProvider>

@@ -1,0 +1,6 @@
+openai
+fastapi
+uvicorn[all]
+aiohttp
+loguru
+python-dotenv

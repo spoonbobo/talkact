@@ -11,3 +11,4 @@ requests
 ollama
 scipy
 numpy
+pip-audit

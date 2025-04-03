@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 import json
 import os
+import asyncio
 load_dotenv()
 
 import uvicorn
@@ -27,7 +28,9 @@ async def lifespan(app: FastAPI):
     logger.info("Connected to MCP client")
 
     app.state.mcp_client = mcp_client
+    task_processor = asyncio.create_task(mcp_client.process_tasks())  # Start task processing
     yield
+    task_processor.cancel()  # Cancel the task processor on shutdown
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(mcp_router)

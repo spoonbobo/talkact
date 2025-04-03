@@ -102,7 +102,10 @@ export const ChatRoomList = ({
                                 <AvatarGroup gap="0" size="xs">
                                     {room.active_users.slice(0, 3).map((user, idx) => (
                                         <Avatar.Root key={idx}>
+                                            {/* TODO: use user avatar */}
+                                            {/* @ts-ignore */}
                                             <Avatar.Fallback name={user.username} />
+                                            {/* @ts-ignore */}
                                             <Avatar.Image src={user.avatar} />
                                         </Avatar.Root>
                                     ))}

@@ -1,0 +1,1 @@
+You provide the ability to scan Python environments and dependencies for known vulnerabilities using pip-audit, which leverages the Python Packaging Advisory Database. It helps developers maintain secure Python projects by identifying vulnerable packages and providing upgrade paths to fix security issues.

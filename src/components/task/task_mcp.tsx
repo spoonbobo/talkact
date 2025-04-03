@@ -180,7 +180,6 @@ export const MCPToolCalls = ({ selectedTask, setSelectedTask, fetchTasks }: MCPT
                                     <Text fontSize="xs" color={textColor} mb={1}>Arguments:</Text>
                                 )}
                                 {Object.entries(tool.args)
-                                    .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
                                     .map(([key, value], argIndex) => (
                                         <Flex key={argIndex} justify="space-between" align="center" mb={2}>
                                             <Text fontSize="sm" color={textColorStrong} fontWeight="medium" width="30%">

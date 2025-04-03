@@ -108,29 +108,46 @@ function setupSocketIO(io, client) {
 
     socket.on("notification", async (data) => {
       console.log("notification", data);
-      // Check if receivers array exists
+      
+      // Array to store all receiver IDs
+      let allReceivers = [];
+      
+      // Check if direct receivers array exists
       if (data.receivers && Array.isArray(data.receivers)) {
-        // For each receiver in the notification
-        for (const receiverId of data.receivers) {
-          try {
-            // Get the receiver's socket ID from Redis
-            const socketId = await client.get(`user:${receiverId}:socket`);
-            
-            if (socketId) {
-              console.log("socketId", socketId);
-              // User is online, send notification directly
-              io.to(socketId).emit("notification", data);
-              // console.log(`Notification sent to user ${receiverId} via socket ${socketId}`);
-            } else {
-              console.log("socketId not found for", receiverId);
-              // // User is offline, store notification for later delivery
-              // // You might want to implement a storage mechanism similar to unread messages
-              // await client.lpush(`user:${receiverId}:unread_notifications`, JSON.stringify(data));
-              // console.log(`Notification stored for offline user ${receiverId}`);
-            }
-          } catch (error) {
-            console.error(`Error sending notification to user ${receiverId}:`, error);
+        allReceivers = [...data.receivers];
+      }
+      
+      // Check if roomId exists - get all users in the room
+      if (data.roomId) {
+        try {
+          const roomUsers = await client.smembers(`room:${data.roomId}:users`);
+          // Add room users to receivers list (avoiding duplicates)
+          allReceivers = [...new Set([...allReceivers, ...roomUsers])];
+        } catch (error) {
+          console.error(`Error getting users for room ${data.roomId}:`, error);
+        }
+      }
+      
+      // For each receiver in the notification
+      for (const receiverId of allReceivers) {
+        try {
+          // Get the receiver's socket ID from Redis
+          const socketId = await client.get(`user:${receiverId}:socket`);
+          
+          if (socketId) {
+            console.log("socketId", socketId);
+            // User is online, send notification directly
+            io.to(socketId).emit("notification", data);
+            // console.log(`Notification sent to user ${receiverId} via socket ${socketId}`);
+          } else {
+            console.log("socketId not found for", receiverId);
+            // // User is offline, store notification for later delivery
+            // // You might want to implement a storage mechanism similar to unread messages
+            // await client.lpush(`user:${receiverId}:unread_notifications`, JSON.stringify(data));
+            // console.log(`Notification stored for offline user ${receiverId}`);
           }
+        } catch (error) {
+          console.error(`Error sending notification to user ${receiverId}:`, error);
         }
       }
     });

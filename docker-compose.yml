@@ -183,7 +183,7 @@ services:
       - kakashi-chat_server
       - kakashi-psqldb
       - kakashi-app
-      - kakashi-llm
+      - kakashi-ollama
     ports:
       - "34430:34430"
     volumes:
@@ -194,7 +194,7 @@ services:
       - MCP_SERVERS_JSON=/app/mcp_server.json
       - SOCKET_URL=${NEXT_PUBLIC_WS_URL}
       - CLIENT_URL=${CLIENT_URL}
-      - OLLAMA_API_BASE_URL=http://kakashi-llm:11434
+      - OLLAMA_API_BASE_URL=http://kakashi-ollama:11434
       - OLLAMA_MODEL=llama3.2:latest
       - BYPASSER_MODEL=gemma3:4b
       - EMBED_MODEL=nomic-embed-text:latest
@@ -217,14 +217,29 @@ services:
     environment:
       - EMBED_MODEL=nomic-embed-text:latest
       - OLLAMA_MODEL=gemma3:4b
-      - OLLAMA_API_BASE_URL=http://kakashi-llm:11434
+      - OLLAMA_API_BASE_URL=http://kakashi-ollama:11434
     networks:
       - kakashi-network
     restart: always
 
   kakashi-llm:
-    image: ollama/ollama:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.llm
     container_name: kakashi-llm
+    ports:
+      - "36430:36430"
+    volumes:
+      - ./llm:/app
+    environment:
+      - DEEPSEEK_APIKEY=${DEEPSEEK_APIKEY}
+    networks:
+      - kakashi-network
+    restart: always
+
+  kakashi-ollama:
+    image: ollama/ollama:latest
+    container_name: kakashi-ollama
     ports:
       - "11434:11434"
     volumes:

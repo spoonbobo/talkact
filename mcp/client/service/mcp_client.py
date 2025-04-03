@@ -85,11 +85,17 @@ class MCPClient:
         
         logger.info(f"mcp client url: {summon}")
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{client_url}/api/chat/get_messages", 
-                json={"roomId": summon.room_id, "limit": 100}
-            )
-            messages = response.json()
+            try:
+                response = await client.post(
+                    f"{client_url}/api/chat/get_messages", 
+                    json={"roomId": summon.room_id, "limit": 100},
+                    headers={"Content-Type": "application/json"}
+                )
+                response.raise_for_status()
+                messages = response.json()
+            except Exception as e:
+                logger.error(f"Error fetching messages: {e}")
+                messages = []
         
         logger.info(f"Summoner: {summon.summoner}")
         query = summon.query
@@ -199,20 +205,26 @@ Please provide a helpful, conversational response directly to the user that:
 3. Addresses the user's original request completely
 4. Uses a friendly, helpful tone as if speaking directly to the user
 
-Your response should be comprehensive but concise, focusing on the most relevant information.
+Your response is comprehensive and concise, focusing on the most relevant information.
 """
         }
-        
-        logger.info(f"Query: {query}")
         
         summarization = self.ollama_client.generate(
             model=self.ollama_model,
             prompt=query["content"],
         )
         
-        logger.info(f"Summarization: {summarization}")
-        
-        # TODO: create a message to server as assignee.
+        # Update task status to successful
+        client_url = os.environ.get("CLIENT_URL", "")
+        try:
+            async with httpx.AsyncClient() as client:
+                await client.put(
+                    f"{client_url}/api/task/update_task", 
+                    json={"task_id": task.task_id, "status": "successful", "result": summarization.response},
+                    headers={"Content-Type": "application/json"}
+                )
+        except Exception as e:
+            logger.error(f"Error updating task status: {e}")
 
     async def get_servers(self) -> Dict[str, MCPServer]:
         server_information = {}
@@ -255,3 +267,25 @@ Your response should be comprehensive but concise, focusing on the most relevant
     async def cleanup(self):
         for server in self.servers:
             await self.exit_stack[server].aclose()
+
+    async def process_tasks(self):
+        while True:
+            task = await self.queue.get()
+            try:
+                await self.execute(task)
+                # Task status is now updated within the execute method
+            except Exception as e:
+                logger.error(f"Error processing task {task.task_id}: {e}")
+                # Update task status to failed
+                client_url = os.environ.get("CLIENT_URL", "")
+                try:
+                    async with httpx.AsyncClient() as client:
+                        await client.put(
+                            f"{client_url}/api/task/update_task", 
+                            json={"task_id": task.task_id, "status": "failed"},
+                            headers={"Content-Type": "application/json"}
+                        )
+                except Exception as update_error:
+                    logger.error(f"Error updating task status: {update_error}")
+            finally:
+                self.queue.task_done()
