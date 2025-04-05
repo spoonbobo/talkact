@@ -668,7 +668,7 @@ export default function SettingsPage() {
                       </Box>
 
                       {/* Add Delete All Tasks section */}
-                      <Box
+                      {/* <Box
                         p={4}
                         borderWidth="1px"
                         borderColor={dangerZoneBorder}
@@ -706,7 +706,7 @@ export default function SettingsPage() {
                             </Box>
                           </Box>
                         </HStack>
-                      </Box>
+                      </Box> */}
                     </>
                   ) : (
                     <Box

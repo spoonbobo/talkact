@@ -21,11 +21,14 @@ import { markAsRead, updatePosition } from '@/store/features/notificationSlice';
 const Notification: React.FC = () => {
     const dispatch = useDispatch();
     const { notifications, unreadCount, position } = useSelector((state: RootState) => state.notification);
+    const { currentUser, isAuthenticated } = useSelector((state: RootState) => state.user);
     const [isOpen, setIsOpen] = useState(false);
     const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const bellRef = useRef<HTMLDivElement>(null);
+
+    // TODO: if not authenticated, just hide.
 
     // Add constants for boundary margins
     const BOUNDARY_MARGIN = 20; // pixels from edge of screen

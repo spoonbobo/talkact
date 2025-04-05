@@ -124,12 +124,12 @@ export default function HomePage() {
       path: "/learn",
     },
     {
-      id: "tasks",
-      title: t("tasks_title"),
-      description: t("tasks_description"),
+      id: "plans",
+      title: t("plans_title"),
+      description: t("plans_description"),
       icon: FiMessageSquare,
       color: "green.500",
-      path: "/tasks",
+      path: "/plans",
     },
     {
       id: "mcp",
@@ -137,7 +137,7 @@ export default function HomePage() {
       description: t("mcp_description"),
       icon: FiServer,
       color: "purple.500",
-      path: "/mcp",
+      path: "/learn",
     },
   ];
 
@@ -246,18 +246,18 @@ export default function HomePage() {
               borderColor={borderColor}
               boxShadow="sm"
             >
-              <Flex align="center" mb={5}>
+              <Flex align="center" mb={3}>
                 <Icon as={FiTool} fontSize="2xl" color="red.500" mr={3} />
                 <Heading as="h2" size="md" color={textColor}>
                   {t("known_issues") || "Known Issues"}
                 </Heading>
               </Flex>
 
-              <Box>
+              <Box role="list" mt={2}>
                 {noticeData?.known_issues && noticeData.known_issues.length > 0 ? (
                   noticeData.known_issues.map((issue, index) => (
                     <React.Fragment key={index}>
-                      {index > 0 && <Separator my={4} borderColor={dividerColor} />}
+                      {index > 0 && <Separator my={1} borderColor={dividerColor} />}
                       <FeatureItem
                         color="red.400"
                         title={issue.value || t("issue_1_title") || "Connection Stability"}
@@ -286,18 +286,18 @@ export default function HomePage() {
               borderColor={borderColor}
               boxShadow="sm"
             >
-              <Flex align="center" mb={5}>
+              <Flex align="center" mb={3}>
                 <Icon as={FiTool} fontSize="2xl" color="purple.500" mr={3} />
                 <Heading as="h2" size="md" color={textColor}>
                   {t("features_implementing") || "Features Implementing"}
                 </Heading>
               </Flex>
 
-              <Box>
+              <Box role="list" mt={2}>
                 {noticeData?.features_implementing && noticeData.features_implementing.length > 0 ? (
                   noticeData.features_implementing.map((feature, index) => (
                     <React.Fragment key={index}>
-                      {index > 0 && <Separator my={4} borderColor={dividerColor} />}
+                      {index > 0 && <Separator my={1} borderColor={dividerColor} />}
                       <FeatureItem
                         color={index % 3 === 0 ? "yellow.400" : index % 3 === 1 ? "green.400" : "blue.400"}
                         title={feature.value || t("feature_1_title") || "Chat Room"}

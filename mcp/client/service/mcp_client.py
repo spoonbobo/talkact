@@ -1,35 +1,52 @@
 import dotenv
 from contextlib import AsyncExitStack
-from typing import Dict
-from datetime import datetime
+from typing import Dict, List
 import asyncio
 import httpx
-import uuid
 import os
+import datetime
+import re
+import json
+import logging
 
 dotenv.load_dotenv()
 from loguru import logger
 from ollama import Client
+from openai import OpenAI
 from mcp import ClientSession, StdioServerParameters
 from mcp.types import Tool as mcp_tool
 from mcp.client.stdio import stdio_client
 
-from schemas.mcp import MCPSummon, Task
+from schemas.mcp import MCPPlanRequest, Task, MCPTaskRequest
 from schemas.mcp import MCPTool, MCPServer
-from service.bypasser import Bypasser
+from prompts.task_create import PLAN_SYSTEM_PROMPT, PLAN_CREATE_PROMPT
+from prompts.mcp_reqeust import MCP_REQUEST_SYSTEM_PROMPT, MCP_REQUEST_PROMPT
+from schemas.mcp import ToolCallInfo
+from openai.types.chat import ChatCompletion
 
 class MCPClient:
     """
     A MCP client manager that contains connections to mcp servers
     """
-    def __init__(self, servers: dict, bypasser: Bypasser):
+    def __init__(self, servers: dict):
         self.servers = servers
-        self.bypasser = bypasser
+        self.server_names = list(self.servers.keys())
         self.exit_stack = {server: AsyncExitStack() for server in self.servers}
         self.ollama_client = Client(host=os.getenv("OLLAMA_API_BASE_URL"))
         self.ollama_model = os.getenv("OLLAMA_MODEL", "")
-        self.queue = asyncio.Queue()
-
+        self.openai_client = OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY"),
+            base_url=os.getenv("OPENAI_API_BASE_URL")
+        )
+        self.task_queue = asyncio.Queue()  # Execution queue
+        self.plan_queue = asyncio.Queue()  # New queue for task creation
+        self.request_queue = asyncio.Queue()  # Queue for direct MCP requests
+        self.server_descriptions_dict = {}
+        self.server_tools_dict = {}
+        self.mcp_tools_dict = {}
+        for server in self.servers:
+            self.server_descriptions_dict[server] = self.load_server_description(self.servers[server]["description"])
+        self.server_descriptions = self.format_server_descriptions()
 
     async def connect_to_servers(self) -> None:
         logger.info(f"Connecting to servers: {self.servers}")
@@ -54,41 +71,45 @@ class MCPClient:
 
             response = await self.servers[server].list_tools()
             tools = response.tools
-            logger.info(f"Connected to server {server} with tools: {tools}")
+            self.server_tools_dict[server] = tools
+            logger.info(f"Server tools: {tools}")
+            self.mcp_tools_dict[server] = [self.tools_from_mcp(tool) for tool in tools]
 
-    def convert_mcp_tool_desc_to_ollama_tool(self, tool: mcp_tool) -> dict:
-        ollama_tool = {
-            "type": "function",
-            "function": {
-                "name": tool.name,
-                "description": tool.description,
-                "parameters": {
-                    "type": "object",
-                    "properties": tool.inputSchema["properties"],
-                    "required": tool.inputSchema.get("required", [])
-                }
-            }
-        }
-        return ollama_tool  
-
-    async def receive_summon(
-        self, 
-        summon: MCPSummon, 
-    ) -> None:
-        await self.queue.put(summon)
-
-    async def respond(
-        self, 
-        summon: MCPSummon, 
-    ) -> None:
-        client_url = os.environ.get("CLIENT_URL", "")
+    def tools_from_mcp(self, tool: mcp_tool):
+        """
+        Convert MCP tool format to OpenAI function calling format.
         
-        logger.info(f"mcp client url: {summon}")
+        Args:
+            tool: An MCP tool object
+            
+        Returns:
+            dict: A tool description in OpenAI function calling format
+        """
+        # Create the function object with name, description and parameters
+        function_obj = {
+            "name": tool.name,
+            "description": tool.description,
+            "parameters": tool.inputSchema
+        }
+        
+        # Return the complete tool object in OpenAI format
+        return {
+            "type": "function",
+            "function": function_obj
+        }
+
+    async def create_plan(
+        self, 
+        plan_request: MCPPlanRequest, 
+    ) -> None:
+        # logger.info(f"Server tools: {self.server_tools_dict}")
+        client_url = os.environ.get("CLIENT_URL", "")
+
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(
                     f"{client_url}/api/chat/get_messages", 
-                    json={"roomId": summon.room_id, "limit": 100},
+                    json={"roomId": plan_request.room_id, "limit": 100},
                     headers={"Content-Type": "application/json"}
                 )
                 response.raise_for_status()
@@ -97,8 +118,8 @@ class MCPClient:
                 logger.error(f"Error fetching messages: {e}")
                 messages = []
         
-        logger.info(f"Summoner: {summon.summoner}")
-        query = summon.query
+        logger.info(f"Summoner: {plan_request.summoner}")
+        query = plan_request.query
         query = query.replace("@agent", "")
         query = [{"role": "user", "content": query}]
 
@@ -108,129 +129,286 @@ class MCPClient:
                 "content": msg["content"]
             }
             for msg in messages
-        ]
+        ] + query
         
-        byp_mcp_server = await self.bypasser.bypass(conversations, query[0]["content"])
-        server = self.servers[byp_mcp_server]
-        server_description = self.bypasser.server_descriptions_dict[byp_mcp_server]
-
-        tools = await server.list_tools()
-        tools = tools.tools
-        ollama_tools = [self.convert_mcp_tool_desc_to_ollama_tool(tool) for tool in tools]
-        
-        # Create a mapping of tool names to descriptions
-        tool_descriptions = {tool["function"]["name"]: tool["function"]["description"] for tool in ollama_tools}
-
-        llm_response = self.ollama_client.chat(
-            model=self.ollama_model,
-            messages=[{"role": "system", "content": server_description}] + conversations + query,
-            tools=ollama_tools,
+        response = self.openai_client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {
+                    "role": "system", 
+                    "content": PLAN_SYSTEM_PROMPT
+                },
+                {
+                    "role": "user", 
+                    "content": PLAN_CREATE_PROMPT.format(
+                        conversations=self.format_conversation(conversations),
+                        assistants=self.server_names,
+                        assistant_descriptions=self.format_server_descriptions()
+                    )
+                }
+            ],
+            temperature=0.7
         )
         
-        tool_calls = llm_response.message.tool_calls
-        if tool_calls is None:
-            tool_calls = []
+        msgs = [
+                {
+                    "role": "system", 
+                    "content": PLAN_SYSTEM_PROMPT
+                },
+                {
+                    "role": "user", 
+                    "content": PLAN_CREATE_PROMPT.format(
+                        conversations=self.format_conversation(conversations),
+                        assistants=self.server_names,
+                        assistant_descriptions=self.format_server_descriptions()
+                    )
+                }
+            ]
+        logger.info(f"prompt: {msgs}")
+        logger.info(f"Response: {response}")
+        
+        # Extract and parse the JSON plan from the response
+        plan_json = self.extract_json_from_response(response)
+        if plan_json:
+            logger.info(f"Extracted plan: {plan_json}")
+            
+            # First, create a plan record in the database
+            plan_overview = plan_json.get("plan_overview", "No plan overview provided")
+            plan_name = plan_json.get("plan_name", "No plan name provided")
+            try:
+                # Create a context object that includes both the plan and conversations
+                context = {
+                    "plan": plan_json,
+                    "conversations": conversations,
+                    "query": query
+                }
+                
+                # Check if this plan requires any tools
+                no_tools_needed = False
+                if "plan" not in plan_json or not plan_json["plan"] or plan_json.get("no_tools_needed", False):
+                    no_tools_needed = True
+                elif plan_json.get("plan_name", "").lower() == "null_plan":
+                    no_tools_needed = True
+                
+                # Create the plan via API
+                async with httpx.AsyncClient() as client:
+                    plan_response = await client.post(
+                        f"{client_url}/api/plan/create_plan",
+                        json={
+                            "plan_name": plan_name,
+                            "plan_overview": plan_overview,
+                            "room_id": plan_request.room_id,
+                            "context": context,
+                            "assigner": plan_request.assigner,
+                            "assignee": plan_request.assignee,
+                            "reviewer": getattr(plan_request, 'reviewer', None),
+                            "no_tools_needed": no_tools_needed  # Add this flag to the request
+                        },
+                        headers={"Content-Type": "application/json"}
+                    )
+                    plan_response.raise_for_status()
+                    plan_data = plan_response.json()
+                    plan_id = plan_data["plan"]["id"]
+                    logger.info(f"Created plan with ID: {plan_id}")
+                    
+                    # Then create tasks associated with this plan
+                    tasks = self.create_tasks_from_plan(plan_json, plan_request, plan_id)
+                    
+                    if tasks:
+                        # Create the tasks via API
+                        tasks_response = await client.post(
+                            f"{client_url}/api/plan/create_tasks",
+                            json={
+                                "plan_id": plan_id,
+                                "tasks": tasks
+                            },
+                            headers={"Content-Type": "application/json"}
+                        )
+                        tasks_response.raise_for_status()
+                        tasks_data = tasks_response.json()
+                        logger.info(f"Created {len(tasks_data['tasks'])} tasks for plan {plan_id}")
+                    else:
+                        logger.warning(f"No tasks created for plan {plan_id}")
+                        # Mark the plan as completed if no tasks were created
+                        await client.put(
+                            f"{client_url}/api/plan/update_plan",
+                            json={
+                                "plan_id": plan_id,
+                                "status": "success",
+                                "progress": 100,
+                                "completed_at": datetime.datetime.now().isoformat()
+                            },
+                            headers={"Content-Type": "application/json"}
+                        )
+                        logger.info(f"Marked plan {plan_id} as completed since no tasks were created")
+                        
+            except Exception as e:
+                logger.error(f"Error creating plan or tasks in database: {e}")
+        else:
+            logger.error("Failed to extract valid JSON plan from response")
 
-        tools_called = [
-            {
-                "tool_name": tool_call.function.name,
-                "args": tool_call.function.arguments,
-                "mcp_server": byp_mcp_server,
-                "description": tool_descriptions.get(tool_call.function.name, ""),  # Get description from mapping
+    def create_tasks_from_plan(self, plan_json, plan_request: MCPPlanRequest, plan_id: str) -> List[dict]:
+        """
+        Create task dictionaries from the extracted plan JSON.
+        
+        Args:
+            plan_json: The parsed JSON plan
+            plan_request: The original plan request
+            plan_id: The ID of the parent plan
+            
+        Returns:
+            List[dict]: A list of task dictionaries representing the plan steps
+        """
+        tasks = []
+        
+        # Check if there's a plan with steps
+        if "plan" in plan_json and isinstance(plan_json["plan"], dict):
+            # If the plan is empty, return an empty list (no tasks needed)
+            if not plan_json["plan"]:
+                logger.info(f"Empty plan detected, no tasks will be created")
+                return []
+            
+            # Sort steps to ensure they're processed in order (step_1, step_2, etc.)
+            steps = sorted(plan_json["plan"].keys())
+            
+            for i, step_key in enumerate(steps):
+                step = plan_json["plan"][step_key]
+                
+                # Skip steps without an assignee or with "None" as assignee
+                step_assignee_name = step.get("assignee")
+                if not step_assignee_name or step_assignee_name.lower() == "none" or "none" in step_assignee_name.lower():
+                    continue
+                
+                # Extract task details from the step
+                task_name = step.get("name", f"Step {i+1}")
+                task_explanation = step.get("explanation", "")
+                expected_result = step.get("expected_result", "")
+                
+                # Create the task matching the expected format in create_tasks API
+                task = {
+                    "step_number": i + 1,  # 1-based step number
+                    "task_name": task_name,
+                    "task_explanation": task_explanation,
+                    "expected_result": expected_result,
+                    "mcp_server": step_assignee_name,
+                    "tool": {},  # Initialize with empty JSON object instead of assignee info
+                    "status": "not_started"  # Initialize task status to not_started
+                }
+                
+                tasks.append(task)
+        
+        # If no valid tasks were created from steps, create a default task
+        if not tasks and plan_json.get("no_tools_needed", False):
+            # No tasks needed, return empty list to trigger auto-completion
+            return []
+        elif not tasks and plan_json.get("plan_name", "").lower() == "null_plan":
+            # Special case for null plans - no tasks needed
+            return []
+        elif not tasks:
+            # Create a default task
+            task = {
+                "step_number": 1,
+                "task_name": "Execute request",
+                "task_explanation": plan_json.get("plan_overview", "Process the user request"),
+                "expected_result": "Complete the requested task",
+                "tool": {},  # Initialize with empty JSON object
+                "status": "not_started"  # Initialize task status to not_started
             }
-            for tool_call in tool_calls
-        ]
-        
-        summarize_query = {
-            "role": "user",
-            "content": f"""
-Briefly describe how you will use {[tool["tool_name"] for tool in tools_called]} to address the user's request: "{query[0]['content']}".
             
-Available tools: {[tool.name for tool in tools]}
-Server purpose: {server_description}"""
-        }
+            tasks.append(task)
         
-        summarization = self.ollama_client.chat(
-            model=self.ollama_model,
-            messages=conversations + [summarize_query],
-        )
+        return tasks
 
-        task_id = str(uuid.uuid4())
-        task = {
-            "task_id": task_id,
-            "created_at": datetime.now().isoformat(),
-            "start_time": None,
-            "end_time": None,
-            "assigner": summon.assigner,
-            "assignee": summon.assignee,
-            "task_summarization": summarization.message.content,
-            "room_id": summon.room_id,
-            "context": conversations + [summarize_query],
-            "tools_called": tools_called,
-            "status": "pending",
-            "result": ""
-        }
-        logger.info(f"Task: {task}")
-        # create notification as well.
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{client_url}/api/task/create_task", 
-                json=task
-            )
-            
-            logger.info(f"Task created: {response}")
-
-    async def execute(
-        self,
-        task: Task,
-    ):
-        results = []
-        for tool_call in task.tools_called:
-            session = self.servers[tool_call.mcp_server]
-            tool_response = await session.call_tool(tool_call.tool_name, tool_call.args)
-            results.append(tool_response.content[0].text)
-        
-        query = {
-            "role": "user",
-            "content": f"""
-Based on the context: "{task.context}", you executed the following tools:
-{', '.join([f"{tool.tool_name}" for tool in task.tools_called])}
-
-Here are the results from those tool executions:
-{results}
-
-Please provide a helpful, conversational response directly to the user that:
-1. Explains what tools you used and why
-2. Summarizes the key information obtained from the tools
-3. Addresses the user's original request completely
-4. Uses a friendly, helpful tone as if speaking directly to the user
-
-Your response is comprehensive and concise, focusing on the most relevant information.
-"""
-        }
-        
-        summarization = self.ollama_client.generate(
-            model=self.ollama_model,
-            prompt=query["content"],
-        )
-        
-        # Update task status to successful
+    async def execute_mcp_request(self, mcp_request: MCPTaskRequest):
+        task = mcp_request.task
+        mcp_server = task.mcp_server
+        # mcp_tools = self.server_tools_dict[mcp_server]
+        mcp_tools = self.mcp_tools_dict[mcp_server]
         client_url = os.environ.get("CLIENT_URL", "")
+        
+        system_prompt = MCP_REQUEST_SYSTEM_PROMPT.format(
+            mcp_server_speciality=self.server_descriptions_dict[mcp_server]
+        )
+        logger.info(f"System prompt: {system_prompt}")
+        
+        user_prompt = MCP_REQUEST_PROMPT.format(
+            plan_name=mcp_request.plan.plan_name,
+            plan_overview=mcp_request.plan.plan_overview,
+            background_information=[],
+            task=mcp_request.task.task_name,
+            reason=mcp_request.task.task_explanation,
+            expectation=mcp_request.task.expected_result
+        )
+        logger.info(f"User prompt: {user_prompt}")
+        logger.info(f"Tools: {mcp_tools}")
+        
+        tools = self.openai_client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
+            tools=mcp_tools,
+            tool_choice="required"
+        )
+        
+        logger.info(f"Tools: {tools}")
+        
+        # Parse the tools response into ToolCallInfo objects
+        tool_calls = self.parse_mcp_tools(tools, mcp_server)
+        task_id = mcp_request.task.task_id
+        
+        # Convert tool_calls to a format suitable for the database
         try:
-            async with httpx.AsyncClient() as client:
-                await client.put(
-                    f"{client_url}/api/task/update_task", 
-                    json={"task_id": task.task_id, "status": "successful", "result": summarization.response},
+            # For Pydantic v2
+            tool_data = [tool_call.model_dump() for tool_call in tool_calls]
+        except AttributeError:
+            # Fallback for Pydantic v1
+            tool_data = [tool_call.dict() for tool_call in tool_calls]
+        
+        # Update the task with the tool information
+        async with httpx.AsyncClient() as client:
+            try:
+                # First update the task with the tool information
+                update_url = f"{client_url}/api/plan/update_task"
+                
+                # Ensure the data is properly serializable by using json.dumps/loads
+                # This ensures we have valid JSON that PostgreSQL can accept
+                json_string = json.dumps(tool_data)
+                validated_json = json.loads(json_string)
+                
+                update_payload = {
+                    "task_id": task_id,
+                    "tool": validated_json,
+                    "status": "pending"  # Optionally update status
+                }
+                
+                logger.debug(f"Updating task with payload: {json.dumps(update_payload)}")
+                
+                update_response = await client.put(
+                    update_url,
+                    json=update_payload,
                     headers={"Content-Type": "application/json"}
                 )
-        except Exception as e:
-            logger.error(f"Error updating task status: {e}")
+                update_response.raise_for_status()
+                logger.info(f"Task updated successfully: {update_response.status_code}")
+                
+                # Then continue with your existing code to fetch messages
+                response = await client.post(
+                    f"{client_url}/api/chat/get_messages", 
+                    json={"roomId": mcp_request.plan.room_id, "limit": 100},
+                    headers={"Content-Type": "application/json"}
+                )
+                response.raise_for_status()
+                messages = response.json()
+            except Exception as e:
+                logger.error(f"Error updating task or fetching messages: {e}")
+                if isinstance(e, httpx.HTTPStatusError):
+                    logger.error(f"Response content: {e.response.content}")
+                messages = []
 
     async def get_servers(self) -> Dict[str, MCPServer]:
         server_information = {}
         for server_name, server_session in self.servers.items():
             try:
-                server_description = self.bypasser.server_descriptions_dict[server_name]
+                server_description = self.server_descriptions_dict[server_name]
                 server_tools_response = await server_session.list_tools()
                 server_tools = server_tools_response.tools
                 
@@ -270,10 +448,38 @@ Your response is comprehensive and concise, focusing on the most relevant inform
 
     async def process_tasks(self):
         while True:
-            task = await self.queue.get()
+            task = await self.task_queue.get()
             try:
-                await self.execute(task)
-                # Task status is now updated within the execute method
+                # Check if this task requires tool execution
+                requires_tool = True
+                if hasattr(task, 'tool') and (task.tool is None or not task.tool):
+                    requires_tool = False
+                
+                if requires_tool:
+                    await self.execute_mcp_request(task)
+                    # Task status is now updated within the execute method
+                else:
+                    # No tool execution needed, mark as completed
+                    client_url = os.environ.get("CLIENT_URL", "")
+                    try:
+                        async with httpx.AsyncClient() as client:
+                            # Update task status to success
+                            await client.put(
+                                f"{client_url}/api/task/update_task", 
+                                json={
+                                    "task_id": task.task_id, 
+                                    "status": "success",
+                                    "progress": 100,
+                                    "completed_at": datetime.datetime.now().isoformat()
+                                },
+                                headers={"Content-Type": "application/json"}
+                            )
+                            logger.info(f"Task {task.task_id} marked as completed (no tool execution required)")
+                            
+                            # Check if all tasks for this plan are completed
+                            await self.check_and_update_plan_status(task.plan_id)
+                    except Exception as update_error:
+                        logger.error(f"Error updating task status: {update_error}")
             except Exception as e:
                 logger.error(f"Error processing task {task.task_id}: {e}")
                 # Update task status to failed
@@ -288,4 +494,198 @@ Your response is comprehensive and concise, focusing on the most relevant inform
                 except Exception as update_error:
                     logger.error(f"Error updating task status: {update_error}")
             finally:
-                self.queue.task_done()
+                self.task_queue.task_done()
+
+    # New method to process the creation queue
+    async def process_creation_tasks(self):
+        while True:
+            plan_request = await self.plan_queue.get()
+            try:
+                await self.create_plan(plan_request)
+            except Exception as e:
+                logger.error(f"Error creating task: {e}")
+            finally:
+                self.plan_queue.task_done()
+
+    def load_server_description(self, server: str) -> str:
+        with open(server, 'r') as file:
+            return file.read()
+    
+    def format_server_descriptions(self) -> str:
+        descriptions = []
+        for idx, server in enumerate(self.server_names):
+            description = self.server_descriptions_dict[server]
+            # Replace "You provide the" with "The assistant has"
+            description = description.replace("You provide the", "The assistant has")
+            
+            # Add tools information to the description
+            if server in self.server_tools_dict:
+                tools = self.server_tools_dict[server]
+                tools_description = f"\n\nAvailable tools for Assistant {idx + 1} - {server}:\n"
+                
+                for tool in tools:
+                    # Extract just the first line of the description
+                    short_description = tool.description.split('\n')[0].strip()
+                    tools_description += f"- {tool.name}: {short_description}\n"
+                
+                description += tools_description
+            
+            descriptions.append(f"assistant name: {server}\n=================\n{description}\n")
+        
+        return "\n" + "\n".join(descriptions)
+
+    def format_conversation(self, messages):
+        formatted_text = "CONVERSATION START\n\n"
+        for message in messages:
+            role = message['role']
+            content = message['content']
+            # Clean up the content by removing '@agent' prefix
+            if content.startswith('@agent'):
+                content = content.replace('@agent', '', 1).strip()
+            
+            formatted_text += f"{role.capitalize()}: {content}\n"
+        
+        formatted_text += "\nCONVERSATION END"
+        return formatted_text
+
+    def extract_json_from_response(self, response):
+        """
+        Extract and parse JSON from the OpenAI API response.
+        
+        Args:
+            response: The OpenAI API response object
+            
+        Returns:
+            dict: The parsed JSON object or None if parsing fails
+        """
+        try:
+            # Get the content from the first message in the response
+            content = response.choices[0].message.content
+            
+            # Check if the content contains JSON code block
+            import re
+            import json
+            
+            # Look for JSON content within markdown code blocks
+            json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', content)
+            if json_match:
+                json_str = json_match.group(1)
+                return json.loads(json_str)
+            
+            # If no code block, try to parse the entire content as JSON
+            try:
+                return json.loads(content)
+            except json.JSONDecodeError:
+                # If that fails, return None
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error extracting JSON from response: {e}")
+            return None
+
+    async def check_and_update_plan_status(self, plan_id: str) -> None:
+        """
+        Check if all tasks for a plan are completed and update the plan status accordingly.
+        
+        Args:
+            plan_id: The ID of the plan to check
+        """
+        client_url = os.environ.get("CLIENT_URL", "")
+        try:
+            async with httpx.AsyncClient() as client:
+                # Get all tasks for this plan
+                response = await client.get(
+                    f"{client_url}/api/plan/get_tasks?plan_id={plan_id}",
+                    headers={"Content-Type": "application/json"}
+                )
+                response.raise_for_status()
+                tasks_data = response.json()
+                
+                # Check if all tasks are completed
+                tasks = tasks_data.get("tasks", [])
+                if not tasks:
+                    return
+                    
+                all_completed = all(task.get("status") in ["success", "failed"] for task in tasks)
+                all_successful = all(task.get("status") == "success" for task in tasks)
+                
+                if all_completed:
+                    # Calculate progress as percentage of successful tasks
+                    successful_tasks = sum(1 for task in tasks if task.get("status") == "success")
+                    progress = int((successful_tasks / len(tasks)) * 100)
+                    
+                    # Update plan status
+                    status = "success" if all_successful else "failed"
+                    await client.put(
+                        f"{client_url}/api/plan/update_plan",
+                        json={
+                            "plan_id": plan_id,
+                            "status": status,
+                            "progress": progress,
+                            "completed_at": datetime.datetime.now().isoformat()
+                        },
+                        headers={"Content-Type": "application/json"}
+                    )
+                    logger.info(f"Updated plan {plan_id} status to {status} with progress {progress}%")
+        except Exception as e:
+            logger.error(f"Error checking and updating plan status: {e}")
+
+    async def process_mcp_requests(self):
+        """Process direct MCP requests from the request queue"""
+        while True:
+            mcp_request = await self.request_queue.get()
+            try:
+                await self.execute_mcp_request(mcp_request)
+            except Exception as e:
+                logger.error(f"Error processing MCP request: {e}")
+            finally:
+                self.request_queue.task_done()
+
+    def parse_mcp_tools(self, completion_response: ChatCompletion, mcp_server: str) -> List[ToolCallInfo]:
+        """
+        Parse tool calls from a ChatCompletion response object.
+        
+        Args:
+            completion_response: ChatCompletion response from OpenAI API
+            mcp_server: The MCP server name to associate with the tool calls
+            
+        Returns:
+            List of ToolCallInfo objects representing the parsed tool calls
+        """
+        tool_call_infos = []
+        
+        # Check if there are any tool calls in the response
+        if not completion_response.choices or not completion_response.choices[0].message.tool_calls:
+            return []
+        
+        # Extract tool calls from the response
+        tool_calls = completion_response.choices[0].message.tool_calls
+        
+        for tool_call in tool_calls:
+            try:
+                # Extract tool information
+                tool_name = tool_call.function.name
+                args = json.loads(tool_call.function.arguments)
+                
+                # Find the specific tool description that matches the tool name
+                tool_description = None
+                for tool in self.mcp_tools_dict[mcp_server]:
+                    if tool["function"]["name"] == tool_name:
+                        tool_description = tool["function"]["description"]
+                        break
+                
+                # Create a ToolCallInfo object
+                tool_info = ToolCallInfo(
+                    tool_name=tool_name,
+                    mcp_server=mcp_server,  # Use the provided mcp_server
+                    args=args,
+                    description=tool_description
+                )
+                
+                tool_call_infos.append(tool_info)
+            except (json.JSONDecodeError, AttributeError) as e:
+                # Skip this tool call if there's an error
+                logger.warning(f"Error parsing tool call: {e}")
+                continue
+        
+        return tool_call_infos

@@ -262,10 +262,10 @@ const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: 
             />
 
             <NavIconButton
-              to="/tasks"
+              to="/plans"
               icon={FaTasks}
-              label="Tasks"
-              tooltipContent={t("tasks")}
+              label="Plans"
+              tooltipContent={t("plans")}
               isMobile={isMobile}
               isExpanded={isExpanded}
             />

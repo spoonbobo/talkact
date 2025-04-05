@@ -1,4 +1,5 @@
 import { useColorModeValue } from "@/components/ui/color-mode";
+import { useColorMode } from "@/components/ui/color-mode";
 
 // Chat room list colors
 export const useChatRoomColors = () => {
@@ -103,6 +104,87 @@ export const useChatPageColors = () => {
         taskModeColor: useColorModeValue("blue.500", "blue.500"),
         taskModeHoverColor: useColorModeValue("blue.600", "blue.600"),
         chatModeHoverColor: useColorModeValue("green.600", "green.600"),
+    };
+};
+
+// Plans page colors
+export const usePlansColors = () => {
+    const colorMode = useColorMode();
+    const mode = typeof colorMode === 'object' ? colorMode.colorMode : colorMode;
+    const isDarkMode = mode === "dark";
+
+    return {
+        accentColor: "blue.500",
+        bgColor: useColorModeValue("bg.subtle", "gray.800"),
+        borderColor: useColorModeValue("gray.200", "gray.700"),
+        borderColorSubtle: useColorModeValue("gray.100", "gray.750"),
+        hoverBg: useColorModeValue("gray.50", "gray.700"),
+        textColor: useColorModeValue("gray.600", "gray.400"),
+        textColorHeading: useColorModeValue("gray.800", "gray.100"),
+        textColorMuted: useColorModeValue("gray.400", "gray.500"),
+        cardBg: useColorModeValue("white", "gray.700"),
+        bgSubtle: useColorModeValue("gray.50", "gray.800"),
+        selectedRoomBg: useColorModeValue("blue.50", "blue.900"),
+        errorBg: useColorModeValue("red.50", "red.900"),
+        errorText: useColorModeValue("red.500", "red.300"),
+        emptyBg: useColorModeValue("gray.50", "gray.800"),
+        planItemBg: useColorModeValue("white", "gray.700"),
+        planItemHoverBg: useColorModeValue("blue.50", "gray.600"),
+        planItemBorder: useColorModeValue("gray.200", "gray.600"),
+        planItemSelectedBg: useColorModeValue("blue.100", "blue.900"),
+
+        // Add all the color values that were previously in the component
+        sidebarShadowColor: useColorModeValue("rgba(0,0,0,0.05)", "rgba(0,0,0,0.3)"),
+        cardHoverBg: useColorModeValue("gray.50", "gray.750"),
+        selectedItemBg: useColorModeValue("blue.50", "rgba(66, 153, 225, 0.15)"),
+        timelineConnectorColor: useColorModeValue("gray.200", "gray.600"),
+        detailsPanelBg: useColorModeValue("white", "gray.850"),
+        timelineIconBg: useColorModeValue("blue.50", "blue.900"),
+        timelineIconColor: useColorModeValue("blue.500", "blue.300"),
+        timelineSelectedIconBg: useColorModeValue("blue.500", "blue.400"),
+        timelineSelectedIconColor: useColorModeValue("white", "white"),
+        accentGradient: useColorModeValue(
+            "linear-gradient(to right, blue.400, blue.500)",
+            "linear-gradient(to right, blue.400, blue.600)"
+        ),
+        selectedBorderColor: useColorModeValue("blue.400", "blue.500"),
+        timelineBg: useColorModeValue("white", "gray.850"),
+        detailsBg: useColorModeValue("gray.50", "gray.900"),
+        cardShadow: useColorModeValue("0 2px 5px rgba(0,0,0,0.05)", "0 2px 5px rgba(0,0,0,0.3)"),
+        selectedCardShadow: useColorModeValue("0 3px 8px rgba(0,0,0,0.08)", "0 3px 8px rgba(0,0,0,0.4)"),
+        subtleSelectedItemBg: useColorModeValue("blue.50", "rgba(66, 153, 225, 0.2)"),
+        subtleSelectedBorderColor: useColorModeValue("blue.200", "blue.600"),
+        subtleTimelineSelectedIconBg: useColorModeValue("blue.400", "blue.500"),
+        tableBgDark: useColorModeValue("white", "gray.800"),
+        tableHeaderBgDark: useColorModeValue("gray.50", "gray.750"),
+        monoBgDark: useColorModeValue("gray.50", "gray.800"),
+        darkModeInputBg: useColorModeValue("white", "gray.700"),
+        focusRingColor: useColorModeValue("blue.100", "blue.800"),
+        buttonBgColor: useColorModeValue("white", "gray.800"),
+        buttonHoverBgColor: useColorModeValue("red.50", "gray.700"),
+        blueBgColor: useColorModeValue("blue.500", "blue.500"),
+        blueHoverBgColor: useColorModeValue("blue.600", "blue.400"),
+
+        // Adding missing properties
+        inputBg: useColorModeValue("white", "gray.700"),
+        inputBorder: useColorModeValue("gray.200", "gray.600"),
+        selectedBorder: useColorModeValue("blue.300", "blue.600"),
+
+        // Adding color properties for buttons and status indicators
+        greenBgColor: useColorModeValue("green.500", "green.500"),
+        greenHoverBgColor: useColorModeValue("green.600", "green.400"),
+        orangeBgColor: useColorModeValue("orange.500", "orange.500"),
+        orangeHoverBgColor: useColorModeValue("orange.600", "orange.400"),
+        redBgColor: useColorModeValue("red.500", "red.500"),
+        redHoverBgColor: useColorModeValue("red.600", "red.400"),
+
+        // Status colors
+        statusSuccess: isDarkMode ? "green.500" : "green.500",
+        statusRunning: isDarkMode ? "blue.500" : "blue.500",
+        statusPending: isDarkMode ? "yellow.500" : "yellow.500",
+        statusTerminated: isDarkMode ? "red.400" : "red.400",
+        statusFailure: isDarkMode ? "red.500" : "red.500",
+        statusDefault: isDarkMode ? "gray.500" : "gray.500",
     };
 };
 

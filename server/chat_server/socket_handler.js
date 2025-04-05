@@ -108,7 +108,7 @@ function setupSocketIO(io, client) {
 
     socket.on("notification", async (data) => {
       console.log("notification", data);
-      
+      const roomId = data.room_id;
       // Array to store all receiver IDs
       let allReceivers = [];
       
@@ -116,15 +116,17 @@ function setupSocketIO(io, client) {
       if (data.receivers && Array.isArray(data.receivers)) {
         allReceivers = [...data.receivers];
       }
+      console.log(roomId);
       
       // Check if roomId exists - get all users in the room
-      if (data.roomId) {
+      if (roomId) {
         try {
-          const roomUsers = await client.smembers(`room:${data.roomId}:users`);
+          const roomUsers = await client.smembers(`room:${roomId}:users`);
           // Add room users to receivers list (avoiding duplicates)
           allReceivers = [...new Set([...allReceivers, ...roomUsers])];
+          console.log('allReceivers', allReceivers)
         } catch (error) {
-          console.error(`Error getting users for room ${data.roomId}:`, error);
+          console.error(`Error getting users for room ${roomId}:`, error);
         }
       }
       

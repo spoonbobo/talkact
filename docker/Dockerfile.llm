@@ -26,6 +26,6 @@ COPY ./llm .
 # Ensure the installed binary is on the `PATH`
 ENV PATH="/root/.local/bin/:$PATH"
 
-EXPOSE 34430
+EXPOSE 36430
 
 CMD ["python", "main.py", "--host", "0.0.0.0", "--port", "36430"]

@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import { Box, Container, Flex, Heading, Icon, Text, SimpleGrid, Image } from "@chakra-ui/react";
+import { Box, Container, Flex, Heading, Icon, Text, SimpleGrid, Image, Avatar } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FiMessageSquare } from "react-icons/fi";
-import { FaBook, FaTasks } from "react-icons/fa";
+import { FaBook, FaTasks, FaQuoteLeft } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
@@ -60,6 +60,34 @@ export function GuestHomePage({
         },
     ];
 
+    // Add testimonials data
+    const testimonials = [
+        // {
+        //     id: "testimonial1",
+        //     name: "Sarah Johnson",
+        //     role: "AI Engineer",
+        //     company: "TechCorp",
+        //     content: t("testimonial_1") || "MCP has revolutionized how we build context-aware AI applications. The standardized protocol saves us countless development hours.",
+        //     avatar: "https://randomuser.me/api/portraits/women/44.jpg"
+        // },
+        // {
+        //     id: "testimonial2",
+        //     name: "Michael Chen",
+        //     role: "CTO",
+        //     company: "AI Innovations",
+        //     content: t("testimonial_2") || "Implementing MCP into our workflow has improved our AI models' performance by 40%. The context handling is simply unmatched.",
+        //     avatar: "https://randomuser.me/api/portraits/men/32.jpg"
+        // },
+        // {
+        //     id: "testimonial3",
+        //     name: "Elena Rodriguez",
+        //     role: "Product Manager",
+        //     company: "DataSense",
+        //     content: t("testimonial_3") || "Our team was able to integrate MCP in just days. The documentation is excellent and the community support is outstanding.",
+        //     avatar: "https://randomuser.me/api/portraits/women/68.jpg"
+        // }
+    ];
+
     return (
         <Container maxWidth="1400px" paddingX={{ base: 4, md: 6 }} paddingY={6}>
             <MotionBox
@@ -95,16 +123,48 @@ export function GuestHomePage({
                         {t("powered_by") || "Powered By"}
                     </Heading>
                     <Flex justifyContent="center" gap="16px">
-                        <Image
-                            src="https://openrouter.ai/images/icons/DeepSeek.png"
-                            alt="DeepSeekV3"
-                            height="60px"
-                        />
-                        <Image
-                            src="https://ai.google.dev/static/gemma/images/gemma3.png"
-                            alt="Gemma3"
-                            height="60px"
-                        />
+                        <MotionBox
+                            initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+                            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                            transition={{
+                                delay: 0.3,
+                                duration: 0.5,
+                                type: "spring",
+                                stiffness: 100
+                            }}
+                            whileHover={{
+                                scale: 1.05,
+                                rotate: 2,
+                                transition: { duration: 0.2 }
+                            }}
+                        >
+                            <Image
+                                src="https://openrouter.ai/images/icons/DeepSeek.png"
+                                alt="DeepSeekV3"
+                                height="60px"
+                            />
+                        </MotionBox>
+                        <MotionBox
+                            initial={{ opacity: 0, scale: 0.8, rotate: 5 }}
+                            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                            transition={{
+                                delay: 0.4,
+                                duration: 0.5,
+                                type: "spring",
+                                stiffness: 100
+                            }}
+                            whileHover={{
+                                scale: 1.05,
+                                rotate: -2,
+                                transition: { duration: 0.2 }
+                            }}
+                        >
+                            <Image
+                                src="https://ai.google.dev/static/gemma/images/gemma3.png"
+                                alt="Gemma3"
+                                height="60px"
+                            />
+                        </MotionBox>
                     </Flex>
                 </MotionBox>
 
@@ -158,6 +218,104 @@ export function GuestHomePage({
                         ))}
                     </SimpleGrid>
                 </Box>
+
+                {/* Testimonials Section */}
+                <MotionBox
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, duration: 0.3 }}
+                    marginBottom={16}
+                >
+                    <Heading as="h2" size="lg" marginBottom={8} color={textColor} textAlign="center">
+                        {t("trusted_by") || "Trusted By Users"}
+                    </Heading>
+                    <Flex
+                        direction={{ base: "column", md: "row" }}
+                        gap={6}
+                        justifyContent="center"
+                        overflowX={{ base: "visible", md: "auto" }}
+                        pb={2}
+                        css={{
+                            "&::-webkit-scrollbar": {
+                                height: "8px",
+                            },
+                            "&::-webkit-scrollbar-track": {
+                                background: "transparent",
+                            },
+                            "&::-webkit-scrollbar-thumb": {
+                                background: dividerColor,
+                                borderRadius: "4px",
+                            },
+                        }}
+                    >
+                        {testimonials.map((testimonial, index) => (
+                            <MotionBox
+                                key={testimonial.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 * (index + 1), duration: 0.3 }}
+                                bg={cardBgColor}
+                                p={5}
+                                borderRadius="lg"
+                                boxShadow="sm"
+                                border="1px solid"
+                                borderColor={cardBorderColor}
+                                minWidth={{ base: "100%", md: "300px" }}
+                                maxWidth={{ base: "100%", md: "350px" }}
+                                flex="1"
+                                position="relative"
+                                _hover={{
+                                    transform: "translateY(-3px)",
+                                    boxShadow: "md",
+                                    transition: "all 0.2s ease"
+                                }}
+                            >
+                                <Icon
+                                    as={FaQuoteLeft}
+                                    position="absolute"
+                                    top={3}
+                                    right={3}
+                                    color="gray.200"
+                                    fontSize="xl"
+                                />
+
+                                <Text
+                                    color={textColor}
+                                    fontSize="md"
+                                    fontStyle="italic"
+                                    mb={4}
+                                    lineHeight="1.6"
+                                >
+                                    "{testimonial.content}"
+                                </Text>
+
+                                <Flex align="center">
+                                    {/* <Avatar
+                                        src={testimonial.avatar}
+                                        name={testimonial.name}
+                                        size="sm"
+                                        mr={3}
+                                    /> */}
+                                    <Box>
+                                        <Text
+                                            color={textColor}
+                                            fontWeight="medium"
+                                            fontSize="sm"
+                                        >
+                                            {testimonial.name}
+                                        </Text>
+                                        <Text
+                                            color={textColorSecondary}
+                                            fontSize="xs"
+                                        >
+                                            {testimonial.role}, {testimonial.company}
+                                        </Text>
+                                    </Box>
+                                </Flex>
+                            </MotionBox>
+                        ))}
+                    </Flex>
+                </MotionBox>
 
                 {/* Call to Action */}
                 <MotionBox

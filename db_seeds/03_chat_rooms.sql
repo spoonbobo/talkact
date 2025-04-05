@@ -15,5 +15,5 @@ CREATE TABLE IF NOT EXISTS messages (
     room_id UUID,
     sender UUID,
     content TEXT NOT NULL,
-    avatar TEXT,
+    avatar TEXT
 );

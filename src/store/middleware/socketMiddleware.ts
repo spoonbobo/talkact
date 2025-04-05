@@ -26,6 +26,8 @@ export const socketMiddleware: Middleware = store => next => (action: unknown) =
     const { dispatch, getState } = store;
     const chatAction = action as ChatAction;
 
+    console.log('Action received in middleware:', (action as ChatAction).type);
+
     // Handle socket initialization
     if (chatAction.type === 'chat/initializeSocket') {
         const user: User = chatAction.payload;
@@ -168,7 +170,25 @@ export const socketMiddleware: Middleware = store => next => (action: unknown) =
         if (socketClient && socketClient.socket && socketClient.socket.connected) {
             socketClient.sendNotification(notification);
         }
+        return next(action);
     }
-    // Pass all other actions to the next middleware
+
+    if ((action as ChatAction).type === 'plan/approvePlan') {
+        console.log('Plan approve action detected in middleware');
+        const plan = (action as ChatAction).payload;
+        console.log('approvePlan plan data:', plan);
+        const notification: INotification = {
+            notification_id: uuidv4(),
+            message: `Plan ${plan.plan_name} has been approved`,
+            sender: plan.user_id,
+            created_at: new Date().toISOString(),
+            room_id: plan.room_id
+        }
+        if (socketClient && socketClient.socket && socketClient.socket.connected) {
+            socketClient.sendNotification(notification);
+        }
+        return next(action);
+    }
+
     return next(action);
 }; 

@@ -12,3 +12,4 @@ ollama
 scipy
 numpy
 pip-audit
+openai

@@ -16,3 +16,5 @@ CREATE TABLE IF NOT EXISTS users (
     active_rooms UUID[],
     archived_rooms UUID[]
 );
+
+INSERT INTO users (user_id, username, email, role) VALUES ('00000000-0000-0000-0000-000000000000', 'agent', 'agent@agent.com', 'admin');

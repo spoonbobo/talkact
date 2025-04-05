@@ -5,6 +5,7 @@ import storage from 'redux-persist/lib/storage'; // defaults to localStorage for
 import chatReducer from './features/chatSlice';
 import userReducer from './features/userSlice';
 import notificationReducer from './features/notificationSlice';
+import planReducer from './features/planSlice';
 import { socketMiddleware } from './middleware/socketMiddleware';
 
 // Combine all reducers
@@ -12,6 +13,7 @@ const rootReducer = combineReducers({
     chat: chatReducer,
     user: userReducer,
     notification: notificationReducer,
+    plan: planReducer,
     // Add other reducers here
 });
 

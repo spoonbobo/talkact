@@ -9,6 +9,7 @@ export interface INotification {
     sender?: string;
     receivers?: string[];
     created_at: string;
+    room_id?: string;
 
     // Frontend-specific properties
     title?: string;

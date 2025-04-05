@@ -283,7 +283,7 @@ const ChatPageContent = () => {
         }
       }
 
-      const url = `/api/mcp/summon`;
+      const url = `/api/mcp/create_plan`;
       const payload = {
         summoner: currentUser?.email,
         query: message,

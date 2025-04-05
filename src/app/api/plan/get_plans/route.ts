@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { ITask } from '@/types/task';
 
 export async function GET(request: Request) {
     try {
@@ -29,7 +28,7 @@ export async function GET(request: Request) {
         }
 
         // Get total count for pagination
-        let countQuery = db('tasks');
+        let countQuery = db('plan');
         if (status) {
             countQuery = countQuery.where('status', status);
         }
@@ -37,7 +36,7 @@ export async function GET(request: Request) {
         const totalCount = parseInt(count as string, 10);
 
         // Build main query with order by
-        let query = db('tasks').orderBy('created_at', 'desc');
+        let query = db('plan').orderBy('created_at', 'desc');
 
         // Apply status filter if provided
         if (status) {
@@ -52,58 +51,41 @@ export async function GET(request: Request) {
         query = query.offset(offset);
 
         // Execute query
-        const tasks = await query;
+        const plans = await query;
 
-        // Ensure tasks is an array
-        if (!Array.isArray(tasks)) {
-            console.error('Expected tasks to be an array but got:', typeof tasks);
-            return NextResponse.json({
-                tasks: [],
-                pagination: {
-                    total: 0,
-                    page,
-                    limit: limit || 10,
-                    totalPages: 0
-                }
-            }, { status: 200 });
+        // Ensure plans is an array
+        if (!Array.isArray(plans)) {
+            console.error('Expected plans to be an array but got:', typeof plans);
+            return NextResponse.json([], { status: 200 });
         }
 
         // Parse JSON strings back to objects
-        const formattedTasks = tasks.map((task: any) => ({
-            id: task.id,
-            task_id: task.task_id,
-            created_at: task.created_at,
-            start_time: task.start_time,
-            end_time: task.end_time,
-            assigner: task.assigner,
-            assignee: task.assignee,
-            task_summarization: task.task_summarization,
-            room_id: task.room_id,
-            context: tryParseJSON(task.context),
-            tools_called: tryParseJSON(task.tools_called),
-            status: task.status,
-            result: task.result
-        }));
+        const formattedPlans = plans.map((plan: any) => {
+            const context = tryParseJSON(plan.context);
 
-        return NextResponse.json({
-            tasks: formattedTasks,
-            pagination: {
-                total: totalCount,
-                page,
-                limit: limit || 10,
-                totalPages: Math.ceil(totalCount / (limit || 10))
-            }
-        }, { status: 200 });
+            return {
+                id: plan.id,
+                plan_id: plan.plan_id,
+                room_id: plan.room_id || (context && context.room_id) || null,
+                created_at: plan.created_at,
+                updated_at: plan.updated_at,
+                completed_at: plan.completed_at,
+                plan_name: plan.plan_name,
+                plan_overview: plan.plan_overview,
+                status: plan.status,
+                progress: plan.progress,
+                logs: tryParseJSON(plan.logs),
+                context: context,
+                assigner: plan.assigner || null,
+                assignee: plan.assignee || null,
+                reviewer: plan.reviewer || null
+            };
+        });
+
+        return NextResponse.json(formattedPlans, { status: 200 });
     } catch (error) {
-        console.error('Error fetching tasks:', error);
+        console.error('Error fetching plans:', error);
         return NextResponse.json({
-            tasks: [],
-            pagination: {
-                total: 0,
-                page: 1,
-                limit: 10,
-                totalPages: 0
-            },
             error: 'Internal Server Error',
             details: error instanceof Error ? error.message : 'Unknown error'
         }, { status: 500 });

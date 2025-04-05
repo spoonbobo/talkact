@@ -31,6 +31,11 @@ const Footer: React.FC = () => {
             src="https://openrouter.ai/images/icons/DeepSeek.png"
             alt="Powered by DeepSeek"
             height="40px"
+            className="animate-pulse opacity-0 transition-opacity duration-300 ease-in-out"
+            onLoad={(e) => {
+              e.currentTarget.classList.remove('animate-pulse', 'opacity-0');
+              e.currentTarget.classList.add('opacity-100');
+            }}
           />
         </Link>
         <Link
@@ -44,6 +49,11 @@ const Footer: React.FC = () => {
             src="https://ai.google.dev/static/gemma/images/gemma3.png"
             alt="Powered by Gemma 3"
             height="40px"
+            className="animate-pulse opacity-0 transition-opacity duration-300 ease-in-out"
+            onLoad={(e) => {
+              e.currentTarget.classList.remove('animate-pulse', 'opacity-0');
+              e.currentTarget.classList.add('opacity-100');
+            }}
           />
         </Link>
       </HStack>
