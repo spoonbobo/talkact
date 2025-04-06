@@ -273,6 +273,27 @@ export default function PlanDetailsPage() {
         setIsTaskInfoModalOpen(true);
     };
 
+    // Add this useEffect to listen for plan updates
+    useEffect(() => {
+        const handlePlanUpdate = (event: CustomEvent) => {
+            const { planId: updatedPlanId } = event.detail;
+            // Only refresh if the updated plan is the one we're viewing
+            if (updatedPlanId === planId) {
+                console.log('Refreshing tasks for updated plan:', updatedPlanId);
+                dispatch(fetchTasks(updatedPlanId));
+                dispatch(fetchPlans());
+            }
+        };
+
+        // Add event listener
+        window.addEventListener('plan-update', handlePlanUpdate as EventListener);
+
+        // Clean up
+        return () => {
+            window.removeEventListener('plan-update', handlePlanUpdate as EventListener);
+        };
+    }, [dispatch, planId]);
+
     if (!currentPlan) {
         return (
             <Center height="100%" p={8}>

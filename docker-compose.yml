@@ -171,7 +171,7 @@ services:
       - ./mcp/agent_home:/agent_home
     environment:
       - MCP_SERVERS_JSON=/app/mcp_server.json
-      - SOCKET_URL=${NEXT_PUBLIC_WS_URL}
+      - SOCKET_SERVER_URL=${SOCKET_SERVER_URL}
       - CLIENT_URL=${CLIENT_URL}
       - OLLAMA_API_BASE_URL=http://kakashi-ollama:11434
       - OPENAI_API_KEY=${OPENAI_API_KEY}

@@ -176,6 +176,8 @@ class ChatSocketClient {
                         timestamp: new Date().toISOString(),
                         notification_id: notificationData.notification_id,
                         created_at: notificationData.created_at,
+                        updating_plan: notificationData.updating_plan,
+                        room_id: notificationData.room_id
                     };
 
                     // Show toast for mentions
@@ -186,6 +188,23 @@ class ChatSocketClient {
                             type: "info"
                         });
                     }
+
+                    // Handle plan update notifications
+                    if (notificationData.updating_plan) {
+                        // Dispatch event for plan update
+                        const planUpdateEvent = new CustomEvent('plan-update', {
+                            detail: { planId: notificationData.updating_plan }
+                        });
+                        window.dispatchEvent(planUpdateEvent);
+
+                        toaster.create({
+                            title: "Plan Update",
+                            description: "A plan has been updated",
+                            type: "info"
+                        });
+                    }
+
+                    console.log("processedNotification", processedNotification);
 
                     callback(processedNotification);
                 } else {

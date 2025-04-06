@@ -15,8 +15,8 @@ import {
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { motion } from "framer-motion";
 import { FaUpload, FaUserCircle } from "react-icons/fa";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import { User } from "@/types/user";
 import { v4 as uuidv4 } from 'uuid';
 import axios from "axios";
@@ -34,6 +34,8 @@ export default function CreateProfilePage() {
     const router = useRouter();
     const { data: session } = useSession();
     const dispatch = useDispatch();
+    const params = useParams();
+    const locale = params.locale as string;
     const searchParams = useSearchParams();
 
     // Color mode values - matching signin page style
@@ -129,9 +131,17 @@ export default function CreateProfilePage() {
 
             await axios.post("/api/user/create_user", newUser);
 
-            dispatch(setUser(newUser));
-
-            router.push("/");
+            // dispatch(setUser(newUser));
+            toaster.create(
+                {
+                    title: "Profile created",
+                    description: "Please login again",
+                    type: "success"
+                }
+            )
+            await signOut({ redirect: false });
+            router.push(`/${locale}`);
+            // login again
         } catch (error) {
             toaster.create(
                 {

@@ -1,151 +1,172 @@
 import os
 import asyncio
 import traceback
+from dotenv import load_dotenv
+
+load_dotenv()
 import socketio
 import requests
 from loguru import logger
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Callable
 
 # from schemas.mcp impor
-
-class AppClient:
-    """Client for connecting to chat rooms and sending messages."""
-    
-    def __init__(self, room_id: str, token: str):
-        self.socket_url = os.getenv("SOCKET_URL", "")
-        self.token = token
-        self.room_id = room_id
-        self.is_agent = True
+class SocketClient:
+    def __init__(self, server_url: str, user_id: str):
+        """
+        Initialize the socket client.
         
-        # Authenticate and get token
-        self.auth = {
-            "token": self.token,
-            "roomId": self.room_id,
-            "isAgent": self.is_agent,
-        }
-
-        # Initialize socket client
-        self.sio = socketio.AsyncClient(logger=True, engineio_logger=True) # type: ignore
+        Args:
+            server_url: URL of the socket.io server
+            user_id: User ID for authentication
+        """
+        self.server_url = server_url
+        self.user_id = user_id
+        self.sio = socketio.AsyncClient()
+        self.connected = False
+        self.message_handlers = []
+        self.notification_handlers = []
         
         # Set up event handlers
+        self._setup_event_handlers()
+    
+    def _setup_event_handlers(self):
+        """Set up the socket.io event handlers."""
         @self.sio.event
         async def connect():
-            logger.info("Socket.IO connected successfully")
-            
-        @self.sio.event
-        async def connect_error(data):
-            logger.error(f"Socket.IO connection error: {data}")
-            
+            logger.info(f"Connected to socket server: {self.server_url}")
+            self.connected = True
+        
         @self.sio.event
         async def disconnect():
-            logger.info("Socket.IO disconnected")
-
-    async def connect(self):
-        """Connect to the socket server."""
-        if self.sio.connected:
-            await self.sio.disconnect()
-
-        logger.info(f"Connecting to {self.socket_url} with auth: {self.auth}")
+            logger.info("Disconnected from socket server")
+            self.connected = False
         
-        try:
-            await self.sio.connect(self.socket_url, auth=self.auth, wait_timeout=10)
-            logger.info(f"Connected to {self.socket_url}")
-            return True
-        except Exception as e:
-            logger.error(f"Connection error: {str(e)}")
-            logger.error(traceback.format_exc())
-            return False
-
+        @self.sio.event
+        async def message(data):
+            logger.debug(f"Received message: {data}")
+            for handler in self.message_handlers:
+                try:
+                    await handler(data)
+                except Exception as e:
+                    logger.error(f"Error in message handler: {e}")
+                    logger.error(traceback.format_exc())
+        
+        @self.sio.event
+        async def notification(data):
+            logger.debug(f"Received notification: {data}")
+            for handler in self.notification_handlers:
+                try:
+                    await handler(data)
+                except Exception as e:
+                    logger.error(f"Error in notification handler: {e}")
+                    logger.error(traceback.format_exc())
+    
+    async def connect(self):
+        """Connect to the socket server with authentication."""
+        if not self.connected:
+            try:
+                # Connect with authentication data
+                await self.sio.connect(
+                    self.server_url,
+                    auth={"user": {"user_id": self.user_id}}
+                )
+                logger.info(f"Connected to socket server as user {self.user_id}")
+            except Exception as e:
+                logger.error(f"Failed to connect to socket server: {e}")
+                logger.error(traceback.format_exc())
+                raise
+    
     async def disconnect(self):
         """Disconnect from the socket server."""
-        if self.sio.connected:
+        if self.connected:
             await self.sio.disconnect()
-            logger.info("Disconnected from server")
-
-    async def send_message(self, response, wait_for_ack=True, timeout=10.0) -> bool:
+            logger.info("Disconnected from socket server")
+    
+    async def join_room(self, room_id: str):
         """
-        Send a message to the current room.
+        Join a chat room.
         
         Args:
-            message: Message object to send
-            wait_for_ack: Whether to wait for message acknowledgment
-            timeout: How long to wait for acknowledgment in seconds
-            
-        Returns:
-            bool: True if message was sent successfully, False otherwise
+            room_id: ID of the room to join
         """
-        message_data = {
-            "id": response.id,
-            "room_id": response.room_id,
-            "sender": response.sender,
-            "content": response.text,
-            "created_at": response.created_at
-        }
-        
-        logger.info(f"Sending message to room {self.room_id}: {message_data}")
-        
-        try:
-            ack_received = None
-            
-            if wait_for_ack:
-                ack_received = asyncio.Event()
-                
-                async def message_ack(data):
-                    logger.debug(f"Received ack data: {data}")
-                    if data.get('id') == response.id:
-                        logger.info(f"Message {response.id} acknowledged")
-                        ack_received.set()
-                    else:
-                        logger.warning(f"Received ack for different message. Expected: {response.id}, Got: {data.get('id')}")
-                
-                self.sio.on('message_ack', message_ack)
-            
-            await self.sio.emit("message", response.model_dump(), callback=lambda: ack_received.set() if ack_received else None)
-            logger.info("Message sent successfully")
-            
-            if wait_for_ack and ack_received:
-                try:
-                    await asyncio.wait_for(ack_received.wait(), timeout=timeout)
-                    logger.info("Message delivery confirmed")
-                    return True
-                except asyncio.TimeoutError:
-                    logger.warning(f"Message acknowledgment timed out after {timeout} seconds")
-                    return False
-                finally:
-                    self.sio.handlers.pop('message_ack', None)
-            
-            return True
-        except Exception as e:
-            logger.error(f"Error sending message: {str(e)}")
-            logger.error(traceback.format_exc())
-            return False
-
-    async def send_message_with_retry(self, response, max_retries=3, initial_timeout=5.0) -> bool:
+        if self.connected:
+            await self.sio.emit("join_room", room_id)
+            logger.info(f"Joined room: {room_id}")
+    
+    async def quit_room(self, room_id: str):
         """
-        Send a message with automatic retries on failure.
+        Leave a chat room.
         
         Args:
-            message: Message to send
-            max_retries: Maximum number of retry attempts
-            initial_timeout: Initial timeout for first attempt, increases with backoff
-            
-        Returns:
-            bool: True if message was eventually sent successfully, False otherwise
+            room_id: ID of the room to leave
         """
-        retry_count = 0
-        current_timeout = initial_timeout
+        if self.connected:
+            await self.sio.emit("quit_room", room_id)
+            logger.info(f"Left room: {room_id}")
+    
+    async def invite_to_room(self, room_id: str, user_ids: List[str]):
+        """
+        Invite users to a room.
         
-        while retry_count <= max_retries:
-            result = await self.send_message(response, wait_for_ack=True, timeout=current_timeout)
-            if result:
-                return True
-            
-            retry_count += 1
-            if retry_count > max_retries:
-                break
-                
-            current_timeout *= 1.5  # Exponential backoff
-            logger.info(f"Retrying message send (attempt {retry_count}/{max_retries}) with timeout {current_timeout}")
-            
-        logger.error(f"Failed to send message after {max_retries} attempts")
-        return False
+        Args:
+            room_id: ID of the room
+            user_ids: List of user IDs to invite
+        """
+        if self.connected:
+            data = {
+                "roomId": room_id,
+                "userIds": user_ids
+            }
+            await self.sio.emit("invite_to_room", data)
+            logger.info(f"Invited users {user_ids} to room {room_id}")
+    
+    async def send_message(self, message_data: Dict[str, Any]):
+        """
+        Send a message to a room.
+        
+        Args:
+            message_data: Message data including room_id and content
+        """
+        if self.connected:
+            await self.sio.emit("message", message_data)
+            logger.info(f"Sent message to room {message_data.get('room_id')}")
+    
+    async def send_notification(self, notification_data: Dict[str, Any]):
+        """
+        Send a notification.
+        
+        Args:
+            notification_data: Notification data including receivers and content
+        """
+        if self.connected:
+            await self.sio.emit("notification", notification_data)
+            # logger.info(f"Sent notification to {notification_data.get('receivers', [])} or room {notification_data.get('room_id')}")
+            logger.info(f"sent notification to {notification_data}")
+
+    def add_message_handler(self, handler: Callable):
+        """
+        Add a handler function for incoming messages.
+        
+        Args:
+            handler: Async function that takes a message data dict as parameter
+        """
+        self.message_handlers.append(handler)
+    
+    def add_notification_handler(self, handler: Callable):
+        """
+        Add a handler function for incoming notifications.
+        
+        Args:
+            handler: Async function that takes a notification data dict as parameter
+        """
+        self.notification_handlers.append(handler)
+
+if __name__ == "__main__":
+    print(os.environ)
+    print(os.getenv("SOCKET_SERVER_URL"))
+    client = SocketClient(
+        server_url=os.getenv("SOCKET_SERVER_URL"),
+        user_id="00000000-0000-0000-0000-000000000000"
+    )
+    asyncio.run(client.connect())
+    asyncio.run(client.disconnect())

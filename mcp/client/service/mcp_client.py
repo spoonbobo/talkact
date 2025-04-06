@@ -10,6 +10,7 @@ from collections import defaultdict
 
 dotenv.load_dotenv()
 from loguru import logger
+from uuid import uuid4
 from ollama import Client
 from openai import OpenAI
 from mcp import ClientSession, StdioServerParameters
@@ -21,12 +22,15 @@ from schemas.mcp import MCPTool, MCPServer
 from prompts.task_create import PLAN_SYSTEM_PROMPT, PLAN_CREATE_PROMPT
 from prompts.mcp_reqeust import MCP_REQUEST_SYSTEM_PROMPT, MCP_REQUEST_PROMPT
 from utils.mcp import parse_mcp_tools
-
+from service.socket_client import SocketClient
 class MCPClient:
     """
     A MCP client manager that contains connections to mcp servers
     """
-    def __init__(self, servers: dict):
+    def __init__(
+        self, servers: dict,
+        socket_client: SocketClient
+    ):
         self.servers = servers
         self.server_names = list(self.servers.keys())
         self.exit_stack = {server: AsyncExitStack() for server in self.servers}
@@ -45,6 +49,7 @@ class MCPClient:
         for server in self.servers:
             self.server_descriptions_dict[server] = self.load_server_description(self.servers[server]["description"])
         self.server_descriptions = self.format_server_descriptions()
+        self.socket_client = socket_client
 
     async def connect_to_servers(self) -> None:
         logger.info(f"Connecting to servers: {self.servers}")
@@ -396,6 +401,18 @@ class MCPClient:
                 )
                 response.raise_for_status()
                 messages = response.json()
+                
+                await self.socket_client.send_notification(
+                    {
+                        "id": str(uuid4()),
+                        "notification_id": str(uuid4()),
+                        "room_id": mcp_request.plan.room_id,
+                        "message": f"Task {task_id} has been created",
+                        "sender": mcp_request.plan.assignee,
+                        "created_at": datetime.datetime.now().isoformat(),
+                        "updating_plan": mcp_request.plan.id
+                    }
+                )
             except Exception as e:
                 logger.error(f"Error updating task or fetching messages: {e}")
                 if isinstance(e, httpx.HTTPStatusError):
@@ -460,6 +477,20 @@ class MCPClient:
                 )
             except Exception as e:
                 logger.error(f"Error updating plan status: {e}")
+        
+        await self.socket_client.send_notification(
+            {
+                "id": str(uuid4()),
+                "notification_id": str(uuid4()),
+                "room_id": mcp_request.plan.room_id,
+                "message": f"Task {task.task_id} has been executed",
+                "sender": mcp_request.plan.assignee,
+                "created_at": datetime.datetime.now().isoformat(),
+                "updating_plan": mcp_request.plan.id
+            }
+        )
+            
+                    
 
     async def get_servers(self) -> Dict[str, MCPServer]:
         server_information = {}

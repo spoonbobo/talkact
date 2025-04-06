@@ -206,7 +206,7 @@ const Notification: React.FC = () => {
                                                 _hover={{ bg: hoverBg }}
                                                 cursor="pointer"
                                                 onClick={() => {
-                                                    handleNotificationClick(notification.id);
+                                                    handleNotificationClick(notification.id || "");
                                                 }}
                                             >
                                                 <Flex justifyContent="space-between" mb={1}>

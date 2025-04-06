@@ -5,7 +5,7 @@ const axios = require('axios');
 // client: redis-client (ioredis client)
 function setupSocketIO(io, client) {
   io.on("connection", (socket) => {
-    // console.log(`Client connected: ${socket.id}`);
+    console.log(`Client connected: ${socket.id}`);
     
     // Get user information from socket handshake
     const userId = socket.handshake.auth.user.user_id;

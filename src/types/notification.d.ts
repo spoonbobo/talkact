@@ -10,6 +10,7 @@ export interface INotification {
     receivers?: string[];
     created_at: string;
     room_id?: string;
+    updating_plan?: string;
 
     // Frontend-specific properties
     title?: string;
