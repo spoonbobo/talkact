@@ -4,7 +4,7 @@ import db from '@/lib/db';
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
-        const { plan_id, status, progress, logs } = body;
+        const { plan_id, status, progress, logs, step_number } = body;
 
         // Validate required fields
         if (!plan_id) {
@@ -45,8 +45,22 @@ export async function PUT(request: Request) {
             updateData.progress = progressNum;
         }
 
-        // Add logs if provided
-        if (logs !== undefined) {
+        // Handle logs by step number if both logs and step_number are provided
+        if (logs !== undefined && step_number !== undefined) {
+            // First get the current logs
+            const [currentPlan] = await db('plan').where({ plan_id: plan_id }).select('logs');
+
+            // Initialize with existing logs or empty object
+            let updatedLogs = currentPlan?.logs || {};
+
+            // Add new logs under the step_number key
+            updatedLogs[step_number] = logs;
+
+            // Update the logs field with the combined logs
+            updateData.logs = updatedLogs;
+        }
+        // If only logs are provided without step_number, use the old behavior
+        else if (logs !== undefined) {
             updateData.logs = logs;
         }
 

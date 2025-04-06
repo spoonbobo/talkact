@@ -17,7 +17,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.types import Tool as mcp_tool
 from mcp.client.stdio import stdio_client
 
-from schemas.mcp import MCPPlanRequest, Task, MCPTaskRequest
+from schemas.mcp import MCPPlanRequest, Task, MCPTaskRequest, PlanData
 from schemas.mcp import MCPTool, MCPServer
 from prompts.task_create import PLAN_SYSTEM_PROMPT, PLAN_CREATE_PROMPT
 from prompts.mcp_reqeust import MCP_REQUEST_SYSTEM_PROMPT, MCP_REQUEST_PROMPT
@@ -333,11 +333,12 @@ class MCPClient:
             mcp_server_speciality=self.server_descriptions_dict[mcp_server]
         )
         logger.info(f"System prompt: {system_prompt}")
+        background_information = self.prepare_background_information(mcp_request.plan, mcp_request.task.step_number)
         
         user_prompt = MCP_REQUEST_PROMPT.format(
             plan_name=mcp_request.plan.plan_name,
             plan_overview=mcp_request.plan.plan_overview,
-            background_information=[],
+            background_information=background_information,
             task=mcp_request.task.task_name,
             reason=mcp_request.task.task_explanation,
             expectation=mcp_request.task.expected_result
@@ -471,8 +472,9 @@ class MCPClient:
                     json={
                         "plan_id": mcp_request.plan.plan_id,
                         "status": "running" if step_number < plan_size else "success",
-                        "progress": (step_number / plan_size) * 100,
-                        "logs": results
+                        "progress": int((step_number / plan_size) * 100),
+                        "logs": results,
+                        "step_number": step_number
                     }
                 )
             except Exception as e:
@@ -490,7 +492,18 @@ class MCPClient:
             }
         )
             
-                    
+    def prepare_background_information(self, plan: PlanData, step_number: int):
+        background = ""
+        logger.info(f"Plan: {plan}")
+        # for step in range(1, step_number):
+        #     step_log = plan.logs[str(step)]
+        #     step_log_str = ""
+        #     for tool, result in step_log.items():
+        #         step_log_str += f"Tool: {tool}\nResult: {result}\n"
+        #     background += f"Step {step}: {step_log_str}\n"
+
+        # logger.info(f"Background information: {background}")
+        return background
 
     async def get_servers(self) -> Dict[str, MCPServer]:
         server_information = {}
