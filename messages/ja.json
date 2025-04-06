@@ -184,7 +184,38 @@
     "status": "ステータス",
     "progress": "進捗",
     "expected_result": "期待される結果",
-    "tool": "MCPツール"
+    "tool": "MCPツール",
+    "select_plan": "プランを選択",
+    "select_plan_description": "詳細を表示するプランを選択してください",
+    "current_task": "現在のタスク",
+    "plan_completed_successfully": "プランが正常に完了しました",
+    "plan_terminated": "プランが終了しました",
+    "not_started": "未開始",
+    "server": "MCPサーバー",
+    "not_specified": "未指定",
+    "started": "開始日時",
+    "approve_task": "タスクを承認",
+    "deny_task": "タスクを拒否",
+    "refresh_task": "タスクを更新",
+    "parameters": "パラメータ",
+    "parameter": "パラメータ",
+    "value": "値",
+    "edit_task": "タスクを編集",
+    "task_name": "タスク名",
+    "enter_task_name": "タスク名を入力",
+    "task_explanation": "タスクの説明",
+    "enter_task_explanation": "タスクの説明を入力",
+    "enter_expected_result": "期待される結果を入力",
+    "update_task": "タスクを更新",
+    "optional": "オプション",
+    "required": "必須",
+    "cancel": "キャンセル",
+    "tools": "ツール",
+    "tools_readonly_message": "ツール設定は読み取り専用で編集できません",
+    "type": "タイプ",
+    "enter_array_as_json": "配列値をJSONとして入力: [\"項目1\", \"項目2\"]",
+    "readonly": "読み取り専用",
+    "request_mcp": "MCPをリクエスト"
   },
   "Learn": {
     "learn": "学ぶ",
@@ -306,5 +337,4 @@
     "seconds": "秒",
     "to_home": "ホームに戻る"
   }
-  
 }

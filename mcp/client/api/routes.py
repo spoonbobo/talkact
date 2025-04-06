@@ -31,17 +31,20 @@ async def request_mcp(request: Request, mcp_request: MCPTaskRequest):
             f"{client_url}/api/plan/update_task", 
             json={"task_id": mcp_request.task.task_id, "status": "pending"}
         )
-    
-    # mcp_client = request.app.state.mcp_client
-    # # Add to the request queue
-    # await mcp_client.request_queue.put(mcp_request)
     return PlainTextResponse(content="MCP request enqueued", status_code=202)
 
 
 @router.post("/api/execute_task")
-async def execute_task(request: Request, task: Task):
+async def execute_task(request: Request, mcp_request: MCPTaskRequest):
+
     mcp_client = request.app.state.mcp_client
     client_url = os.environ.get("CLIENT_URL")
+    # async with httpx.AsyncClient() as client:
+    #     await client.put(
+    #         f"{client_url}/api/plan/update_task", 
+    #         json={"task_id": mcp_request.task.task_id, "status": "running"}
+    #     )
+    await mcp_client.task_queue.put(mcp_request)
     # async with httpx.AsyncClient() as client:
     #     await client.put(
     #         f"{client_url}/api/task/update_task", 

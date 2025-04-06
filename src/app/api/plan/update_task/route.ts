@@ -6,12 +6,18 @@ export async function PUT(request: Request) {
     try {
         const body = await request.json();
 
-        // Extract required fields from the request body
+        // Extract all possible fields from the request body
         const {
             task_id,
+            task_name,
+            task_explanation,
+            expected_result,
+            mcp_server,
             status,
             start_time,
-            tool  // Add tool to the extracted fields
+            tool,
+            logs,
+            step_number
         } = body;
 
         // Validate required fields
@@ -22,7 +28,15 @@ export async function PUT(request: Request) {
         }
 
         // Check if at least one field to update is provided
-        if (!status && start_time === undefined && tool === undefined) {
+        if (!status &&
+            start_time === undefined &&
+            tool === undefined &&
+            task_name === undefined &&
+            task_explanation === undefined &&
+            expected_result === undefined &&
+            mcp_server === undefined &&
+            logs === undefined &&
+            step_number === undefined) {
             return NextResponse.json({
                 error: 'No fields to update provided'
             }, { status: 400 });
@@ -45,6 +59,23 @@ export async function PUT(request: Request) {
 
         // Prepare update data
         const updateData: any = {};
+
+        // Add new fields to updateData
+        if (task_name !== undefined) {
+            updateData.task_name = task_name;
+        }
+
+        if (task_explanation !== undefined) {
+            updateData.task_explanation = task_explanation;
+        }
+
+        if (expected_result !== undefined) {
+            updateData.expected_result = expected_result;
+        }
+
+        if (mcp_server !== undefined) {
+            updateData.mcp_server = mcp_server;
+        }
 
         if (status) {
             updateData.status = status;
@@ -84,6 +115,53 @@ export async function PUT(request: Request) {
                 console.error('Error processing tool JSON:', error);
                 return NextResponse.json({
                     error: 'Invalid JSON format for tool field',
+                    details: error instanceof Error ? error.message : 'Unknown error'
+                }, { status: 400 });
+            }
+        }
+
+        // Handle logs update if provided
+        if (logs !== undefined) {
+            try {
+                // Get the current logs from the database
+                const currentTask = await db('task').where('task_id', task_id).first('logs');
+                let currentLogs = {};
+
+                // Parse current logs if they exist
+                if (currentTask.logs) {
+                    try {
+                        currentLogs = typeof currentTask.logs === 'string'
+                            ? JSON.parse(currentTask.logs)
+                            : currentTask.logs;
+                    } catch (e) {
+                        // If parsing fails, start with empty object
+                        currentLogs = {};
+                    }
+                }
+
+                // Use step_number from request body if provided, otherwise use a default key
+                const logKey = step_number !== undefined ? step_number.toString() : 'latest';
+
+                // Update logs with the new data for this step
+                const updatedLogs = {
+                    ...currentLogs,
+                    [logKey]: logs
+                };
+
+                const logsJson = JSON.stringify(updatedLogs);
+
+                // Update logs in the database
+                await db.raw(
+                    `UPDATE task SET logs = ?::jsonb WHERE task_id = ?`,
+                    [logsJson, task_id]
+                );
+
+                // Remove logs from updateData since we've handled it separately
+                delete updateData.logs;
+            } catch (error) {
+                console.error('Error processing logs JSON:', error);
+                return NextResponse.json({
+                    error: 'Invalid JSON format for logs field',
                     details: error instanceof Error ? error.message : 'Unknown error'
                 }, { status: 400 });
             }

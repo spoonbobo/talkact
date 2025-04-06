@@ -11,6 +11,7 @@ You will be given
     5. expectation of the task
 
 Analyze the plan, understand your task, and use your capabilities to solve the task.
+If the task is not accomplishable or not executable, you can terminate the task.
 """
 
 MCP_REQUEST_PROMPT = """

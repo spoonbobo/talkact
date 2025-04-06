@@ -76,6 +76,7 @@ class ToolCallInfo(BaseModel):
     mcp_server: str
     args: Dict[str, Any]
     description: Optional[str] = None
+    tool_type: Optional[str] = None
 
 class Task(BaseModel):
     id: str

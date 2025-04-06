@@ -4,7 +4,7 @@ import db from '@/lib/db';
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
-        const { plan_id, status } = body;
+        const { plan_id, status, progress, logs } = body;
 
         // Validate required fields
         if (!plan_id) {
@@ -28,16 +28,34 @@ export async function PUT(request: Request) {
         }
 
         // Update the plan with new status and updated_at timestamp
-        const updateData = {
+        const updateData: any = {
             status,
-            updated_at: new Date(),
-            completed_at: new Date()
+            updated_at: new Date()
         };
 
+        // Add progress if provided
+        if (progress !== undefined) {
+            // Ensure progress is a number between 0 and 100
+            const progressNum = Number(progress);
+            if (isNaN(progressNum) || progressNum < 0 || progressNum > 100) {
+                return NextResponse.json({
+                    error: 'Progress must be a number between 0 and 100'
+                }, { status: 400 });
+            }
+            updateData.progress = progressNum;
+        }
+
+        // Add logs if provided
+        if (logs !== undefined) {
+            updateData.logs = logs;
+        }
 
         // If status is 'completed', also set completed_at
-        if (status === 'completed') {
+        if (status === 'success' || status === 'failure' || status === 'terminated') {
             updateData.completed_at = new Date();
+        } else {
+            // Remove completed_at if status is not terminal
+            updateData.completed_at = null;
         }
 
         console.log('updateData', plan_id)
@@ -61,6 +79,7 @@ export async function PUT(request: Request) {
             id: updatedPlan.id,
             plan_id: updatedPlan.plan_id,
             status: updatedPlan.status,
+            progress: updatedPlan.progress,
             updated_at: updatedPlan.updated_at,
             completed_at: updatedPlan.completed_at
         };

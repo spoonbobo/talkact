@@ -5,9 +5,8 @@ import asyncio
 import httpx
 import os
 import datetime
-import re
 import json
-import logging
+from collections import defaultdict
 
 dotenv.load_dotenv()
 from loguru import logger
@@ -21,8 +20,7 @@ from schemas.mcp import MCPPlanRequest, Task, MCPTaskRequest
 from schemas.mcp import MCPTool, MCPServer
 from prompts.task_create import PLAN_SYSTEM_PROMPT, PLAN_CREATE_PROMPT
 from prompts.mcp_reqeust import MCP_REQUEST_SYSTEM_PROMPT, MCP_REQUEST_PROMPT
-from schemas.mcp import ToolCallInfo
-from openai.types.chat import ChatCompletion
+from utils.mcp import parse_mcp_tools
 
 class MCPClient:
     """
@@ -38,9 +36,9 @@ class MCPClient:
             api_key=os.getenv("OPENAI_API_KEY"),
             base_url=os.getenv("OPENAI_API_BASE_URL")
         )
-        self.task_queue = asyncio.Queue()  # Execution queue
         self.plan_queue = asyncio.Queue()  # New queue for task creation
         self.request_queue = asyncio.Queue()  # Queue for direct MCP requests
+        self.task_queue = asyncio.Queue()  # Execution queue
         self.server_descriptions_dict = {}
         self.server_tools_dict = {}
         self.mcp_tools_dict = {}
@@ -319,7 +317,7 @@ class MCPClient:
         
         return tasks
 
-    async def execute_mcp_request(self, mcp_request: MCPTaskRequest):
+    async def create_mcp_request(self, mcp_request: MCPTaskRequest):
         task = mcp_request.task
         mcp_server = task.mcp_server
         # mcp_tools = self.server_tools_dict[mcp_server]
@@ -352,7 +350,7 @@ class MCPClient:
         logger.info(f"Tools: {tools}")
         
         # Parse the tools response into ToolCallInfo objects
-        tool_calls = self.parse_mcp_tools(tools, mcp_server)
+        tool_calls = parse_mcp_tools(tools, mcp_server, self.mcp_tools_dict)
         task_id = mcp_request.task.task_id
         
         # Convert tool_calls to a format suitable for the database
@@ -404,6 +402,65 @@ class MCPClient:
                     logger.error(f"Response content: {e.response.content}")
                 messages = []
 
+    async def execute_mcp_request(self, mcp_request: MCPTaskRequest):
+        task = mcp_request.task
+        plan_size = len(mcp_request.plan.context.plan["plan"])
+        step_number = task.step_number
+        tools = task.tool
+        session = self.servers[task.mcp_server]
+        logger.info(f"Plan size: {plan_size}")
+        client_url = os.environ.get("CLIENT_URL", "")
+        
+        results = {}
+        tool_call_ct = defaultdict(int)
+        for tool in tools:
+            resp = None
+            tool_name = tool['tool_name']
+            try:
+                args = tool['args']
+                args = {k: arg["value"] for k, arg in args.items()}
+                resp = await session.call_tool(tool_name, args)
+            except Exception as e:
+                logger.error(f"Error calling tool {tool_name}: {e}")
+                continue
+            results[f"{tool_name}_{tool_call_ct[tool_name]}"] = resp.content[0].text
+            tool_call_ct[tool_name] += 1
+        
+        # update the task with logs and change status to success
+        async with httpx.AsyncClient() as client:
+            try:
+                update_url = f"{client_url}/api/plan/update_task"
+                response = await client.put(
+                    update_url,
+                    json={
+                        "task_id": task.task_id,
+                        "status": "success",
+                        "logs": results,
+                        "step_number": step_number
+                    }
+                )
+                response.raise_for_status()
+                logger.info(f"Successfully updated task {task.task_id} with logs")
+            except Exception as e:
+                logger.error(f"Error updating task with logs: {e}")
+                if isinstance(e, httpx.HTTPStatusError):
+                    logger.error(f"Response content: {e.response.content}")
+        
+        async with httpx.AsyncClient() as client:
+            try:
+                update_url = f"{client_url}/api/plan/update_plan"
+                response = await client.put(
+                    update_url,
+                    json={
+                        "plan_id": mcp_request.plan.plan_id,
+                        "status": "running" if step_number < plan_size else "success",
+                        "progress": (step_number / plan_size) * 100,
+                        "logs": results
+                    }
+                )
+            except Exception as e:
+                logger.error(f"Error updating plan status: {e}")
+
     async def get_servers(self) -> Dict[str, MCPServer]:
         server_information = {}
         for server_name, server_session in self.servers.items():
@@ -442,60 +499,6 @@ class MCPClient:
                 
         return server_information
 
-    async def cleanup(self):
-        for server in self.servers:
-            await self.exit_stack[server].aclose()
-
-    async def process_tasks(self):
-        while True:
-            task = await self.task_queue.get()
-            try:
-                # Check if this task requires tool execution
-                requires_tool = True
-                if hasattr(task, 'tool') and (task.tool is None or not task.tool):
-                    requires_tool = False
-                
-                if requires_tool:
-                    await self.execute_mcp_request(task)
-                    # Task status is now updated within the execute method
-                else:
-                    # No tool execution needed, mark as completed
-                    client_url = os.environ.get("CLIENT_URL", "")
-                    try:
-                        async with httpx.AsyncClient() as client:
-                            # Update task status to success
-                            await client.put(
-                                f"{client_url}/api/task/update_task", 
-                                json={
-                                    "task_id": task.task_id, 
-                                    "status": "success",
-                                    "progress": 100,
-                                    "completed_at": datetime.datetime.now().isoformat()
-                                },
-                                headers={"Content-Type": "application/json"}
-                            )
-                            logger.info(f"Task {task.task_id} marked as completed (no tool execution required)")
-                            
-                            # Check if all tasks for this plan are completed
-                            await self.check_and_update_plan_status(task.plan_id)
-                    except Exception as update_error:
-                        logger.error(f"Error updating task status: {update_error}")
-            except Exception as e:
-                logger.error(f"Error processing task {task.task_id}: {e}")
-                # Update task status to failed
-                client_url = os.environ.get("CLIENT_URL", "")
-                try:
-                    async with httpx.AsyncClient() as client:
-                        await client.put(
-                            f"{client_url}/api/task/update_task", 
-                            json={"task_id": task.task_id, "status": "failed"},
-                            headers={"Content-Type": "application/json"}
-                        )
-                except Exception as update_error:
-                    logger.error(f"Error updating task status: {update_error}")
-            finally:
-                self.task_queue.task_done()
-
     # New method to process the creation queue
     async def process_creation_tasks(self):
         while True:
@@ -506,6 +509,28 @@ class MCPClient:
                 logger.error(f"Error creating task: {e}")
             finally:
                 self.plan_queue.task_done()
+
+    async def process_mcp_requests(self):
+        """Process direct MCP requests from the request queue"""
+        while True:
+            mcp_request = await self.request_queue.get()
+            try:
+                await self.create_mcp_request(mcp_request)
+            except Exception as e:
+                logger.error(f"Error processing MCP request: {e}")
+            finally:
+                self.request_queue.task_done()
+
+    async def process_tasks(self):
+        while True:
+            task = await self.task_queue.get()
+            logger.info(f"Processing task: {task}")
+            try:
+                await self.execute_mcp_request(task)
+            except Exception as e:
+                logger.error(f"Error creating task: {e}")
+            finally:
+                self.task_queue.task_done()
 
     def load_server_description(self, server: str) -> str:
         with open(server, 'r') as file:
@@ -630,62 +655,7 @@ class MCPClient:
         except Exception as e:
             logger.error(f"Error checking and updating plan status: {e}")
 
-    async def process_mcp_requests(self):
-        """Process direct MCP requests from the request queue"""
-        while True:
-            mcp_request = await self.request_queue.get()
-            try:
-                await self.execute_mcp_request(mcp_request)
-            except Exception as e:
-                logger.error(f"Error processing MCP request: {e}")
-            finally:
-                self.request_queue.task_done()
 
-    def parse_mcp_tools(self, completion_response: ChatCompletion, mcp_server: str) -> List[ToolCallInfo]:
-        """
-        Parse tool calls from a ChatCompletion response object.
-        
-        Args:
-            completion_response: ChatCompletion response from OpenAI API
-            mcp_server: The MCP server name to associate with the tool calls
-            
-        Returns:
-            List of ToolCallInfo objects representing the parsed tool calls
-        """
-        tool_call_infos = []
-        
-        # Check if there are any tool calls in the response
-        if not completion_response.choices or not completion_response.choices[0].message.tool_calls:
-            return []
-        
-        # Extract tool calls from the response
-        tool_calls = completion_response.choices[0].message.tool_calls
-        
-        for tool_call in tool_calls:
-            try:
-                # Extract tool information
-                tool_name = tool_call.function.name
-                args = json.loads(tool_call.function.arguments)
-                
-                # Find the specific tool description that matches the tool name
-                tool_description = None
-                for tool in self.mcp_tools_dict[mcp_server]:
-                    if tool["function"]["name"] == tool_name:
-                        tool_description = tool["function"]["description"]
-                        break
-                
-                # Create a ToolCallInfo object
-                tool_info = ToolCallInfo(
-                    tool_name=tool_name,
-                    mcp_server=mcp_server,  # Use the provided mcp_server
-                    args=args,
-                    description=tool_description
-                )
-                
-                tool_call_infos.append(tool_info)
-            except (json.JSONDecodeError, AttributeError) as e:
-                # Skip this tool call if there's an error
-                logger.warning(f"Error parsing tool call: {e}")
-                continue
-        
-        return tool_call_infos
+    async def cleanup(self):
+        for server in self.servers:
+            await self.exit_stack[server].aclose()

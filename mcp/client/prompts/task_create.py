@@ -5,7 +5,7 @@ You will be given
     2. a list of available assistants
     3. descriptions of assistants' capabilities
 
-Analyze the problem from the conversation history, and create a plan with an overview and at least one task.
+Analyze the problem from the conversation history, and create a plan with an overview.
 
 You must output the created plan in JSON format, with the following schema:
 {

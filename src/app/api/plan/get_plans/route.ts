@@ -36,7 +36,7 @@ export async function GET(request: Request) {
         const totalCount = parseInt(count as string, 10);
 
         // Build main query with order by
-        let query = db('plan').orderBy('created_at', 'desc');
+        let query = db('plan').orderBy('updated_at', 'desc');
 
         // Apply status filter if provided
         if (status) {

@@ -8,8 +8,9 @@ import { RootState, AppDispatch } from "@/store/store";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Box, Heading, Icon, Container, Text, VStack, Flex, Spinner, Badge, Input, HStack, Button } from "@chakra-ui/react";
+import { Box, Heading, Icon, Container, Text, VStack, Flex, Spinner, Badge, Input, HStack, Button, IconButton } from "@chakra-ui/react";
 import { FaTasks, FaSearch } from "react-icons/fa";
+import { FiChevronRight, FiChevronLeft } from "react-icons/fi";
 import { fetchPlans } from "@/store/features/planSlice";
 import { usePlansColors } from "@/utils/colors";
 import Link from "next/link";
@@ -25,7 +26,6 @@ const useAppDispatch = () => useDispatch<AppDispatch>();
 const formatDate = (date: Date | null): string => {
     if (!date) return 'N/A';
     return new Date(date).toLocaleString(undefined, {
-        year: 'numeric',
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
@@ -50,9 +50,11 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
 
     const colors = usePlansColors();
 
-    // Add state for search and filter
+    // Add state for search, filter, and pagination
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<PlanStatus | "all">("all");
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10; // Number of plans per page
 
     // Fetch plans on component mount
     useEffect(() => {
@@ -61,6 +63,11 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
             dispatch(fetchPlans());
         }
     }, [isAuthenticated, isOwner, dispatch]);
+
+    // Reset to first page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, statusFilter]);
 
     // Show loading state while checking authentication
     if (userLoading || !session) {
@@ -82,11 +89,20 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
     const isDetailView = pathname !== '/plans' && pathname !== '/plans/';
 
     // Filter plans based on search query and status filter
-    const filteredPlans = plans.filter((plan: any) => {
-        const matchesSearch = plan.plan_overview.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = statusFilter === "all" || plan.status === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
+    const filteredPlans = plans
+        .filter((plan: any) => {
+            const matchesSearch = plan.plan_overview.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesStatus = statusFilter === "all" || plan.status === statusFilter;
+            return matchesSearch && matchesStatus;
+        })
+        .sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredPlans.length / itemsPerPage);
+    const paginatedPlans = filteredPlans.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     // Status filter options with their respective colors
     const statusOptions: Array<{ value: PlanStatus | "all", label: string }> = [
@@ -103,7 +119,7 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
             maxW="1400px"
             px={{ base: 4, md: 6, lg: 8 }}
             py={4}
-            height="100%"
+            height="calc(100% - 10px)"
             position="relative"
             overflow="hidden"
         >
@@ -127,7 +143,7 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                     bg={colors.cardBg}
                     borderRadius="lg"
                     boxShadow="sm"
-                    height="calc(100vh - 200px)"
+                    height="calc(100vh - 160px)"
                     borderWidth="1px"
                     borderColor={colors.borderColor}
                     overflow="hidden"
@@ -139,6 +155,8 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                         borderRightColor={colors.borderColor}
                         overflowY="auto"
                         p={4}
+                        display="flex"
+                        flexDirection="column"
                     >
                         <Text fontSize="lg" fontWeight="bold" mb={4}>
                             {t("available_plans")} {plans.length > 0 && `(${plans.length})`}
@@ -198,8 +216,8 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                 <Text fontSize="sm">{t("loading_plans")}</Text>
                             </VStack>
                         ) : filteredPlans.length > 0 ? (
-                            <VStack align="stretch" gap={3}>
-                                {filteredPlans.map((plan: any) => {
+                            <VStack align="stretch" gap={3} flex="1">
+                                {paginatedPlans.map((plan: any) => {
                                     // Convert string dates to Date objects
                                     const typedPlan: IPlan = {
                                         ...plan,
@@ -235,12 +253,14 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                                     </Text>
                                                     <StatusBadge status={typedPlan.status} size="sm" />
                                                 </Flex>
-                                                <Text fontSize="xs" color={colors.textColorMuted} mb={1}>
-                                                    {t("progress")}: {typedPlan.progress}%
-                                                </Text>
-                                                <Text fontSize="xs" color={colors.textColorMuted}>
-                                                    {t("created")}: {formatDate(typedPlan.created_at)}
-                                                </Text>
+                                                <Flex justify="space-between" align="center">
+                                                    <Text fontSize="xs" color={colors.textColorMuted}>
+                                                        {t("progress")}: {typedPlan.progress}%
+                                                    </Text>
+                                                    <Text fontSize="xs" color={colors.textColorMuted}>
+                                                        {formatDate(typedPlan.updated_at)}
+                                                    </Text>
+                                                </Flex>
                                             </Box>
                                         </Link>
                                     );
@@ -266,6 +286,39 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                     </Button>
                                 )}
                             </VStack>
+                        )}
+
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                            <Flex justify="center" mt={4} align="center" borderTopWidth="1px" borderColor={colors.borderColor} pt={3}>
+                                <IconButton
+                                    aria-label="Previous Page"
+                                    size="sm"
+                                    colorScheme="blue"
+                                    variant="ghost"
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    mr={2}
+                                >
+                                    <Icon as={FiChevronLeft} />
+                                </IconButton>
+
+                                <Text fontSize="sm" mx={2} color={colors.textColorMuted}>
+                                    {currentPage} / {totalPages}
+                                </Text>
+
+                                <IconButton
+                                    aria-label="Next Page"
+                                    size="sm"
+                                    colorScheme="blue"
+                                    variant="ghost"
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    ml={2}
+                                >
+                                    <Icon as={FiChevronRight} />
+                                </IconButton>
+                            </Flex>
                         )}
                     </Box>
 
