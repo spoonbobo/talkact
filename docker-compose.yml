@@ -147,7 +147,7 @@ services:
       - .:/app
     restart: always
     depends_on:
-      # - kakashi-chat_server
+      - kakashi-chat_server
       - kakashi-psqldb
     networks:
       - kakashi-network
