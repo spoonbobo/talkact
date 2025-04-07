@@ -495,14 +495,14 @@ class MCPClient:
     def prepare_background_information(self, plan: PlanData, step_number: int):
         background = ""
         logger.info(f"Plan: {plan}")
-        # for step in range(1, step_number):
-        #     step_log = plan.logs[str(step)]
-        #     step_log_str = ""
-        #     for tool, result in step_log.items():
-        #         step_log_str += f"Tool: {tool}\nResult: {result}\n"
-        #     background += f"Step {step}: {step_log_str}\n"
+        for step in range(1, step_number):
+            step_log = plan.logs[str(step)]
+            step_log_str = ""
+            for tool, result in step_log.items():
+                step_log_str += f"Tool: {tool}\nResult: {result}\n"
+            background += f"Step {step}: {step_log_str}\n"
 
-        # logger.info(f"Background information: {background}")
+        logger.info(f"Background information: {background}")
         return background
 
     async def get_servers(self) -> Dict[str, MCPServer]:

@@ -45,6 +45,57 @@ async def download_file_from_internet(url: str, destination_path: str) -> str:
     
     return f"Downloaded file to {str(destination.absolute())}"
 
+@mcp.tool()
+async def download_multiple_files_from_internet(urls: list[str], destination_path: str) -> list[str]:
+    """
+    Downloads multiple files from the internet and saves them to the specified path.
+    
+    Args:
+        urls: A list of URLs to download from
+        destination_path: Where to save the files on disk (directory)
+        
+    Returns:
+        A list of absolute paths where the files were saved
+    """
+    destination = Path(destination_path)
+    
+    # Ensure destination exists and is a directory
+    if not destination.exists():
+        os.makedirs(destination, exist_ok=True)
+    elif not destination.is_dir():
+        raise ValueError(f"Destination path must be a directory: {destination_path}")
+    
+    downloaded_paths = []
+    
+    async with aiohttp.ClientSession() as session:
+        for url in urls:
+            # Extract filename from URL
+            parsed_url = urlparse(url)
+            filename = os.path.basename(parsed_url.path)
+            if not filename:
+                filename = f"downloaded_file_{len(downloaded_paths) + 1}"
+            
+            file_destination = destination / filename
+            
+            try:
+                async with session.get(url) as response:
+                    if response.status != 200:
+                        downloaded_paths.append(f"Failed to download {url}: HTTP {response.status}")
+                        continue
+                    
+                    with open(file_destination, 'wb') as f:
+                        while True:
+                            chunk = await response.content.read(1024)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                
+                downloaded_paths.append(str(file_destination.absolute()))
+            except Exception as e:
+                downloaded_paths.append(f"Failed to download {url}: {str(e)}")
+    
+    return downloaded_paths
+
 if __name__ == "__main__":
     # Initialize and run the server
     print("Starting web fetcher server")
