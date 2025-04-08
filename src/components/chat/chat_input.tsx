@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from "react";
-import { Flex, Input, Box, Icon } from "@chakra-ui/react";
+import { Flex, Textarea, Box, Icon } from "@chakra-ui/react";
 import { FaPaperPlane } from "react-icons/fa";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { useTranslations } from "next-intl";
@@ -145,7 +145,7 @@ export const ChatInput = React.memo(({
         }
     }, [mentionState.isActive]);
 
-    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const newValue = e.target.value;
         setMessageInput(newValue);
 
@@ -232,12 +232,17 @@ export const ChatInput = React.memo(({
             }
         }
 
-        if (e.key === "Enter" && !e.shiftKey && !mentionState.isActive) {
-            e.preventDefault();
-            if (messageInput.trim() && selectedRoomId) {
-                const newMessage = createNewMessage(messageInput);
-                handleSendMessage(newMessage);
-                setActiveMentions([]);
+        if (e.key === "Enter" && !mentionState.isActive) {
+            if (e.shiftKey) {
+                // Allow Shift+Enter to create a new line
+                return;
+            } else {
+                e.preventDefault();
+                if (messageInput.trim() && selectedRoomId) {
+                    const newMessage = createNewMessage(messageInput);
+                    handleSendMessage(newMessage);
+                    setActiveMentions([]);
+                }
             }
         }
     }, [
@@ -386,6 +391,25 @@ export const ChatInput = React.memo(({
         t
     ]);
 
+    // Add a ref for the textarea
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+    // Add effect to auto-resize the textarea
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        // Reset height to auto to get the correct scrollHeight
+        textarea.style.height = 'auto';
+
+        // Calculate the new height (capped at 50% of viewport height)
+        const maxHeight = window.innerHeight * 0.5;
+        const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+
+        // Set the new height
+        textarea.style.height = `${newHeight}px`;
+    }, [messageInput]);
+
     return (
         <Flex
             p={4}
@@ -395,14 +419,15 @@ export const ChatInput = React.memo(({
             align="center"
             position="relative"
         >
-            <Input
+            <Textarea
+                ref={textareaRef}
                 flex="1"
                 placeholder={!selectedRoomId ? t("please_select_a_room") : t("type_message")}
                 mr={2}
                 value={messageInput}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                borderRadius="full"
+                borderRadius="md"
                 size="md"
                 disabled={!selectedRoomId}
                 _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
@@ -416,6 +441,13 @@ export const ChatInput = React.memo(({
                         "0 0 0 1px var(--chakra-colors-blue-500)" :
                         "0 0 0 1px var(--chakra-colors-green-400)"
                 }}
+                resize="none"
+                overflow="auto"
+                minHeight="40px"
+                maxHeight="50vh"
+                py={2}
+                px={4}
+                rows={1}
             />
 
             <Box

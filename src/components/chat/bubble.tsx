@@ -57,11 +57,15 @@ export const ChatBubble = React.memo(({
   const userBgChat = useColorModeValue("rgba(72, 187, 120, 0.85)", "rgba(49, 130, 206, 0.85)"); // Green for light, Blue for dark
 
   // Pre-process the message content to highlight mentions with glowing effect
+  // and properly handle newlines
   const processedContent = useMemo(() => {
     if (!message.content) return "";
 
-    // Replace @mentions with HTML spans that have glowing styling
-    return message.content.replace(/@(\w+)/g, (match, username) => {
+    // First replace newlines with <br> tags
+    let content = message.content.replace(/\n/g, '<br>');
+
+    // Then replace @mentions with HTML spans that have glowing styling
+    return content.replace(/@(\w+)/g, (match, username) => {
       const isAgent = username.startsWith('agent');
 
       // Select appropriate colors based on bubble type and mention type
@@ -168,7 +172,7 @@ export const ChatBubble = React.memo(({
           maxW="100%"
           borderRadius="xl"
           bg={isUser
-            ? (isTaskMode ? userBgTask : userBgChat) // Even lighter bubble colors
+            ? (isTaskMode ? userBgTask : userBgChat)
             : (isTaskMode ? colors.otherBgTask : colors.otherBgChat)}
           color={isUser
             ? "white"
@@ -181,12 +185,16 @@ export const ChatBubble = React.memo(({
           style={{
             opacity: isVisible ? 1 : 0,
             transition: "opacity 0.5s ease-in-out",
-            userSelect: "text"
+            userSelect: "text",
+            whiteSpace: "pre-wrap"
           }}
         >
           <Box position="relative" textAlign="left">
             {/* Use dangerouslySetInnerHTML to render the processed content with styled mentions */}
-            <div dangerouslySetInnerHTML={{ __html: contentWithCursor }} />
+            <div
+              dangerouslySetInnerHTML={{ __html: contentWithCursor }}
+              style={{ whiteSpace: "pre-wrap" }}
+            />
           </Box>
         </Box>
       </Menu.ContextTrigger>

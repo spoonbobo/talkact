@@ -2,7 +2,7 @@
 
 import {
     Box,
-    Input,
+    Textarea,
     IconButton,
     Flex,
     Icon,
@@ -32,6 +32,9 @@ export const ChatModeInput = ({
     const t = useTranslations("Chat");
     const colors = useChatPageColors();
 
+    // Add textarea ref for auto-resizing
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
     // Use the centralized colors
     const inputBg = useColorModeValue("white", "#1A202C"); // Direct hex for dark mode
     const inputBorder = colors.chatModeHeading; // Using the green accent color
@@ -44,6 +47,22 @@ export const ChatModeInput = ({
 
     // Add this ref for the messages end
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+    // Auto-resize effect
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        // Reset height to auto to get the correct scrollHeight
+        textarea.style.height = 'auto';
+
+        // Calculate the new height (capped at 50% of viewport height)
+        const maxHeight = window.innerHeight * 0.5;
+        const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+
+        // Set the new height
+        textarea.style.height = `${newHeight}px`;
+    }, [inputValue]);
 
     const handleSendMessage = () => {
         if (inputValue.trim() && currentUser && !isStreaming) {
@@ -62,7 +81,7 @@ export const ChatModeInput = ({
         }
     };
 
-    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             handleSendMessage();
@@ -112,9 +131,9 @@ export const ChatModeInput = ({
             backdropFilter="blur(8px)"
             position="relative"
         >
-
             <Flex>
-                <Input
+                <Textarea
+                    ref={textareaRef}
                     color={inputTextColor}
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
@@ -131,7 +150,13 @@ export const ChatModeInput = ({
                     _placeholder={{ color: placeholderColor }}
                     disabled={isStreaming}
                     fontSize="md"
-                    height="44px"
+                    minHeight="44px"
+                    maxHeight="50vh"
+                    resize="none"
+                    overflow="auto"
+                    rows={1}
+                    py={2}
+                    px={4}
                     transition="all 0.2s"
                 />
 
@@ -146,10 +171,10 @@ export const ChatModeInput = ({
                     width="44px"
                     borderRadius="md"
                     transition="all 0.2s"
+                    alignSelf="flex-start"
                 >
                     <Icon as={FaPaperPlane} />
                 </IconButton>
-
             </Flex>
         </Box>
     );
