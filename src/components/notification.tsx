@@ -11,12 +11,14 @@ import {
     Flex,
     Portal,
     Icon,
+    Button,
+    HStack,
 } from "@chakra-ui/react";
 import { FaBell } from "react-icons/fa"
 import { useColorModeValue } from "@/components/ui/color-mode"
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { markAsRead, updatePosition } from '@/store/features/notificationSlice';
+import { markAsRead, updatePosition, markAllAsRead, clearAllNotifications } from '@/store/features/notificationSlice';
 
 const Notification: React.FC = () => {
     const dispatch = useDispatch();
@@ -134,6 +136,14 @@ const Notification: React.FC = () => {
         setIsOpen(false);
     };
 
+    const handleClearAll = () => {
+        dispatch(clearAllNotifications());
+    };
+
+    const handleMarkAllAsRead = () => {
+        dispatch(markAllAsRead());
+    };
+
     return (
         <Box
             ref={bellRef}
@@ -186,6 +196,29 @@ const Notification: React.FC = () => {
                 <Portal>
                     <Popover.Positioner>
                         <Popover.Content width="300px" boxShadow="xl" border="1px solid" borderColor={borderColor}>
+                            <Flex justifyContent="space-between" alignItems="center" p={2} borderBottom="1px solid" borderColor={borderColor}>
+                                <Text fontWeight="bold">Notifications</Text>
+                                {notifications.length > 0 && (
+                                    <HStack gap={1}>
+                                        <Button
+                                            size="xs"
+                                            colorScheme="blue"
+                                            variant="ghost"
+                                            onClick={handleMarkAllAsRead}
+                                        >
+                                            Mark All Read
+                                        </Button>
+                                        <Button
+                                            size="xs"
+                                            colorScheme="red"
+                                            variant="ghost"
+                                            onClick={handleClearAll}
+                                        >
+                                            Clear All
+                                        </Button>
+                                    </HStack>
+                                )}
+                            </Flex>
                             <Popover.Body p={0}>
                                 {notifications.length === 0 ? (
                                     <Box p={4} textAlign="center">

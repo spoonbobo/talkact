@@ -37,6 +37,16 @@ const notificationSlice = createSlice({
         },
         updatePosition: (state, action: PayloadAction<{ x: number, y: number }>) => {
             state.position = action.payload;
+        },
+        markAllAsRead: (state) => {
+            state.notifications.forEach(notification => {
+                notification.read = true;
+            });
+            state.unreadCount = 0;
+        },
+        clearAllNotifications: (state) => {
+            state.notifications = [];
+            state.unreadCount = 0;
         }
     }
 });
@@ -45,7 +55,9 @@ export const {
     setNotifications,
     markAsRead,
     addNotification,
-    updatePosition
+    updatePosition,
+    markAllAsRead,
+    clearAllNotifications
 } = notificationSlice.actions;
 
 export default notificationSlice.reducer;
