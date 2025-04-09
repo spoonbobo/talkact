@@ -23,7 +23,8 @@
     "sign_in": "Sign In",
     "signout_success": "Sign Out Successful",
     "signout_success_description": "You have successfully signed out",
-    "admin_panel": "Admin Panel"
+    "admin_panel": "Admin Panel",
+    "plans": "Plans"
   },
   "Signup": {
     "signup": "Sign Up",
@@ -158,7 +159,13 @@
     "Share": "Share",
     "Translate": "Translate",
     "Edit": "Edit",
-    "Delete": "Delete"
+    "Delete": "Delete",
+    "user_profile": "User Profile",
+    "user_info": "User Information",
+    "user_not_found": "User not found",
+    "success": "Success",
+    "left_room_successfully": "Left room successfully",
+    "users_invited_successfully": "Users invited successfully"
   },
   "Tasks": {
     "tasks": "Tasks",
@@ -283,7 +290,8 @@
     "active_users": "Members",
     "last_updated": "Last Updated",
     "refresh": "Refresh",
-    "search_chatrooms": "Search Chat Rooms"
+    "search_chatrooms": "Search Chat Rooms",
+    "members": "Members"
   },
   "Settings": {
     "settings": "Settings",
@@ -396,6 +404,10 @@
     "tools_readonly_message": "Tool configuration is read-only and cannot be edited",
     "type": "Type",
     "enter_array_as_json": "Enter array values as JSON: [\"item1\", \"item2\"]",
-    "readonly": "Read-only"
+    "readonly": "Read-only",
+    "request_mcp": "Request MCP",
+    "task_details": "Task Details",
+    "close": "Close",
+    "logs": "Logs"
   }
 }

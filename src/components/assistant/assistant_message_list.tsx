@@ -8,6 +8,7 @@ import {
 import { ChatBubble } from "@/components/chat/bubble";
 import { IMessage } from "@/types/chat";
 import { useChatPageColors } from "@/utils/colors";
+import { useTranslations } from 'next-intl';
 
 interface AssistantMessageListProps {
     messages: IMessage[];
@@ -24,7 +25,7 @@ const AssistantMessageList: React.FC<AssistantMessageListProps> = ({
 }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const colors = useChatPageColors();
-
+    const t = useTranslations("Assistant");
     // Group messages by sender for continuous messages
     const groupedMessages = useMemo(() => {
         return messages.reduce(
@@ -73,7 +74,7 @@ const AssistantMessageList: React.FC<AssistantMessageListProps> = ({
         >
             {groupedMessages.length === 0 ? (
                 <Box p={4} textAlign="center">
-                    <Text color="gray.500">How can I help you today?</Text>
+                    <Text color="gray.500">{t("how_can_i_help_you_today")}</Text>
                 </Box>
             ) : (
                 groupedMessages.map((group, groupIndex) => (

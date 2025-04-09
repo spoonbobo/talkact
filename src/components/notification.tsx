@@ -19,8 +19,10 @@ import { useColorModeValue } from "@/components/ui/color-mode"
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { markAsRead, updatePosition, markAllAsRead, clearAllNotifications } from '@/store/features/notificationSlice';
+import { useTranslations } from 'next-intl';
 
 const Notification: React.FC = () => {
+    const t = useTranslations("Notification");
     const dispatch = useDispatch();
     const { notifications, unreadCount, position } = useSelector((state: RootState) => state.notification);
     const { currentUser, isAuthenticated } = useSelector((state: RootState) => state.user);
@@ -35,9 +37,12 @@ const Notification: React.FC = () => {
     // Add constants for boundary margins
     const BOUNDARY_MARGIN = 20; // pixels from edge of screen
 
-    const bgColor = useColorModeValue("white", "gray.800");
+    const bgColor = useColorModeValue("white", "gray.900");
     const borderColor = useColorModeValue("gray.200", "gray.700");
     const hoverBg = useColorModeValue("gray.100", "gray.700");
+    const notificationUnreadBg = useColorModeValue("blue.50", "rgba(66, 153, 225, 0.15)");
+    const notificationTextColor = useColorModeValue("gray.800", "gray.100");
+    const mutedTextColor = useColorModeValue("gray.500", "gray.400");
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (bellRef.current) {
@@ -166,7 +171,7 @@ const Notification: React.FC = () => {
             >
                 <Popover.Trigger asChild>
                     <IconButton
-                        aria-label="Notifications"
+                        aria-label={t("notifications")}
                         onClick={handleClick}
                         size="lg"
                         colorScheme="blue"
@@ -174,7 +179,7 @@ const Notification: React.FC = () => {
                         borderRadius="full"
                         boxShadow="lg"
                         position="relative"
-                        bg={useColorModeValue("white", "gray.800")}
+                        bg={bgColor}
                         _hover={{ bg: useColorModeValue("blue.50", "gray.700") }}
                     >
                         {<Icon as={FaBell} />}
@@ -199,9 +204,9 @@ const Notification: React.FC = () => {
                 </Popover.Trigger>
                 <Portal>
                     <Popover.Positioner>
-                        <Popover.Content width="300px" boxShadow="xl" border="1px solid" borderColor={borderColor}>
+                        <Popover.Content width="300px" boxShadow="xl" border="1px solid" borderColor={borderColor} bg={bgColor}>
                             <Flex justifyContent="space-between" alignItems="center" p={2} borderBottom="1px solid" borderColor={borderColor}>
-                                <Text fontWeight="bold">Notifications</Text>
+                                <Text fontWeight="bold" color={notificationTextColor}>{t("notifications")}</Text>
                                 {notifications.length > 0 && (
                                     <HStack gap={1}>
                                         <Button
@@ -210,7 +215,7 @@ const Notification: React.FC = () => {
                                             variant="ghost"
                                             onClick={handleMarkAllAsRead}
                                         >
-                                            Mark All Read
+                                            {t("Mark All Read")}
                                         </Button>
                                         <Button
                                             size="xs"
@@ -218,7 +223,7 @@ const Notification: React.FC = () => {
                                             variant="ghost"
                                             onClick={handleClearAll}
                                         >
-                                            Clear All
+                                            {t("Clear All")}
                                         </Button>
                                     </HStack>
                                 )}
@@ -226,7 +231,7 @@ const Notification: React.FC = () => {
                             <Popover.Body p={0}>
                                 {notifications.length === 0 ? (
                                     <Box p={4} textAlign="center">
-                                        <Text color="gray.500">No notifications</Text>
+                                        <Text color={mutedTextColor}>{t("no_notifications")}</Text>
                                     </Box>
                                 ) : (
                                     <VStack gap={0} align="stretch" maxH="400px" overflowY="auto">
@@ -236,10 +241,7 @@ const Notification: React.FC = () => {
                                                 p={3}
                                                 borderBottom="1px solid"
                                                 borderColor={borderColor}
-                                                bg={notification.read ? bgColor : "blue.50"}
-                                                _dark={{
-                                                    bg: notification.read ? bgColor : "blue.900"
-                                                }}
+                                                bg={notification.read ? bgColor : notificationUnreadBg}
                                                 _hover={{ bg: hoverBg }}
                                                 cursor="pointer"
                                                 onClick={() => {
@@ -247,10 +249,10 @@ const Notification: React.FC = () => {
                                                 }}
                                             >
                                                 <Flex justifyContent="space-between" mb={1}>
-                                                    <Text fontWeight="bold" fontSize="sm">{notification.title}</Text>
-                                                    <Text fontSize="xs" color="gray.500">{notification.timestamp}</Text>
+                                                    <Text fontWeight="bold" fontSize="sm" color={notificationTextColor}>{notification.title}</Text>
+                                                    <Text fontSize="xs" color={mutedTextColor}>{notification.timestamp}</Text>
                                                 </Flex>
-                                                <Text fontSize="sm" lineClamp={2}>{notification.message}</Text>
+                                                <Text fontSize="sm" lineClamp={2} color={notificationTextColor}>{notification.message}</Text>
                                             </Box>
                                         ))}
                                     </VStack>

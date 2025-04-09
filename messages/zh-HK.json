@@ -49,7 +49,11 @@
     "powered_by": "搭載",
     "trusted_by": "用戶回饋",
     "plans_title": "計劃",
-    "plans_description": "查看和完成計劃"
+    "plans_description": "查看並利用MCP工具完成計劃",
+    "ai_assistant_title": "AI助手",
+    "ai_assistant_description": "在應用任何一個地方都可以回答你的問題，並且會不斷學習新的知識。",
+    "chatroom_title": "聊天室",
+    "chatroom_description": "與你的團隊和AI代理聊天，以創建可執行的計劃"
   },
   "Signup": {
     "signup": "註冊",
@@ -101,6 +105,15 @@
     "privacy_policy": "私隱政策",
     "terms_of_service": "使用條款",
     "contact_us": "聯絡我們"
+  },
+  "Notification": {
+    "notifications": "通知",
+    "no_notifications": "沒有通知"
+  },
+  "Assistant": {
+    "ai_assistant": "AI助手",
+    "clear_chat": "清除聊天",
+    "how_can_i_help_you_today": "我可以怎麼幫你？"
   },
   "Chat": {
     "chat": "聊天",

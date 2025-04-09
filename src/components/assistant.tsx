@@ -37,7 +37,7 @@ const Assistant: React.FC = () => {
     const { data: session } = useSession();
     const { currentUser, isAuthenticated } = useSelector((state: RootState) => state.user);
     const { position, isOpen, messages, isStreaming, streamingMessageId } = useSelector((state: RootState) => state.assistant);
-    const t = useTranslations("Chat");
+    const t = useTranslations("Assistant");
     const colors = useChatPageColors();
     const params = useParams();
     const locale = params.locale as string;
@@ -523,7 +523,7 @@ const Assistant: React.FC = () => {
                         <Popover.Content width="350px" boxShadow="xl" border="1px solid" borderColor={borderColor}>
                             <Popover.Arrow bg={bgColor} borderColor={borderColor} />
                             <Flex justifyContent="space-between" alignItems="center" p={2} borderBottom="1px solid" borderColor={borderColor}>
-                                <Text fontWeight="bold">AI Assistant</Text>
+                                <Text fontWeight="bold">{t("ai_assistant")}</Text>
                                 <Flex>
                                     <Button
                                         size="xs"
@@ -532,7 +532,7 @@ const Assistant: React.FC = () => {
                                         onClick={clearConversation}
                                         mr={2}
                                     >
-                                        Clear Chat
+                                        {t("clear_chat")}
                                     </Button>
                                     <Popover.CloseTrigger asChild>
                                         <IconButton

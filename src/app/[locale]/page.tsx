@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Box, Container, Flex, Heading, Icon, Text, Separator, Portal, Popover, CloseButton } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FiHome, FiServer, FiBook, FiMessageSquare, FiBell, FiTool } from "react-icons/fi";
+import { FaComments, FaComment } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -116,12 +117,12 @@ export default function HomePage() {
   // Navigation cards for main sections
   const navigationCards = [
     {
-      id: "learn",
-      title: t("learn_title"),
-      description: t("learn_description"),
-      icon: FiBook,
-      color: "blue.500",
-      path: "/learn",
+      id: "chatroom",
+      title: t("chatroom_title") || "Chatroom",
+      description: t("chatroom_description") || "Chat with your team and AI agents to create executable plans",
+      icon: FaComments,
+      color: "pink.500",
+      path: "/chat",
     },
     {
       id: "plans",
@@ -132,12 +133,20 @@ export default function HomePage() {
       path: "/plans",
     },
     {
-      id: "mcp",
-      title: t("mcp_title"),
-      description: t("mcp_description"),
-      icon: FiServer,
-      color: "purple.500",
+      id: "learn",
+      title: t("learn_title"),
+      description: t("learn_description"),
+      icon: FiBook,
+      color: "blue.500",
       path: "/learn",
+    },
+    {
+      id: "ai-assistant",
+      title: t("ai_assistant_title") || "AI Assistant",
+      description: t("ai_assistant_description") || "Answer questions based on growing knowledge, globally persisted across the app.",
+      icon: FaComment,
+      color: "teal.500",
+      path: "/assistant",
     },
   ];
 

@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useSelector } from "react-redux";
 import {
   FaTasks,
-  FaComment,
+  FaComments,
   FaBook,
   FaChartLine,
   FaCog,
@@ -254,7 +254,7 @@ const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: 
           <div className="flex flex-col w-full items-center">
             <NavIconButton
               to="/chat"
-              icon={FaComment}
+              icon={FaComments}
               label="Chat"
               tooltipContent={t("chat")}
               isMobile={isMobile}

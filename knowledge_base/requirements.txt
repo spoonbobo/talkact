@@ -18,5 +18,6 @@ llama-index-embeddings-fastembed
 llama-index-llms-openai
 llama-index-embeddings-ollama
 llama-index-llms-ollama
+llama-index-llms-deepseek
 
 # https://cloud.llamaindex.ai/login

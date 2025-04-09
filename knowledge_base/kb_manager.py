@@ -9,8 +9,9 @@ from loguru import logger
 from llama_index.core import VectorStoreIndex, StorageContext
 from llama_index.vector_stores.qdrant import QdrantVectorStore # type: ignore
 from llama_index.embeddings.ollama import OllamaEmbedding # type: ignore
-from llama_index.llms.ollama import Ollama # type: ignore
 from llama_index.core.llms import ChatMessage
+from llama_index.llms.deepseek import DeepSeek
+
 
 from schemas.document import Folder, DataSource
 from schemas.document import QueryRequest
@@ -106,9 +107,9 @@ class KBManager:
             model_name=os.getenv("EMBED_MODEL"),
             base_url=os.getenv("OLLAMA_API_BASE_URL")
         )
-        self.ollama_llm = Ollama(
-            model=os.getenv("OLLAMA_MODEL"),
-            base_url=os.getenv("OLLAMA_API_BASE_URL")
+        self.llm = DeepSeek(
+            model=os.getenv("OPENAI_MODEL"),
+            api_key=os.getenv("OPENAI_API_KEY")
         )
         
         # Add message store for streaming resumption
@@ -196,10 +197,9 @@ class KBManager:
            if source not in self.indices:
                continue
                
-           # Create a proper Ollama LLM instance for querying
            query_engine = self.indices[source].as_query_engine(
                similarity_top_k=top_k,
-               llm=self.ollama_llm  # Use proper Ollama LLM instance
+               llm=self.llm
            )
            response = query_engine.query(query_text)
            
@@ -236,7 +236,7 @@ class KBManager:
         )
         
         # Stream tokens from the LLM
-        for chunk in self.ollama_llm.stream_complete(prompt):
+        for chunk in self.llm.stream_complete(prompt):
             # Extract the text from the CompletionResponse object
             if hasattr(chunk, 'delta'):
                 token = chunk.delta
@@ -301,9 +301,9 @@ class KBManager:
                 
         if query.streaming:
             # Return generator for streaming
-            return self.ollama_llm.stream_complete(prompt)
+            return self.llm.stream_complete(prompt)
         else:
-            answer = self.ollama_llm.complete(prompt)
+            answer = self.llm.complete(prompt)
             return answer
 
     def _build_folder_structure(self, documents):

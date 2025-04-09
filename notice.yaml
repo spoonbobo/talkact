@@ -7,10 +7,6 @@ known_issues:
     description: Socket connection is not supported in multi-window openings
     status: "Under investigation"
     reported: "2025-03-15"
-  - value: "switching view during chat streaming may cause problems"
-    description: "Users may experience UI freezing when switching views while in active chat sessions"
-    status: "Workaround: Close chat before switching views"
-    reported: "2025-03-29"
   - value: "Last room update is not available yet"
     description: "Last room update is not available yet"
     status: "Under investigation"

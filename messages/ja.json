@@ -152,7 +152,11 @@
     "Edit": "編集",
     "Delete": "削除",
     "user_not_found": "ユーザーが見つかりません",
-    "user_profile": "ユーザー情報"
+    "user_profile": "ユーザープロフィール",
+    "user_info": "ユーザー情報",
+    "success": "成功",
+    "left_room_successfully": "ルームから正常に退出しました",
+    "users_invited_successfully": "ユーザーを正常に招待しました"
   },
   "Plans": {
     "plans": "プラン",
@@ -175,7 +179,6 @@
     "completed": "完了日時",
     "pending": "保留中",
     "running": "実行中",
-    "success": "成功",
     "failure": "失敗",
     "denied": "拒否",
     "terminated": "終了",
@@ -215,7 +218,10 @@
     "type": "タイプ",
     "enter_array_as_json": "配列値をJSONとして入力: [\"項目1\", \"項目2\"]",
     "readonly": "読み取り専用",
-    "request_mcp": "MCPをリクエスト"
+    "request_mcp": "MCPをリクエスト",
+    "task_details": "タスク詳細",
+    "no_task_selected": "タスクが選択されていません",
+    "logs": "ログ"
   },
   "Learn": {
     "learn": "学ぶ",
@@ -284,7 +290,8 @@
     "active_users": "メンバー",
     "last_updated": "最終更新",
     "refresh": "更新",
-    "search_chatrooms": "チャットルーム検索"
+    "search_chatrooms": "チャットルーム検索",
+    "members": "メンバー"
   },
   "Settings": {
     "settings": "設定",

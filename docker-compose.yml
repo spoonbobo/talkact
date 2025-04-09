@@ -199,6 +199,9 @@ services:
       - EMBED_MODEL=nomic-embed-text:latest
       - OLLAMA_MODEL=gemma3:4b
       - OLLAMA_API_BASE_URL=http://kakashi-ollama:11434
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_BASE_URL=${OPENAI_API_BASE_URL}
+      - OPENAI_MODEL=${OPENAI_MODEL}
     networks:
       - kakashi-network
     restart: always

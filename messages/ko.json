@@ -12,7 +12,7 @@
       "kakashi": "카카시",
       "home": "홈",
       "chat": "채팅",
-      "tasks": "태스크",
+      "plans": "플랜",
       "dashboard": "대시보드",
       "learn": "학습",
       "settings": "설정",
@@ -158,7 +158,13 @@
       "Share": "공유",
       "Translate": "번역",
       "Edit": "편집",
-      "Delete": "삭제"
+      "Delete": "삭제",
+      "user_profile": "사용자 프로필",
+      "user_info": "사용자 정보",
+      "user_not_found": "사용자를 찾을 수 없습니다",
+      "success": "성공",
+      "left_room_successfully": "채팅방에서 성공적으로 나갔습니다",
+      "users_invited_successfully": "사용자를 성공적으로 초대했습니다"
     },
     "Tasks": {
       "tasks": "태스크",
@@ -288,7 +294,8 @@
       "active_users": "멤버",
       "last_updated": "마지막 업데이트",
       "refresh": "새로고침",
-      "search_chatrooms": "채팅방 검색"
+      "search_chatrooms": "채팅방 검색",
+      "members": "멤버"
     },
     "Settings": {
       "settings": "설정",
@@ -396,6 +403,11 @@
       "tools_readonly_message": "도구 구성은 읽기 전용이며 편집할 수 없습니다",
       "type": "유형",
       "enter_array_as_json": "배열 값을 JSON으로 입력: [\"항목1\", \"항목2\"]",
-      "readonly": "읽기 전용"
+      "readonly": "읽기 전용",
+      "request_mcp": "MCP 요청",
+      "task_details": "태스크 세부 정보",
+      "no_task_selected": "선택된 태스크가 없습니다",
+      "close": "닫기",
+      "logs": "로그"
     }
 }

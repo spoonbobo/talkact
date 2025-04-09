@@ -38,25 +38,32 @@ export function GuestHomePage({
 
     const featureCards = [
         {
-            id: "chat_room",
-            title: t("feature_chat_room") || "Chat Room",
-            description: t("feature_chat_room_desc") || "A dedicated space for real-time communication.",
+            id: "chatroom",
+            title: t("chatroom_title") || "Chatroom",
+            description: t("chatroom_description") || "Chat with your team and AI agents to create executable plans",
             icon: FiMessageSquare,
-            color: "blue.500",
+            color: "pink.500",
         },
         {
-            id: "task_management",
-            title: t("feature_task_management") || "Task Management",
-            description: t("feature_task_management_desc") || "Organizing and tracking tasks efficiently.",
+            id: "plans",
+            title: t("plans_title") || "Plans",
+            description: t("plans_description") || "Organizing and tracking tasks efficiently",
             icon: FaTasks,
             color: "green.500",
         },
         {
             id: "learn",
-            title: t("feature_learn") || "Learn",
-            description: t("feature_learn_desc") || "Accessing resources and tutorials for skill development.",
+            title: t("learn_title") || "Learn",
+            description: t("learn_description") || "Accessing resources and tutorials for skill development",
             icon: FaBook,
-            color: "purple.500",
+            color: "blue.500",
+        },
+        {
+            id: "ai-assistant",
+            title: t("ai_assistant_title") || "AI Assistant",
+            description: t("ai_assistant_description") || "Answer questions based on growing knowledge, globally persisted across the app",
+            icon: FaQuoteLeft,
+            color: "teal.500",
         },
     ];
 
@@ -173,7 +180,7 @@ export function GuestHomePage({
                     <Heading as="h2" size="lg" marginBottom={8} color={textColor} textAlign="center">
                         {t("guest_features_title") || "Why Choose MCP?"}
                     </Heading>
-                    <SimpleGrid columns={{ base: 1, md: 3 }} gap="32px">
+                    <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap="32px">
                         {featureCards.map((card, index) => (
                             <MotionBox
                                 key={card.id}
