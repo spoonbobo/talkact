@@ -74,7 +74,6 @@ class SocketClient:
             except Exception as e:
                 logger.error(f"Failed to connect to socket server: {e}")
                 logger.error(traceback.format_exc())
-                raise
     
     async def disconnect(self):
         """Disconnect from the socket server."""
