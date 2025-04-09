@@ -1,0 +1,21 @@
+{
+  "Navbar": {
+    "plans": "プラン"
+  },
+  "Plans": {
+    "no_task_selected": "タスクが選択されていません",
+    "close": "閉じる"
+  },
+  "Home": {
+    "powered_by": "搭載",
+    "trusted_by": "ユーザー回饋",
+    "plans_title": "計画",
+    "plans_description": "MCPツールを利用して計画を完成させる",
+    "ai_assistant_title": "AIアシスタント",
+    "ai_assistant_description": "アプリ内のどこでも質問に答え、新しい知識を継続的に学習します。",
+    "chatroom_title": "チャットルーム",
+    "chatroom_description": "チームやAIエージェントとチャットして実行可能な計画を作成する",
+    "create_account": "アカウント作成",
+    "no_data": "データなし"
+  }
+} 

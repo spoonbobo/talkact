@@ -29,5 +29,4 @@ docker exec -it kakashi-ollama bash
 ollama pull nomic-embed-text
 ```
 
-Only Ollama is supported now for LLM service. Roadmap is to support more LLM services.
 Visit `kakashi-dev.com` to open the web application.

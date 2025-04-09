@@ -1,0 +1,18 @@
+{
+  "Plans": {
+    "no_task_selected": "선택된 태스크가 없습니다",
+    "close": "닫기"
+  },
+  "Home": {
+    "powered_by": "구동",
+    "trusted_by": "사용자 피드백",
+    "plans_title": "플랜",
+    "plans_description": "MCP 도구를 활용하여 플랜 완성",
+    "ai_assistant_title": "AI 어시스턴트",
+    "ai_assistant_description": "앱 내 어디서나 질문에 답변하고 지속적으로 새로운 지식을 학습합니다.",
+    "chatroom_title": "채팅방",
+    "chatroom_description": "팀 및 AI 에이전트와 채팅하여 실행 가능한 플랜 생성",
+    "create_account": "계정 만들기",
+    "no_data": "데이터 없음"
+  }
+} 

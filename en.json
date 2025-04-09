@@ -1,0 +1,18 @@
+{
+  "Home": {
+    "powered_by": "Powered by",
+    "trusted_by": "Trusted by",
+    "plans_title": "Plans",
+    "plans_description": "View and utilize MCP tools to complete plans",
+    "ai_assistant_title": "AI Assistant",
+    "ai_assistant_description": "Answers your questions anywhere in the app and continuously learns new knowledge.",
+    "chatroom_title": "Chat Room",
+    "chatroom_description": "Chat with your team and AI agents to create actionable plans",
+    "create_account": "Create Account",
+    "no_data": "No data"
+  },
+  "Plans": {
+    "no_task_selected": "No task selected",
+    "close": "Close"
+  }
+} 
