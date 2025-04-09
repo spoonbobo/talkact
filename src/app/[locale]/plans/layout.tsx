@@ -79,11 +79,6 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
         return <Loading />; // Show loading instead of direct navigation
     }
 
-    // Add a check to not render the content if not owner
-    if (!isOwner) {
-        return <Loading />;
-    }
-
     // Extract the current plan ID from the pathname
     const currentPlanId = pathname.split('/').pop();
     const isDetailView = pathname !== '/plans' && pathname !== '/plans/';
