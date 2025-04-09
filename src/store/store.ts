@@ -6,7 +6,9 @@ import chatReducer from './features/chatSlice';
 import userReducer from './features/userSlice';
 import notificationReducer from './features/notificationSlice';
 import planReducer from './features/planSlice';
+import assistantReducer from './features/assistantSlice';
 import { socketMiddleware } from './middleware/socketMiddleware';
+import streamingMiddleware from './middleware/streamingMiddleware';
 
 // Combine all reducers
 const rootReducer = combineReducers({
@@ -14,6 +16,7 @@ const rootReducer = combineReducers({
     user: userReducer,
     notification: notificationReducer,
     plan: planReducer,
+    assistant: assistantReducer,
     // Add other reducers here
 });
 
@@ -21,7 +24,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
     key: 'root',
     storage,
-    whitelist: ['chat', 'user', 'notification'], // Persist notification state too
+    whitelist: ['chat', 'user', 'notification', 'assistant'], // Persist notification state too
 };
 
 // Create a persisted reducer
@@ -35,7 +38,7 @@ export const store = configureStore({
             serializableCheck: {
                 ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
             },
-        }).concat(socketMiddleware),
+        }).concat(socketMiddleware, streamingMiddleware),
 });
 
 // Persistor object

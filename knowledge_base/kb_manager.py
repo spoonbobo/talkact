@@ -1,12 +1,15 @@
-from typing import Dict
+from typing import Dict, AsyncGenerator
 import os
+import uuid
+import json
+import asyncio
 
 from qdrant_client import QdrantClient
 from loguru import logger
 from llama_index.core import VectorStoreIndex, StorageContext
-from llama_index.vector_stores.qdrant import QdrantVectorStore
-from llama_index.embeddings.ollama import OllamaEmbedding
-from llama_index.llms.ollama import Ollama
+from llama_index.vector_stores.qdrant import QdrantVectorStore # type: ignore
+from llama_index.embeddings.ollama import OllamaEmbedding # type: ignore
+from llama_index.llms.ollama import Ollama # type: ignore
 from llama_index.core.llms import ChatMessage
 
 from schemas.document import Folder, DataSource
@@ -107,6 +110,9 @@ class KBManager:
             model=os.getenv("OLLAMA_MODEL"),
             base_url=os.getenv("OLLAMA_API_BASE_URL")
         )
+        
+        # Add message store for streaming resumption
+        self._message_store = {}
     
     def load_documents(self):
         """Load documents from all sources"""
@@ -210,6 +216,70 @@ class KBManager:
        # Sort by relevance score
        results.sort(key=lambda x: x["score"], reverse=True)
        return results[:top_k]
+
+    async def stream_answer_with_context(self, query: QueryRequest):
+        """
+        Stream an answer using RAG with async support
+        """
+        # Handle both string and list inputs
+        query_text = query.query[-1] if isinstance(query.query, list) else query.query
+        
+        # Generate context based on the latest query
+        context = self.generate_context(query_text, query.source_id, query.top_k)
+        
+        prompt_template = self.lng_prompt[query.preferred_language]
+        prompt = prompt_template.format(
+            preferred_language=self.lng_map[query.preferred_language],
+            context=context,
+            conversation_history=query.conversation_history,
+            query=query_text
+        )
+        
+        # Stream tokens from the LLM
+        for chunk in self.ollama_llm.stream_complete(prompt):
+            # Extract the text from the CompletionResponse object
+            if hasattr(chunk, 'delta'):
+                token = chunk.delta
+            elif hasattr(chunk, 'text'):
+                token = chunk.text
+            elif isinstance(chunk, dict) and 'text' in chunk:
+                token = chunk['text']
+            elif isinstance(chunk, str):
+                token = chunk
+            else:
+                # Log the unexpected type for debugging
+                logger.warning(f"Unexpected token type: {type(chunk)}, value: {chunk}")
+                token = str(chunk)
+            
+            yield token
+            await asyncio.sleep(0.01) 
+
+    # Methods for message persistence
+    def store_message(self, message_id: str, message_data: dict):
+        """Store message data for potential resumption"""
+        self._message_store[message_id] = message_data
+        
+        # Set expiration (optional) - remove after 30 minutes
+        asyncio.create_task(self._expire_message(message_id, 1800))
+    
+    async def _expire_message(self, message_id: str, delay_seconds: int):
+        """Remove message after delay"""
+        await asyncio.sleep(delay_seconds)
+        self.remove_message(message_id)
+    
+    def get_message_by_id(self, message_id: str):
+        """Retrieve stored message data"""
+        return self._message_store.get(message_id)
+    
+    def update_message_content(self, message_id: str, content: str):
+        """Update the content of a stored message"""
+        if message_id in self._message_store:
+            self._message_store[message_id]["current_content"] = content
+    
+    def remove_message(self, message_id: str):
+        """Remove a message from storage"""
+        if message_id in self._message_store:
+            del self._message_store[message_id]
 
     def answer_with_context(self, query: QueryRequest):
         """

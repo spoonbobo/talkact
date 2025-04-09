@@ -144,6 +144,10 @@ const Notification: React.FC = () => {
         dispatch(markAllAsRead());
     };
 
+    if (!isAuthenticated) {
+        return null;
+    }
+
     return (
         <Box
             ref={bellRef}

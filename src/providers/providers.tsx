@@ -15,6 +15,9 @@ import { defaultSystem } from "@chakra-ui/react"
 import { ColorModeProvider } from "@/components/ui/color-mode"
 import Notification from "@/components/notification";
 import Footer from "@/components/footer";
+import Assistant from "@/components/assistant";
+import { usePathname } from 'next/navigation';
+import { setCurrentRoute } from '@/store/features/assistantSlice';
 
 
 export default function Providers({
@@ -25,6 +28,14 @@ export default function Providers({
   session: any;
 }) {
   const [navExpanded, setNavExpanded] = React.useState(false);
+  const pathname = usePathname();
+
+  // Track route changes
+  React.useEffect(() => {
+    if (store) {
+      store.dispatch(setCurrentRoute(pathname));
+    }
+  }, [pathname]);
 
   // Function to handle navbar expansion state
   const handleNavExpansion = (expanded: boolean) => {
@@ -83,6 +94,7 @@ export default function Providers({
                       {children}
                     </Container>
                     <Notification />
+                    <Assistant />
                   </Box>
                   <Footer />
                 </Flex>

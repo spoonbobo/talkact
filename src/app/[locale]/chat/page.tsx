@@ -47,14 +47,10 @@ import { ChatRoomList } from "@/components/chat/room_list";
 import { ChatMessageList } from "@/components/chat/message_list";
 import { ChatInput } from "@/components/chat/chat_input";
 import { CreateRoomForm } from "@/components/chat/create_room_form";
-import { ChatModeProvider, useChatMode } from "@/components/chat/chat_mode_context";
-import { ChatModeMessageList } from "@/components/chat/chat_mode_message_list";
-import { ChatModeInput } from "@/components/chat/chat_mode_input";
 import { toaster } from "@/components/ui/toaster";
 import { useChatPageColors } from "@/utils/colors";
 import { RoomMenu } from "@/components/chat/room_menu";
 import { RoomInvitation } from "@/components/chat/room_invitation";
-
 
 const MotionBox = motion.create(Box);
 
@@ -98,7 +94,6 @@ const TaskLog = () => {
   );
 };
 
-// Wrap the main component with the ChatModeProvider
 export default function ChatPage() {
   const { data: session } = useSession();
   const { currentUser } = useSelector((state: RootState) => state.user);
@@ -107,14 +102,10 @@ export default function ChatPage() {
     return <Loading />;
   }
 
-  return (
-    <ChatModeProvider currentUser={currentUser}>
-      <ChatPageContent />
-    </ChatModeProvider>
-  );
+  return <ChatPageContent />;
 }
 
-// The existing ChatPageContent component remains as is
+// The main ChatPageContent component
 const ChatPageContent = () => {
   const t = useTranslations("Chat");
   const { data: session } = useSession();
@@ -133,10 +124,6 @@ const ChatPageContent = () => {
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const isOwner = useSelector((state: RootState) => state.user.isOwner);
 
-  // UAT flag to check if user is not an owner
-  // const UAT = !isOwner;
-  const UAT = false;
-
   // Get messages for the selected room
   const currentMessages = selectedRoomId ? messages[selectedRoomId] || [] : [];
 
@@ -145,8 +132,6 @@ const ChatPageContent = () => {
   const [newRoomName, setNewRoomName] = useState<string>("");
   const [isCreatingRoomLoading, setIsCreatingRoomLoading] = useState<boolean>(false);
   const [isLayoutFlipped, setIsLayoutFlipped] = useState<boolean>(false);
-  // Force chat mode for non-owners in UAT
-  const [isTaskMode, setIsTaskMode] = useState<boolean>(!UAT);
   const [users, setUsers] = useState<User[]>([]);
   const [agents, setAgents] = useState<User[]>([]);
 
@@ -181,19 +166,10 @@ const ChatPageContent = () => {
   const textColor = colors.textColor;
   const textColorHeading = colors.textColorHeading;
   const borderColor = colors.borderColor;
-  const chatModeBg = colors.chatModeBg;
-  const chatModeBorder = colors.chatModeBorder;
-  const chatModeHeading = colors.chatModeHeading;
 
   // Add new color variables for message list consistency
   const messageListBg = bgSubtle;
   const messageTextColor = colors.messageTextColor || textColor;
-
-  // Add this new state to track if event source is active
-  const [isEventSourceActive, setIsEventSourceActive] = useState<boolean>(false);
-
-  // Add this ref to store the event source instance
-  const eventSourceRef = React.useRef<EventSource | null>(null);
 
   // Fetch rooms
   useEffect(() => {
@@ -345,7 +321,6 @@ const ChatPageContent = () => {
 
         dispatch(setRooms(roomsResponse.data));
 
-
         toaster.create({
           title: t("room_created"),
           description: t("room_created_description"),
@@ -486,57 +461,6 @@ const ChatPageContent = () => {
     setIsLayoutFlipped(!isLayoutFlipped);
   };
 
-  // Modify the handleTaskModeToggle function to prevent non-owners from switching to task mode
-  const handleTaskModeToggle = () => {
-    // If user is not an owner in UAT, don't allow switching to task mode
-    if (UAT && isTaskMode === false) {
-      return;
-    }
-
-    // If switching to task mode while event source is active
-    if (isTaskMode === false && isEventSourceActive) {
-      // Don't immediately clear messages, just pause the UI updates
-      chatModeContext.setPauseUpdates(true);
-    } else if (isTaskMode === true && isEventSourceActive) {
-      // Resuming updates when switching back to chat mode
-      chatModeContext.setPauseUpdates(false);
-    }
-
-    setIsTaskMode(!isTaskMode);
-  };
-
-  // Add this effect to clean up event source when component unmounts
-  useEffect(() => {
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        setIsEventSourceActive(false);
-      }
-    };
-  }, []);
-
-  // Get the chat mode context
-  const chatModeContext = useChatMode();
-
-  // Use a ref to track if we're in task mode to avoid dependency cycles
-  const isTaskModeRef = React.useRef(isTaskMode);
-  isTaskModeRef.current = isTaskMode;
-
-  // Effect to clear chat mode messages when switching back to task mode
-  useEffect(() => {
-    if (isTaskMode && !isTaskModeRef.current) {
-      chatModeContext.clearChatModeMessages();
-    }
-    isTaskModeRef.current = isTaskMode;
-  }, [isTaskMode, chatModeContext]);
-
-  // Force chat mode for non-owners when component mounts
-  useEffect(() => {
-    if (UAT) {
-      setIsTaskMode(false);
-    }
-  }, [UAT]);
-
   // If there are no rooms but a room is selected, clear the selection
   useEffect(() => {
     if (rooms.length === 0 && selectedRoomId) {
@@ -548,8 +472,7 @@ const ChatPageContent = () => {
   const [isInvitingUsers, setIsInvitingUsers] = useState<boolean>(false);
 
   const handleSendMessage = useCallback((newMessage: IMessage) => {
-    if (newMessage.content.trim() && selectedRoomId && isTaskMode) {
-
+    if (newMessage.content.trim() && selectedRoomId) {
       dispatch({
         type: 'chat/sendMessage',
         payload: { message: newMessage }
@@ -570,7 +493,7 @@ const ChatPageContent = () => {
 
       setMessageInput("");
     }
-  }, [dispatch, isTaskMode, selectedRoomId, setMessageInput, triggerAgentAPI]);
+  }, [dispatch, selectedRoomId, setMessageInput, triggerAgentAPI]);
 
   // Memoize the ChatInput props to prevent unnecessary re-renders
   const chatInputProps = useMemo(() => ({
@@ -581,7 +504,6 @@ const ChatPageContent = () => {
     users,
     agents,
     currentUser,
-    isTaskMode,
     currentRoom,
     roomUsers,
   }), [
@@ -592,7 +514,6 @@ const ChatPageContent = () => {
     users,
     agents,
     currentUser,
-    isTaskMode,
     currentRoom,
     roomUsers
   ]);
@@ -626,21 +547,10 @@ const ChatPageContent = () => {
           mb={6}
           display="flex"
           alignItems="center"
-          color={isTaskMode ? textColorHeading : "green.600"}
+          color={textColorHeading}
         >
-          <Icon as={FaComments} mr={3} color={isTaskMode ? "blue.500" : "green.500"} />
+          <Icon as={FaComments} mr={3} color="blue.500" />
           {t("chat")}
-          {!isTaskMode && (
-            <motion.span
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              transition={{ duration: 0.3 }}
-              style={{ marginLeft: '8px', color: 'green.500' }}
-            >
-              ({t("chat_mode")})
-            </motion.span>
-          )}
         </Heading>
 
         <Flex
@@ -656,10 +566,10 @@ const ChatPageContent = () => {
             initial={false}
             animate={{
               left: isLayoutFlipped ? "calc(100% - 300px)" : 0,
-              opacity: isTaskMode ? 1 : 0,
-              scale: isTaskMode ? 1 : 0.9,
-              width: isTaskMode ? "300px" : "0px",
-              pointerEvents: isTaskMode ? "auto" : "none",
+              opacity: 1,
+              scale: 1,
+              width: "300px",
+              pointerEvents: "auto",
             }}
             transition={{
               duration: 0.5,
@@ -671,7 +581,7 @@ const ChatPageContent = () => {
             position="absolute"
             height="100%"
             zIndex={1}
-            whileHover={{ boxShadow: isTaskMode ? "0 4px 12px rgba(0,0,0,0.1)" : "none" }}
+            whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
           >
             <AnimatePresence mode="wait" initial={false}>
               {isLayoutFlipped ? (
@@ -756,13 +666,13 @@ const ChatPageContent = () => {
             layout
             initial={false}
             animate={{
-              left: !isTaskMode ? 0 : (isLayoutFlipped ? 0 : "300px"),
-              width: !isTaskMode ? "100%" : (isLayoutFlipped ? "calc(100% - 300px - 1rem)" : "calc(100% - 300px - 1rem)"),
+              left: isLayoutFlipped ? 0 : "300px",
+              width: isLayoutFlipped ? "calc(100% - 300px - 1rem)" : "calc(100% - 300px - 1rem)",
               opacity: 1,
               scale: 1,
             }}
             style={{
-              backgroundColor: isTaskMode ? bgSubtle : chatModeBg,
+              backgroundColor: bgSubtle,
             }}
             transition={{
               duration: 0.5,
@@ -777,7 +687,7 @@ const ChatPageContent = () => {
             display="flex"
             flexDirection="column"
             borderWidth="1px"
-            borderColor={isTaskMode ? borderColor : chatModeBorder}
+            borderColor={borderColor}
             zIndex={2}
             whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
           >
@@ -785,8 +695,8 @@ const ChatPageContent = () => {
             <Flex
               p={4}
               borderBottomWidth="1px"
-              borderColor={isTaskMode ? borderColor : chatModeBorder}
-              bg={isTaskMode ? bgSubtle : chatModeBg}
+              borderColor={borderColor}
+              bg={bgSubtle}
               align="center"
               minHeight="80px"
               width="100%"
@@ -816,12 +726,12 @@ const ChatPageContent = () => {
                       <Text
                         fontSize="lg"
                         fontWeight="bold"
-                        color={isTaskMode ? textColorHeading : chatModeHeading}
+                        color={textColorHeading}
                         display="flex"
                         alignItems="center"
                       >
                         {currentRoom?.name || t("select_room")}
-                        {currentRoom && isTaskMode && (
+                        {currentRoom && (
                           <RoomMenu
                             onRoomDetails={() => {
                               setIsRoomDetailsOpen(true);
@@ -886,7 +796,7 @@ const ChatPageContent = () => {
                         )}
                       </Text>
                       <AnimatePresence>
-                        {isTaskMode && currentRoom && (
+                        {currentRoom && (
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
@@ -931,100 +841,37 @@ const ChatPageContent = () => {
                       gap: "12px"
                     }}
                   >
-                    {/* Task mode toggle - disabled for non-owners in UAT */}
+                    {/* Layout toggle */}
                     <Text
                       as="button"
-                      color={isTaskMode ? colors.taskModeColor : colors.chatModeColor}
+                      color="blue.500"
                       fontWeight="medium"
-                      cursor={UAT && !isTaskMode ? "not-allowed" : "pointer"}
-                      onClick={handleTaskModeToggle}
-                      opacity={UAT && !isTaskMode ? 0.6 : 1}
-                      _hover={{
-                        color: UAT && !isTaskMode
-                          ? (isTaskMode ? colors.taskModeColor : colors.chatModeColor)
-                          : (isTaskMode ? colors.taskModeHoverColor : colors.chatModeHoverColor),
-                        textDecoration: UAT && !isTaskMode ? "none" : "underline"
-                      }}
+                      cursor="pointer"
+                      onClick={handleFlipLayout}
+                      _hover={{ color: "blue.600", textDecoration: "underline" }}
                       transition="color 0.2s ease"
                     >
-                      {isTaskMode
-                        ? t("switch_to_chat_mode")
-                        : UAT
-                          ? `${t("switch_to_task_mode")} (${t("disabled_task_view_due_to_uat")})`
-                          : t("switch_to_task_mode")
-                      }
+                      {isLayoutFlipped ? t("switch_to_room_view") : t("switch_to_task_view")}
                     </Text>
-
-                    {/* Reset chat button - only show in chat mode */}
-                    {!isTaskMode && (
-                      <Text
-                        as="button"
-                        color={colors.chatModeColor}
-                        fontWeight="medium"
-                        cursor="pointer"
-                        onClick={() => chatModeContext.clearChatModeMessages()}
-                        _hover={{ color: colors.chatModeHoverColor, textDecoration: "underline" }}
-                        transition="color 0.2s ease"
-                        ml={4}
-                      >
-                        {t("reset_chat_mode") || "Reset Chat"}
-                      </Text>
-                    )}
-
-                    {/* Layout toggle - only show in task mode and for owners */}
-                    {isTaskMode && !UAT && (
-                      <Text
-                        as="button"
-                        color="blue.500"
-                        fontWeight="medium"
-                        cursor="pointer"
-                        onClick={handleFlipLayout}
-                        _hover={{ color: "blue.600", textDecoration: "underline" }}
-                        transition="color 0.2s ease"
-                      >
-                        {isLayoutFlipped ? t("switch_to_room_view") : t("switch_to_task_view")}
-                      </Text>
-                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
             </Flex>
 
-            {/* Messages area - conditionally render based on mode */}
-            {isTaskMode ? (
-              <ChatMessageList
-                messageGroups={groupedMessages}
-                messagesEndRef={messagesEndRef}
-                isTaskMode={isTaskMode}
-                // TODO: do not delete
-                // @ts-ignore
-                style={{
-                  backgroundColor: messageListBg,
-                  color: messageTextColor,
-                }}
-              />
-            ) : (
-              <ChatModeMessageList
-                messagesEndRef={messagesEndRef}
-                // TODO: do not delete
-                // @ts-ignore
-                style={{
-                  backgroundColor: chatModeBg,
-                  color: messageTextColor,
-                }}
-              />
-            )}
+            {/* Messages area */}
+            <ChatMessageList
+              messageGroups={groupedMessages}
+              messagesEndRef={messagesEndRef}
+              // TODO: Add isTaskMode prop
+              // @ts-ignore
+              style={{
+                backgroundColor: messageListBg,
+                color: messageTextColor,
+              }}
+            />
 
-            {/* Input area - conditionally render based on mode */}
-            {isTaskMode ? (
-              <ChatInput {...chatInputProps} />
-            ) : (
-              <ChatModeInput
-                currentUser={currentUser}
-                setIsEventSourceActive={setIsEventSourceActive}
-                eventSourceRef={eventSourceRef}
-              />
-            )}
+            {/* Input area */}
+            <ChatInput {...chatInputProps} />
           </MotionBox>
         </Flex>
       </MotionBox>
@@ -1143,4 +990,3 @@ const ChatPageContent = () => {
     </Container>
   );
 };
-

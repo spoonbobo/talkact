@@ -61,8 +61,19 @@ export const ChatBubble = React.memo(({
   const processedContent = useMemo(() => {
     if (!message.content) return "";
 
+    // Check if this is an interrupted message
+    const isInterrupted = message.content.includes('[Generation was interrupted');
+
     // First replace newlines with <br> tags
     let content = message.content.replace(/\n/g, '<br>');
+
+    // If this is an interrupted message, add special styling to the interruption notice
+    if (isInterrupted) {
+      content = content.replace(
+        /(\[Generation was interrupted.*?\])/g,
+        '<span style="color: #ff6b6b; font-style: italic; font-size: 0.9em; display: block; margin-top: 8px;">$1</span>'
+      );
+    }
 
     // Then replace @mentions with HTML spans that have glowing styling
     return content.replace(/@(\w+)/g, (match, username) => {
@@ -134,7 +145,15 @@ export const ChatBubble = React.memo(({
   }, []);
 
   const handleCopy = () => {
-    console.log("handleCopy", message.content);
+    if (message.content) {
+      navigator.clipboard.writeText(message.content)
+        .then(() => {
+          console.log("Content copied to clipboard");
+        })
+        .catch(err => {
+          console.error("Failed to copy content: ", err);
+        });
+    }
   };
 
   // Define horizontal menu items with emojis
@@ -266,6 +285,14 @@ export const ChatBubble = React.memo(({
   );
 }, (prevProps, nextProps) => {
   // Custom comparison function to determine if re-render is needed
+  // Always re-render if the message contains an interruption notice
+  if (
+    prevProps.message.content?.includes('[Generation was interrupted') ||
+    nextProps.message.content?.includes('[Generation was interrupted')
+  ) {
+    return false; // Force re-render for interrupted messages
+  }
+
   return (
     prevProps.isUser === nextProps.isUser &&
     prevProps.isFirstInGroup === nextProps.isFirstInGroup &&

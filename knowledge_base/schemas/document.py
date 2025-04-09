@@ -50,6 +50,7 @@ class QueryRequest(BaseModel):
     streaming: bool = False
     top_k: int = 5
     preferred_language: str = "en"
+    message_id: Optional[str] = None
 
 # Update forward references for nested models
 Folder.model_rebuild()
