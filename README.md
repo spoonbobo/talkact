@@ -18,10 +18,14 @@ Kakashi is under rapid development, welcome to contribute.
 cp config/.env.template config/.env
 docker compose up
 
-# in other terminal
-docker exec -it kakashi-llm bash
-ollama pull gemma3:4b
-ollama pull llama3.2:latest
+
+# openai llm
+OPENAI_API_KEY=<YOUR-API-Key>
+OPENAI_API_BASE_URL=https://api.deepseek.com
+OPENAI_MODEL=deepseek-chat
+
+# embedding
+docker exec -it kakashi-ollama bash
 ollama pull nomic-embed-text
 ```
 
