@@ -10,6 +10,7 @@ Kakashi is under rapid development, welcome to contribute.
 - Planning management with approval system
 - Global AI assistant with a growing knowledge base integrated
 - Support multiple languages
+- OpenAI/ Deepseek supported
 
 ## Setup
 
