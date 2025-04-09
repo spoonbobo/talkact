@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     # TODO: replace config.json with custom path
     config = json.load(open("config.json"))
     # TODO: replace with env variable
-    qdrant_client = QdrantClient(host="kakashi-qdrant", port=6333)
+    qdrant_client = QdrantClient(host="onlysaid-qdrant", port=6333)
     kb_manager = KBManager(config, qdrant_client)
     kb_manager.load_documents()
     kb_manager.create_indices()

@@ -9,7 +9,7 @@
     "create_account": "Create Account"
   },
   "Navbar": {
-    "kakashi": "Kakashi",
+    "onlysaid": "onlysaid",
     "home": "Home",
     "chat": "Chat",
     "tasks": "Tasks",
@@ -27,19 +27,19 @@
     "plans": "Plans"
   },
   "Home": {
-    "welcome": "Welcome to Kakashi",
+    "welcome": "Welcome to onlysaid",
     "learn_title": "Learn",
-    "learn_description": "Explore Kakashi's learning features",
+    "learn_description": "Explore onlysaid's learning features",
     "tasks_title": "Tasks",
     "tasks_description": "Check and complete tasks",
     "mcp_title": "MCP",
-    "mcp_description": "Explore Kakashi's MCP features",
+    "mcp_description": "Explore onlysaid's MCP features",
     "welcome_message": "Hello",
     "guest_welcome": "Hello",
-    "guest_welcome_message": "Kakashi is a program that integrates MCP servers to enhance productivity for you and your team.",
+    "guest_welcome_message": "onlysaid is a program that integrates MCP servers to enhance productivity for you and your team.",
     "guest_features_title": "Features",
     "guest_cta_title": "Get Started Now",
-    "guest_cta_description": "After logging in or registering, you can use various features of Kakashi",
+    "guest_cta_description": "After logging in or registering, you can use various features of onlysaid",
     "get_started": "Get Started",
     "guest_footer": "Only supports Passwordless login mode",
     "feature_chat_room": "Chat Room",

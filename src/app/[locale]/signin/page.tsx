@@ -107,7 +107,7 @@ export default function SigninPage() {
               e.preventDefault();
               try {
                 signIn("google", {
-                  callbackUrl: "http://kakashi-dev.com/api/auth/callback/google",
+                  callbackUrl: "http://onlysaid-dev.com/api/auth/callback/google",
                   redirect: true
                 });
               } catch (error) {
@@ -128,7 +128,7 @@ export default function SigninPage() {
               e.preventDefault();
 
               signIn("github", {
-                callbackUrl: `http://kakashi-dev.com/api/redirect/third_party_login?locale=${locale}`,
+                callbackUrl: `http://onlysaid-dev.com/api/redirect/third_party_login?locale=${locale}`,
                 redirect: true
               });
             }}

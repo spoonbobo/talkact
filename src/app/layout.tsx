@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kakashi-Dev",
-  description: "Kakashi",
+  title: "onlysaid-Dev",
+  description: "onlysaid",
 };
 
 export default function RootLayout({

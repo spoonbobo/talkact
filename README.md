@@ -1,7 +1,7 @@
-# Kakashi
+# onlysaid
 
-Kakashi (光說不做) is a go-to chatroom application for you to collaborate with your team and AI agents, integrated with task system, knowledge base, under MCP protocols.
-Kakashi is under rapid development, welcome to contribute.
+onlysaid (光說不做) is a go-to chatroom application for you to collaborate with your team and AI agents, integrated with task system, knowledge base, under MCP protocols.
+onlysaid is under rapid development, welcome to contribute.
 
 ## Features
 
@@ -25,8 +25,8 @@ OPENAI_API_BASE_URL=https://api.deepseek.com
 OPENAI_MODEL=deepseek-chat
 
 # embedding
-docker exec -it kakashi-ollama bash
+docker exec -it onlysaid-ollama bash
 ollama pull nomic-embed-text
 ```
 
-Visit `kakashi-dev.com` to open the web application.
+Visit `onlysaid-dev.com` to open the web application.

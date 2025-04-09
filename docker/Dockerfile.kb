@@ -30,5 +30,5 @@ EXPOSE 35430
 
 CMD ["python", "main.py", "--host", "0.0.0.0", "--port", "35430"]
 
-# docker build -t kakashi-mcp-client -f docker/Dockerfile.mcp.client .
-# docker run -it -p 34430:34430 kakashi-mcp-client
+# docker build -t onlysaid-mcp-client -f docker/Dockerfile.mcp.client .
+# docker run -it -p 34430:34430 onlysaid-mcp-client

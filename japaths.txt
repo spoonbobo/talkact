@@ -154,7 +154,7 @@ Navbar.admin_panel
 Navbar.chat
 Navbar.dashboard
 Navbar.home
-Navbar.kakashi
+Navbar.onlysaid
 Navbar.learn
 Navbar.settings
 Navbar.sign_in

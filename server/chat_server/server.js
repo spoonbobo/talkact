@@ -5,7 +5,7 @@ const { Server } = require("socket.io");
 const { connectToRedis } = require("./redis_client");
 const { setupSocketIO } = require("./socket_handler");
 const { serveHtmlPage } = require("./html_page");
-const { sayHiToKakashi } = require("./kakashi_handler");
+const { sayHiToonlysaid } = require("./app_handler");
 
 const app = express();
 const httpServer = createServer(app);

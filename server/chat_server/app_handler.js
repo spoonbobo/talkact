@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const sayHiToKakashi = async () => {
+export const sayHiToonlysaid = async () => {
   const url = process.env.CLIENT_URL + "/api/health";
   const response = await axios.get(url);
   return response.data;

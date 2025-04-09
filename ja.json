@@ -1,6 +1,6 @@
 {
   "Navbar": {
-    "kakashi": "Kakashi",
+    "onlysaid": "onlysaid",
     "home": "ホーム",
     "chat": "チャット",
     "plans": "プラン",
@@ -21,19 +21,19 @@
     "close": "閉じる"
   },
   "Home": {
-    "welcome": "歓迎します Kakashi へ",
+    "welcome": "歓迎します onlysaid へ",
     "learn_title": "学ぶ",
-    "learn_description": "Kakashi の学習機能を探索する",
+    "learn_description": "onlysaid の学習機能を探索する",
     "tasks_title": "任務",
     "tasks_description": "任務を確認し、完了する",
     "mcp_title": "MCP",
-    "mcp_description": "Kakashi の MCP 機能を探索する",
+    "mcp_description": "onlysaid の MCP 機能を探索する",
     "welcome_message": "こんにちは",
     "guest_welcome": "こんにちは",
-    "guest_welcome_message": "Kakashi (光說不做）はMCPサーバーを統合したプログラムで、あなたとチームの生産性を向上させます。",
+    "guest_welcome_message": "onlysaid (光說不做）はMCPサーバーを統合したプログラムで、あなたとチームの生産性を向上させます。",
     "guest_features_title": "機能",
     "guest_cta_title": "今すぐ始める",
-    "guest_cta_description": "ログインまたは登録後、Kakashi のさまざまな機能を使用できます",
+    "guest_cta_description": "ログインまたは登録後、onlysaid のさまざまな機能を使用できます",
     "get_started": "体験を始める",
     "guest_footer": "Passwordlessログインモードのみをサポートしています",
     "feature_chat_room": "チャットルーム",

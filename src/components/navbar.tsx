@@ -242,8 +242,8 @@ const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: 
               K
             </div>
           )}
-          label="Kakashi"
-          tooltipContent={t("kakashi")}
+          label="onlysaid"
+          tooltipContent={t("onlysaid")}
           isMobile={isMobile}
           isExpanded={isExpanded}
           mb={10}
