@@ -1,12 +1,54 @@
 {
   "Navbar": {
-    "plans": "プラン"
+    "kakashi": "Kakashi",
+    "home": "ホーム",
+    "chat": "チャット",
+    "plans": "プラン",
+    "dashboard": "ダッシュボード",
+    "learn": "学ぶ",
+    "settings": "設定",
+    "signup": "サインアップ",
+    "signout": "ログアウト",
+    "sign_out": "ログアウト",
+    "signin": "ログイン",
+    "sign_in": "ログイン",
+    "signout_success": "ログアウト成功",
+    "signout_success_description": "正常にログアウトしました",
+    "admin_panel": "管理パネル"
   },
   "Plans": {
     "no_task_selected": "タスクが選択されていません",
     "close": "閉じる"
   },
   "Home": {
+    "welcome": "歓迎します Kakashi へ",
+    "learn_title": "学ぶ",
+    "learn_description": "Kakashi の学習機能を探索する",
+    "tasks_title": "任務",
+    "tasks_description": "任務を確認し、完了する",
+    "mcp_title": "MCP",
+    "mcp_description": "Kakashi の MCP 機能を探索する",
+    "welcome_message": "こんにちは",
+    "guest_welcome": "こんにちは",
+    "guest_welcome_message": "Kakashi (光說不做）はMCPサーバーを統合したプログラムで、あなたとチームの生産性を向上させます。",
+    "guest_features_title": "機能",
+    "guest_cta_title": "今すぐ始める",
+    "guest_cta_description": "ログインまたは登録後、Kakashi のさまざまな機能を使用できます",
+    "get_started": "体験を始める",
+    "guest_footer": "Passwordlessログインモードのみをサポートしています",
+    "feature_chat_room": "チャットルーム",
+    "feature_chat_room_desc": "リアルタイム通信専用のスペースです。",
+    "feature_task_management": "タスク管理",
+    "feature_task_management_desc": "タスクを効率的に整理し、追跡します。",
+    "feature_learn": "学ぶ",
+    "feature_learn_desc": "スキルを向上させるためのリソースとチュートリアルにアクセスします。",
+    "announcement": "お知らせ",
+    "known_issues": "既知の問題",
+    "features_implementing": "実装予定の機能",
+    "no_announcements": "お知らせはありません",
+    "no_known_issues": "既知の問題はありません",
+    "no_upcoming_features": "実装予定の機能はありません",
+    "no_data": "データなし",
     "powered_by": "搭載",
     "trusted_by": "ユーザー回饋",
     "plans_title": "計画",
@@ -15,7 +57,6 @@
     "ai_assistant_description": "アプリ内のどこでも質問に答え、新しい知識を継続的に学習します。",
     "chatroom_title": "チャットルーム",
     "chatroom_description": "チームやAIエージェントとチャットして実行可能な計画を作成する",
-    "create_account": "アカウント作成",
-    "no_data": "データなし"
+    "create_account": "アカウント作成"
   }
 } 

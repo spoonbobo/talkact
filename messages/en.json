@@ -100,7 +100,15 @@
     "no_announcements": "No announcements",
     "no_known_issues": "No known issues",
     "no_upcoming_features": "No upcoming features",
-    "no_data": "No data"
+    "no_data": "No data",
+    "powered_by": "Powered by",
+    "trusted_by": "Trusted by",
+    "plans_title": "Plans",
+    "plans_description": "View and utilize MCP tools to complete plans",
+    "ai_assistant_title": "AI Assistant",
+    "ai_assistant_description": "Answers your questions anywhere in the app and continuously learns new knowledge.",
+    "chatroom_title": "Chat Room",
+    "chatroom_description": "Chat with your team and AI agents to create actionable plans"
   },
   "Footer": {
     "privacy_policy": "Privacy Policy",
@@ -409,5 +417,16 @@
     "task_details": "Task Details",
     "close": "Close",
     "logs": "Logs"
+  },
+  "Notification": {
+    "notifications": "Notifications",
+    "no_notifications": "No notifications",
+    "mark_all_read": "Mark all read",
+    "clear_all": "Clear all"
+  },
+  "Assistant": {
+    "ai_assistant": "AI Assistant",
+    "clear_chat": "Clear Chat",
+    "how_can_i_help_you_today": "How can I help you today?"
   }
 }

@@ -87,8 +87,11 @@ export default function SettingsPage() {
     pathParts.splice(1, 1); // Remove the locale part
     const pathWithoutLocale = pathParts.join('/');
 
-    // Redirect to the same page with new locale
-    router.push(`/${value}${pathWithoutLocale}`);
+    // Create the new URL with the selected locale
+    const newPath = `/${value}${pathWithoutLocale}`;
+
+    // Use window.location for a hard refresh instead of router.push
+    window.location.href = newPath;
   };
 
   if (!session) {

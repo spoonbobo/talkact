@@ -108,7 +108,9 @@
   },
   "Notification": {
     "notifications": "通知",
-    "no_notifications": "沒有通知"
+    "no_notifications": "沒有通知",
+    "mark_all_read": "全部已讀",
+    "clear_all": "全部清除"
   },
   "Assistant": {
     "ai_assistant": "AI助手",

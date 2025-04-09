@@ -6,10 +6,10 @@ Kakashi is under rapid development, welcome to contribute.
 ## Features
 
 - All-in-one MCP stack with easy-to-use client & servers
-- Intelligent task system based on chatroom's context
-- Planning management with approval system
-- Global AI assistant with a growing knowledge base integrated
-- Support multiple languages
+- Intelligent planning system based on chatroom's context
+- Planning management with MCP tool executions
+- Global AI assistant with a growing knowledge base integrated.
+- Support multiple languages, Chinese, English, Japanese, Korean, and more to come.
 - OpenAI/ Deepseek supported
 
 ## Setup

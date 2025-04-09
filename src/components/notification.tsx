@@ -215,7 +215,7 @@ const Notification: React.FC = () => {
                                             variant="ghost"
                                             onClick={handleMarkAllAsRead}
                                         >
-                                            {t("Mark All Read")}
+                                            {t("mark_all_read")}
                                         </Button>
                                         <Button
                                             size="xs"
@@ -223,7 +223,7 @@ const Notification: React.FC = () => {
                                             variant="ghost"
                                             onClick={handleClearAll}
                                         >
-                                            {t("Clear All")}
+                                            {t("clear_all")}
                                         </Button>
                                     </HStack>
                                 )}

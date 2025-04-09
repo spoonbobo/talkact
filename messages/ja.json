@@ -91,7 +91,15 @@
     "no_announcements": "お知らせはありません",
     "no_known_issues": "既知の問題はありません",
     "no_upcoming_features": "実装予定の機能はありません",
-    "no_data": "データなし"
+    "no_data": "データなし",
+    "powered_by": "搭載",
+    "trusted_by": "ユーザーフィードバック",
+    "plans_title": "プラン",
+    "plans_description": "MCPツールを利用してプランを完了する",
+    "ai_assistant_title": "AIアシスタント",
+    "ai_assistant_description": "アプリのどこでも質問に答え、新しい知識を継続的に学習します。",
+    "chatroom_title": "チャットルーム",
+    "chatroom_description": "チームやAIエージェントとチャットして実行可能なプランを作成する"
   },
   "Footer": {
     "privacy_policy": "プライバシーポリシー",
@@ -343,5 +351,16 @@
     "redirecting_in": "リダイレクトまで",
     "seconds": "秒",
     "to_home": "ホームに戻る"
+  },
+  "Notification": {
+    "notifications": "通知",
+    "no_notifications": "通知はありません",
+    "mark_all_read": "すべてを読みました",
+    "clear_all": "すべてを削除"
+  },
+  "Assistant": {
+    "ai_assistant": "AIアシスタント",
+    "clear_chat": "チャットをクリア",
+    "how_can_i_help_you_today": "今日はどのようなお手伝いをしましょうか？"
   }
 }
