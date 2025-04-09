@@ -16,19 +16,23 @@ onlysaid is under rapid development, welcome to contribute.
 
 ## Setup
 
+Environment setting:
+
 ```bash
-cp config/.env.template config/.env
-docker compose up
+cp config/.env.template .env
 
-
-# openai llm
+# in .env
 OPENAI_API_KEY=<YOUR-API-Key>
 OPENAI_API_BASE_URL=https://api.deepseek.com
 OPENAI_MODEL=deepseek-chat
+```
 
-# embedding
+```bash
+docker compose up
+
 docker exec -it onlysaid-ollama bash
 ollama pull nomic-embed-text
+
 ```
 
 Visit `onlysaid-dev.com` to open the web application.

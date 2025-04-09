@@ -1,0 +1,24 @@
+NVDA Stock Price Report
+
+Date: April 8, 2025
+- Open: $87.46
+- High: $101.75
+- Low: $86.62
+- Close: $97.64
+- Volume: 610,884,947
+- VWAP: $94.90
+- Transactions: 5,164,574
+
+Date: April 9, 2025
+- Open: $103.81
+- High: $105.85
+- Low: $94.46
+- Close: $96.30
+- Volume: 476,243,390
+- VWAP: $100.83
+- Transactions: 3,957,083
+
+Summary:
+- The stock price of NVDA showed volatility over the past two days, with a significant drop in closing price on April 9 compared to April 8.
+- The highest price recorded was $105.85 on April 9, while the lowest was $86.62 on April 8.
+- Trading volume was higher on April 8, indicating increased activity.
