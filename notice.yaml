@@ -21,6 +21,10 @@ features_implementing:
     description: "Significantly improve the performance of CAG+RAG+MCP"
     expected_release: "2025-06-10"
     completion: "40%"
+  - value: "Integration with existing MCP server"
+    description: "Integration with existing MCP server"
+    expected_release: "2025-04-30"
+    completion: "90%"
   - value: dashboard
     description: "Customizable analytics dashboard with real-time data visualization"
     expected_release: "2025-04-30"
