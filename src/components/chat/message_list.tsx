@@ -128,6 +128,7 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                                             isUser={group.isCurrentUser}
                                             isFirstInGroup={msgIndex === 0}
                                             isTaskMode={isTaskMode}
+                                            isStreaming={!message.content}
                                         />
 
                                         {/* Timestamp with improved colors */}
