@@ -1,12 +1,12 @@
 # Kakashi
 
-Kakashi (光說不做) is a go-to chatroom application for you to collaborate with your team and AI agents, integrated with task system, knowledge base, under MCP protocols.
+Kakashi (光說不做) is a go-to chatroom application for you to collaborate with your team and AI agents, integrated with plan system, knowledge base, under MCP protocols.
 Kakashi is under rapid development, welcome to contribute.
 
 ## Features
 
 - All-in-one MCP stack with easy-to-use client & servers
-- Intelligent task system based on chatroom's context
+- Intelligent plan system based on chatroom's context
 - Task management with approval system
 - Knowledge base integrated
 - Support multiple languages
@@ -17,12 +17,15 @@ Kakashi is under rapid development, welcome to contribute.
 cp config/.env.template config/.env
 docker compose up
 
-# in other terminal
-docker exec -it kakashi-llm bash
-ollama pull gemma3:4b
-ollama pull llama3.2:latest
+
+# openai llm
+OPENAI_API_KEY=<YOUR-API-Key>
+OPENAI_API_BASE_URL=https://api.deepseek.com
+OPENAI_MODEL=deepseek-chat
+
+# embedding
+docker exec -it kakashi-ollama bash
 ollama pull nomic-embed-text
 ```
 
-Only Ollama is supported now for LLM service. Roadmap is to support more LLM services.
 Visit `kakashi-dev.com` to open the web application.
