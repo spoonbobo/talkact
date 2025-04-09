@@ -3,7 +3,7 @@
 onlysaid (光說不做) is a go-to chatroom application for you to collaborate with your team and AI agents, integrated with planning system, knowledge base, and MCP protocols.
 onlysaid is under rapid development, welcome to contribute.
 
-![alt text](./public/demo.png)
+![alt text](./public/demo_plan.png)
 
 ## Features
 

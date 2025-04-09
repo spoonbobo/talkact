@@ -239,7 +239,7 @@ const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: 
               className={`w-10 h-10 rounded-md flex items-center justify-center font-bold ${logoShadow} transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 border border-gray-300 dark:border-gray-600`}
               style={{ backgroundColor: logoBgColor, color: logoTextColor }}
             >
-              K
+              O
             </div>
           )}
           label="onlysaid"
