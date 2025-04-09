@@ -19,7 +19,7 @@ from mcp.client.stdio import stdio_client
 
 from schemas.mcp import MCPPlanRequest, Task, MCPTaskRequest, PlanData
 from schemas.mcp import MCPTool, MCPServer
-from prompts.task_create import PLAN_SYSTEM_PROMPT, PLAN_CREATE_PROMPT
+from prompts.plan_create import PLAN_SYSTEM_PROMPT, PLAN_CREATE_PROMPT
 from prompts.mcp_reqeust import MCP_REQUEST_SYSTEM_PROMPT, MCP_REQUEST_PROMPT
 from utils.mcp import parse_mcp_tools
 from service.socket_client import SocketClient
@@ -117,6 +117,7 @@ class MCPClient:
                 )
                 response.raise_for_status()
                 messages = response.json()
+                logger.info(f"Messages---------------------------->: {messages}")
             except Exception as e:
                 logger.error(f"Error fetching messages: {e}")
                 messages = []
@@ -129,10 +130,15 @@ class MCPClient:
         conversations = [
             {
                 "role": "assistant" if msg["sender"] == "agent" else "user",
-                "content": msg["content"]
+                "content": msg["content"],
+                "created_at": msg.get("created_at", "")
             }
             for msg in messages
         ] + query
+        
+        additional_context = f"""
+        Current datetime: {datetime.datetime.now().isoformat()}
+        """
         
         response = self.openai_client.chat.completions.create(
             model="deepseek-chat",
@@ -145,6 +151,7 @@ class MCPClient:
                     "role": "user", 
                     "content": PLAN_CREATE_PROMPT.format(
                         conversations=self.format_conversation(conversations),
+                        additional_context=additional_context,
                         assistants=self.server_names,
                         assistant_descriptions=self.format_server_descriptions()
                     )
@@ -162,6 +169,7 @@ class MCPClient:
                     "role": "user", 
                     "content": PLAN_CREATE_PROMPT.format(
                         conversations=self.format_conversation(conversations),
+                        additional_context=additional_context,
                         assistants=self.server_names,
                         assistant_descriptions=self.format_server_descriptions()
                     )
@@ -326,6 +334,8 @@ class MCPClient:
         task = mcp_request.task
         mcp_server = task.mcp_server
         # mcp_tools = self.server_tools_dict[mcp_server]
+        plan = mcp_request.plan.context.conversations
+        logger.info(f"Plan======================>: {plan}")
         mcp_tools = self.mcp_tools_dict[mcp_server]
         client_url = os.environ.get("CLIENT_URL", "")
         
@@ -495,6 +505,13 @@ class MCPClient:
     def prepare_background_information(self, plan: PlanData, step_number: int):
         background = ""
         logger.info(f"Plan: {plan}")
+        conversations = plan.context.conversations
+        background += "Conversations:\n"
+
+        for message in reversed(conversations):
+            if "created_at" in message:
+                background += f"[{message['created_at']}] {message['role']}: {message['content']}\n"
+        
         for step in range(1, step_number):
             step_log = plan.logs[str(step)]
             step_log_str = ""
@@ -606,13 +623,22 @@ class MCPClient:
     def format_conversation(self, messages):
         formatted_text = "CONVERSATION START\n\n"
         for message in messages:
-            role = message['role']
-            content = message['content']
+            # Determine the role based on sender field if available, otherwise use the role field
+            if 'sender' in message:
+                role = "assistant" if message['sender'] == "agent" else "user"
+            else:
+                role = message.get('role', 'user')
+            
+            content = message.get('content', '')
+            # Get the timestamp from the message
+            timestamp = message.get('created_at', '')
+            timestamp_str = f" [{timestamp}]" if timestamp else ""
+            
             # Clean up the content by removing '@agent' prefix
-            if content.startswith('@agent'):
+            if isinstance(content, str) and content.startswith('@agent'):
                 content = content.replace('@agent', '', 1).strip()
             
-            formatted_text += f"{role.capitalize()}: {content}\n"
+            formatted_text += f"{role.capitalize()}{timestamp_str}: {content}\n"
         
         formatted_text += "\nCONVERSATION END"
         return formatted_text

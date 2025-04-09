@@ -146,8 +146,8 @@ async def get_zabbix_host_items(host_name: str) -> str:
 @mcp.tool()
 async def get_zabbix_host_memory_utilization(
     host_name: str,
-    time_from: int = None,
-    time_to: int = None
+    time_from: int = None, # type: ignore
+    time_to: int = None # type: ignore
 ) -> str:
     """
     Retrieve memory utilization of a host from Zabbix in a time range (time_from: int, time_to: int)

@@ -1,13 +1,8 @@
 {
     "mcpServers": {
-        "weather": {
-            "description": "/servers/description/weather.md",
-            "path": "/servers/weather.py",
-            "metadata": {}
-        },
-        "web_fetcher": {
-            "description": "/servers/description/web_fetcher.md",
-            "path": "/servers/web_fetcher.py",
+        "web_surfer": {
+            "description": "/servers/description/web_surfer.md",
+            "path": "/servers/web_surfer.py",
             "metadata": {}
         },
         "zabbix": {
@@ -18,6 +13,16 @@
         "pyaudit": {
             "description": "/servers/description/pyaudit.md",
             "path": "/servers/pyaudit.py",
+            "metadata": {}
+        },
+        "stock_agent": {
+            "description": "/servers/description/stock_agent.md",
+            "path": "/servers/stock_agent.py",
+            "metadata": {}
+        },
+        "fileio": {
+            "description": "/servers/description/fileio.md",
+            "path": "/servers/fileio.py",
             "metadata": {}
         }
     }

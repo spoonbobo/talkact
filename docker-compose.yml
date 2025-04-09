@@ -173,12 +173,11 @@ services:
       - MCP_SERVERS_JSON=/app/mcp_server.json
       - SOCKET_SERVER_URL=${SOCKET_SERVER_URL}
       - CLIENT_URL=${CLIENT_URL}
-      - OLLAMA_API_BASE_URL=http://kakashi-ollama:11434
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_API_BASE_URL=${OPENAI_API_BASE_URL}
-      - OLLAMA_MODEL=llama3.2:latest
       - BYPASSER_MODEL=gemma3:4b
       - EMBED_MODEL=nomic-embed-text:latest
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
     networks:
       - kakashi-network
     restart: always

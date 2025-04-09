@@ -1,10 +1,33 @@
-from mcp.server.fastmcp import FastMCP
-import aiohttp
 import os
 from pathlib import Path
+import json
 from urllib.parse import urlparse
 
+import aiohttp
+from tavily import TavilyClient # type: ignore
+from loguru import logger
+from mcp.server.fastmcp import FastMCP
+import dotenv
+
+dotenv.load_dotenv()
+
 mcp = FastMCP("web_fetcher")
+
+@mcp.tool()
+async def search_web(query: str) -> str:
+    """
+    Searches the web for the given query.
+    
+    Args:
+        query: The search query to look up on the web
+        
+    Returns:
+        A summarized answer based on search results
+    """
+    tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+    response = tavily_client.search(query)
+    return json.dumps(response)
+
 
 @mcp.tool()
 async def download_file_from_internet(url: str, destination_path: str) -> str:
@@ -55,7 +78,9 @@ async def download_multiple_files_from_internet(urls: list[str], destination_pat
         destination_path: Where to save the files on disk (directory)
         
     Returns:
-        A list of absolute paths where the files were saved
+        A list of absolute paths where the files were saved    import asyncio
+    query = "What is the weather in Tokyo?"
+    print(asyncio.run(search_web(query)))
     """
     destination = Path(destination_path)
     

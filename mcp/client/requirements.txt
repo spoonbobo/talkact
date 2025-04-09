@@ -13,3 +13,5 @@ scipy
 numpy
 pip-audit
 openai
+tavily-python
+polygon-api-client
