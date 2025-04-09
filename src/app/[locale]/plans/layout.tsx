@@ -58,11 +58,11 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
 
     // Fetch plans on component mount
     useEffect(() => {
-        if (isAuthenticated && isOwner) {
+        if (isAuthenticated) {
             console.log("Fetching plans...");
             dispatch(fetchPlans());
         }
-    }, [isAuthenticated, isOwner, dispatch]);
+    }, [isAuthenticated, dispatch]);
 
     // Reset to first page when filters change
     useEffect(() => {
