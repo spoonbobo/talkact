@@ -1,6 +1,18 @@
 from typing import List, Any, Dict, Optional, Any
 from pydantic import BaseModel
 
+
+class User(BaseModel):
+    id: str
+    username: str
+    email: str
+    created_at: str
+    updated_at: str
+    active_rooms: List[str] = []
+    archived_rooms: List[str] = []
+    avatar: Optional[str] = None
+    role: str
+
 class MCPTool(BaseModel):
     name: str
     description: str
@@ -20,6 +32,7 @@ class MCPPlanRequest(BaseModel):
     assigner: str
     assignee: str
     client_host: str | None = None
+    assignee_obj: User | None = None
 
 class Tool(BaseModel):
     tool_name: str
@@ -92,6 +105,3 @@ class Task(BaseModel):
     result: str = ""
     context: List[Dict[str, Any]] = []
     tools_called: List[ToolCallInfo] = []
-
-
-

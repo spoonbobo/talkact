@@ -21,7 +21,7 @@ class SocketClient:
         """
         self.server_url = server_url
         self.user_id = user_id
-        self.sio = socketio.AsyncClient()
+        self.sio = socketio.AsyncClient() # type: ignore
         self.connected = False
         self.message_handlers = []
         self.notification_handlers = []
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     print(os.environ)
     print(os.getenv("SOCKET_SERVER_URL"))
     client = SocketClient(
-        server_url=os.getenv("SOCKET_SERVER_URL"),
+        server_url=os.getenv("SOCKET_SERVER_URL") or "",
         user_id="00000000-0000-0000-0000-000000000000"
     )
     asyncio.run(client.connect())

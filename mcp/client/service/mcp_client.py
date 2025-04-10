@@ -107,6 +107,7 @@ class MCPClient:
     ) -> None:
         # logger.info(f"Server tools: {self.server_tools_dict}")
         client_url = os.environ.get("CLIENT_URL", "")
+        logger.info(f"Plan request-------------------: {plan_request}")
 
         async with httpx.AsyncClient() as client:
             try:
@@ -222,6 +223,19 @@ class MCPClient:
                     plan_id = plan_data["plan"]["id"]
                     logger.info(f"Created plan with ID: {plan_id}")
                     
+                    # notify all users in the room
+                    await self.socket_client.send_message(
+                        {
+                            "id": str(uuid4()),
+                            "created_at": datetime.datetime.now().isoformat(),
+                            "sender": plan_request.assignee_obj.model_dump(), # type: ignore
+                            "content": f"Plan **{plan_name}** has been created",
+                            "avatar": getattr(plan_request.assignee_obj, 'avatar', None),
+                            "room_id": plan_request.room_id,
+                            "mentions": []
+                        }
+                    )
+                                        
                     # Then create tasks associated with this plan
                     tasks = self.create_tasks_from_plan(plan_json, plan_request, plan_id)
                     

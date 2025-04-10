@@ -104,7 +104,8 @@
   "Footer": {
     "privacy_policy": "プライバシーポリシー",
     "terms_of_service": "利用規約",
-    "contact_us": "お問い合わせ"
+    "contact_us": "お問い合わせ",
+    "version": "バージョン"
   },
   "Chat": {
     "chat": "チャット",

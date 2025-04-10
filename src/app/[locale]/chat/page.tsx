@@ -239,6 +239,7 @@ const ChatPageContent = () => {
 
       // Extract the mentioned agent username
       let assigneeId = null;
+      let assigneeObj = null;
       const mentionMatch = message.match(/@([a-zA-Z0-9_]+)/);
 
       if (mentionMatch && mentionMatch[1]) {
@@ -254,6 +255,7 @@ const ChatPageContent = () => {
             const mentionedAgent = agents.find(agent => agent.username === mentionedUsername);
             if (mentionedAgent) {
               assigneeId = mentionedAgent.user_id;
+              assigneeObj = mentionedAgent;
             }
           }
         }
@@ -266,7 +268,8 @@ const ChatPageContent = () => {
         room_id: roomId,
         assigner: currentUser?.user_id,
         assignee: assigneeId,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        assignee_obj: assigneeObj
       };
       console.log("Payload:", payload);
 
