@@ -130,7 +130,7 @@ services:
       dockerfile: docker/Dockerfile.next.prod
     container_name: onlysaid-app
     environment:
-      - NEXT_PUBLIC_VERSION=${VERSION}
+      - NEXT_PUBLIC_VERSION=${NEXT_PUBLIC_VERSION}
       - NEXT_AUTH_URL=${NEXT_AUTH_URL}
       - PGUSER=${PGUSER}
       - PGPASSWORD=${PGPASSWORD}

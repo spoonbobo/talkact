@@ -32,17 +32,19 @@ const Notification: React.FC = () => {
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const bellRef = useRef<HTMLDivElement>(null);
 
-    // TODO: if not authenticated, just hide.
-
-    // Add constants for boundary margins
-    const BOUNDARY_MARGIN = 20; // pixels from edge of screen
-
+    // Move all color mode hooks to the top
     const bgColor = useColorModeValue("white", "gray.900");
     const borderColor = useColorModeValue("gray.200", "gray.700");
     const hoverBg = useColorModeValue("gray.100", "gray.700");
     const notificationUnreadBg = useColorModeValue("blue.50", "rgba(66, 153, 225, 0.15)");
     const notificationTextColor = useColorModeValue("gray.800", "gray.100");
     const mutedTextColor = useColorModeValue("gray.500", "gray.400");
+    const iconHoverBg = useColorModeValue("blue.50", "gray.700"); // Added for the icon button hover
+
+    // TODO: if not authenticated, just hide.
+
+    // Add constants for boundary margins
+    const BOUNDARY_MARGIN = 20; // pixels from edge of screen
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (bellRef.current) {
@@ -180,7 +182,7 @@ const Notification: React.FC = () => {
                         boxShadow="lg"
                         position="relative"
                         bg={bgColor}
-                        _hover={{ bg: useColorModeValue("blue.50", "gray.700") }}
+                        _hover={{ bg: iconHoverBg }}
                     >
                         {<Icon as={FaBell} />}
                         {unreadCount > 0 && (

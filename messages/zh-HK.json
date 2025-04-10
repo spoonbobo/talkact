@@ -104,7 +104,8 @@
   "Footer": {
     "privacy_policy": "私隱政策",
     "terms_of_service": "使用條款",
-    "contact_us": "聯絡我們"
+    "contact_us": "聯絡我們",
+    "version": "版本"
   },
   "Notification": {
     "notifications": "通知",

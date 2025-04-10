@@ -24,6 +24,11 @@
             "description": "/servers/description/fileio.md",
             "path": "/servers/fileio.py",
             "metadata": {}
+        },
+        "graph_plotter": {
+            "description": "/servers/description/graph_plotter.md",
+            "path": "/servers/graph_plotter.py",
+            "metadata": {}
         }
     }
 }

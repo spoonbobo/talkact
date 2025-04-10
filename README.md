@@ -7,7 +7,7 @@ onlysaid is under rapid development, welcome to contribute.
 
 ## Features
 
-- All-in-one MCP stack with easy-to-use client & servers
+- All-in-one MCP stack with highly configurable and extensible client & servers
 - Intelligent planning system based on chatroom's context
 - Planning management with MCP tool executions
 - Global AI assistant with a growing knowledge base integrated

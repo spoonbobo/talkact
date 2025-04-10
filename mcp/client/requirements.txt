@@ -15,3 +15,4 @@ pip-audit
 openai
 tavily-python
 polygon-api-client
+plotly
