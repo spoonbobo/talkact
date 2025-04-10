@@ -1,7 +1,7 @@
 // src/components/providers.tsx
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Provider as ReduxProvider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { Provider as ChakraProvider } from "@/components/ui/provider";
@@ -18,7 +18,28 @@ import Footer from "@/components/footer";
 import Assistant from "@/components/assistant";
 import { usePathname } from 'next/navigation';
 import { setCurrentRoute } from '@/store/features/assistantSlice';
+import { useDispatch } from "react-redux";
+import { checkSessionExpiration } from "@/store/features/userSlice";
+import ActivityTracker from '@/components/ActivityTracker';
 
+// Session expiration checker component
+function SessionExpirationChecker() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    // Check session on mount
+    dispatch(checkSessionExpiration());
+
+    // Set up periodic checks
+    const interval = setInterval(() => {
+      dispatch(checkSessionExpiration());
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [dispatch]);
+
+  return null; // This component doesn't render anything
+}
 
 export default function Providers({
   children,
@@ -46,6 +67,8 @@ export default function Providers({
     <AuthProvider session={session}>
       <ReduxProvider store={store}>
         <PersistGate loading={null} persistor={persistor}>
+          <SessionExpirationChecker />
+          <ActivityTracker />
           <SocketProvider>
             <ChakraProvider>
               {/* @ts-ignore */}

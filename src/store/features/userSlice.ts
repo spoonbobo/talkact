@@ -10,6 +10,7 @@ interface UserState {
     isLoading: boolean;
     isSigningOut: boolean;
     error: string | null;
+    expiresAt: number | null;
 }
 
 const initialState: UserState = {
@@ -18,14 +19,17 @@ const initialState: UserState = {
     isAuthenticated: false,
     isLoading: false,
     isSigningOut: false,
-    error: null
+    error: null,
+    expiresAt: null
 };
 
-// Configure persist for user slice
+// TTL duration in milliseconds (1 hour)
+export const SESSION_TTL = 60 * 60 * 1000;
+
 const userPersistConfig = {
     key: 'user',
     storage,
-    whitelist: ['currentUser', 'isAuthenticated'] // Only persist these fields
+    whitelist: ['currentUser', 'isAuthenticated', 'expiresAt']
 };
 
 export const userSlice = createSlice({
@@ -37,10 +41,12 @@ export const userSlice = createSlice({
             state.isAuthenticated = true;
             state.isOwner = action.payload.email === "seasonluke@gmail.com";
             state.error = null;
+            state.expiresAt = Date.now() + SESSION_TTL;
         },
         clearUser: (state) => {
             state.currentUser = null;
             state.isAuthenticated = false;
+            state.expiresAt = null;
         },
         setLoading: (state, action: PayloadAction<boolean>) => {
             state.isLoading = action.payload;
@@ -50,6 +56,21 @@ export const userSlice = createSlice({
         },
         setError: (state, action: PayloadAction<string>) => {
             state.error = action.payload;
+        },
+        checkSessionExpiration: (state) => {
+            if (state.isAuthenticated && (!state.expiresAt || Date.now() > state.expiresAt)) {
+                console.log("Session expired or no expiration set, clearing user");
+                state.currentUser = null;
+                state.isAuthenticated = false;
+                state.expiresAt = null;
+            }
+        },
+        // New action to refresh the TTL
+        refreshSessionTTL: (state) => {
+            if (state.isAuthenticated) {
+                state.expiresAt = Date.now() + SESSION_TTL;
+                console.log("Session TTL refreshed to:", new Date(state.expiresAt).toLocaleString());
+            }
         }
     }
 });
@@ -59,7 +80,9 @@ export const {
     clearUser,
     setLoading,
     setSigningOut,
-    setError
+    setError,
+    checkSessionExpiration,
+    refreshSessionTTL
 } = userSlice.actions;
 
 // Create a persisted reducer
