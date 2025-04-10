@@ -47,7 +47,8 @@ const Notification: React.FC = () => {
     const BOUNDARY_MARGIN = 20; // pixels from edge of screen
 
     const handleMouseDown = (e: React.MouseEvent) => {
-        if (bellRef.current) {
+        // Only initiate dragging if the popover is closed
+        if (bellRef.current && !isOpen) {
             setIsDragging(true);
             setDragStartPosition({ x: e.clientX, y: e.clientY });
             const rect = bellRef.current.getBoundingClientRect();
@@ -206,7 +207,14 @@ const Notification: React.FC = () => {
                 </Popover.Trigger>
                 <Portal>
                     <Popover.Positioner>
-                        <Popover.Content width="300px" boxShadow="xl" border="1px solid" borderColor={borderColor} bg={bgColor}>
+                        <Popover.Content
+                            width="300px"
+                            boxShadow="xl"
+                            border="1px solid"
+                            borderColor={borderColor}
+                            bg={bgColor}
+                            onMouseDown={(e) => e.stopPropagation()}
+                        >
                             <Flex justifyContent="space-between" alignItems="center" p={2} borderBottom="1px solid" borderColor={borderColor}>
                                 <Text fontWeight="bold" color={notificationTextColor}>{t("notifications")}</Text>
                                 {notifications.length > 0 && (
