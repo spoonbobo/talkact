@@ -42,6 +42,16 @@ const Assistant: React.FC = () => {
     const params = useParams();
     const locale = params.locale as string;
 
+    // Move all useColorModeValue hooks to the top level, before any conditional logic
+    const bgColor = useColorModeValue("white", "gray.800");
+    const borderColor = useColorModeValue("gray.200", "gray.700");
+    const hoverBg = useColorModeValue("gray.100", "gray.700");
+    const userMessageBg = useColorModeValue("blue.50", "blue.900");
+    const assistantMessageBg = useColorModeValue("gray.50", "gray.700");
+    const inputBg = useColorModeValue("white", "#1A202C");
+    const containerBg = useColorModeValue("rgba(240, 255, 244, 0.8)", "rgba(26, 32, 44, 0.8)");
+    const buttonHoverBgValue = useColorModeValue("green.50", "gray.700");
+
     const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -56,19 +66,11 @@ const Assistant: React.FC = () => {
     // Add constants for boundary margins
     const BOUNDARY_MARGIN = 20; // pixels from edge of screen
 
-    const bgColor = useColorModeValue("white", "gray.800");
-    const borderColor = useColorModeValue("gray.200", "gray.700");
-    const hoverBg = useColorModeValue("gray.100", "gray.700");
-    const userMessageBg = useColorModeValue("blue.50", "blue.900");
-    const assistantMessageBg = useColorModeValue("gray.50", "gray.700");
-
     // Input styling from ChatModeInput
-    const inputBg = useColorModeValue("white", "#1A202C");
     const inputBorder = colors.chatModeHeading;
     const buttonBg = colors.chatModeHeading;
     const buttonHoverBg = "green.700";
     const cancelHoverBg = "red.600";
-    const containerBg = useColorModeValue("rgba(240, 255, 244, 0.8)", "rgba(26, 32, 44, 0.8)");
     const placeholderColor = colors.textColor;
     const inputTextColor = colors.textColorHeading;
 
@@ -514,8 +516,8 @@ const Assistant: React.FC = () => {
                         borderRadius="full"
                         boxShadow="lg"
                         position="relative"
-                        bg={useColorModeValue("white", "gray.800")}
-                        _hover={{ bg: useColorModeValue("green.50", "gray.700") }}
+                        bg={bgColor}
+                        _hover={{ bg: hoverBg }}
                     >
                         <Icon as={FaComment} />
                     </IconButton>
