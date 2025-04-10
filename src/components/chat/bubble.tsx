@@ -6,9 +6,13 @@ import ReactMarkdown from "react-markdown";
 import { useEffect, useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import React from "react";
-import { useChatPageColors } from "@/utils/colors";
+import { useChatPageColors, useCodeSyntaxHighlightColors } from "@/utils/colors";
 import { LuCopy, LuMessageSquare, LuPencil, LuTrash, LuQuote, LuShare } from "react-icons/lu";
 import { useColorModeValue } from "@/components/ui/color-mode";
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 
 // Extend the props interface directly in the file
 interface IChatBubbleProps {
@@ -28,11 +32,18 @@ export const ChatBubble = React.memo(({
 }: IChatBubbleProps) => {
   const t = useTranslations("Chat");
   const colors = useChatPageColors();
+  const codeColors = useCodeSyntaxHighlightColors();
 
   // Add blinking cursor for streaming messages
   const [showCursor, setShowCursor] = useState(true);
   const [dotCount, setDotCount] = useState(1);
   const [isVisible, setIsVisible] = useState(false);
+
+  // Add state to track if content is single line
+  const [isSingleLine, setIsSingleLine] = useState(false);
+
+  // Add ref for the bubble element to enable scrolling into view
+  const bubbleRef = React.useRef<HTMLDivElement>(null);
 
   // Softer, more glowing mention colors for user bubbles (dark backgrounds)
   const agentMentionBgInUserBubble = useColorModeValue("rgba(154, 230, 180, 0.3)", "rgba(74, 222, 128, 0.2)");
@@ -56,16 +67,28 @@ export const ChatBubble = React.memo(({
   const userBgTask = useColorModeValue("rgba(66, 153, 225, 0.85)", "rgba(56, 161, 105, 0.85)"); // Blue for light, Green for dark
   const userBgChat = useColorModeValue("rgba(72, 187, 120, 0.85)", "rgba(49, 130, 206, 0.85)"); // Green for light, Blue for dark
 
-  // Pre-process the message content to highlight mentions with glowing effect
-  // and properly handle newlines
+  // Pre-process the message content to handle tables better
   const processedContent = useMemo(() => {
     if (!message.content) return "";
 
     // Check if this is an interrupted message
     const isInterrupted = message.content.includes('[Generation was interrupted');
 
-    // First replace newlines with <br> tags
-    let content = message.content.replace(/\n/g, '<br>');
+    // First, let's properly format tables in the markdown
+    let content = message.content;
+
+    // Fix table formatting - ensure proper newlines between table rows
+    content = content.replace(/\|\s*\|/g, '|\n|');  // Add newlines between rows that got merged
+    content = content.replace(/\|\|/g, '|\n|');     // Another pattern for merged rows
+
+    // Ensure header separator row has proper format
+    content = content.replace(/\|([-|]+)\|/g, '|$1|');
+
+    // Now convert remaining newlines to <br> tags for non-table content
+    content = content.replace(/\n/g, '<br>');
+
+    // But restore proper newlines for tables
+    content = content.replace(/\|<br>\|/g, '|\n|');
 
     // If this is an interrupted message, add special styling to the interruption notice
     if (isInterrupted) {
@@ -115,7 +138,7 @@ export const ChatBubble = React.memo(({
     ? message.content
       ? processedContent + (showCursor ? '|' : ' ')
       : t("generating") + '.'.repeat(dotCount)
-    : processedContent;
+    : processedContent || (t("generating") + '.'.repeat(dotCount)); // Show "Generating..." with dots for empty bubbles
 
   // Blinking cursor effect for streaming messages
   useEffect(() => {
@@ -130,7 +153,7 @@ export const ChatBubble = React.memo(({
 
   // Animated dots for "generating..." text
   useEffect(() => {
-    if (!isStreaming || message.content) return;
+    if ((!isStreaming && message.content) || !message.content === false) return;
 
     const dotsInterval = setInterval(() => {
       setDotCount(prev => prev < 3 ? prev + 1 : 1);
@@ -143,6 +166,46 @@ export const ChatBubble = React.memo(({
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  // Check if content is a single line (no line breaks or paragraphs)
+  useEffect(() => {
+    if (!message.content) {
+      setIsSingleLine(true);
+      return;
+    }
+
+    // Consider content single line if it has no line breaks, no code blocks, and no lists
+    const hasSingleLine = !message.content.includes('\n') &&
+      !message.content.includes('```') &&
+      !message.content.match(/^\s*[-*+]\s/) && // No list items
+      !message.content.match(/^\s*\d+\.\s/);   // No numbered lists
+
+    setIsSingleLine(hasSingleLine);
+  }, [message.content]);
+
+  // Auto-scroll when the bubble appears or content changes
+  useEffect(() => {
+    if (bubbleRef.current && (isStreaming || isFirstInGroup)) {
+      bubbleRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end'
+      });
+    }
+  }, [message.content, isStreaming, isFirstInGroup]);
+
+  // Add a small delay to ensure content is fully rendered before scrolling
+  useEffect(() => {
+    if (bubbleRef.current && isFirstInGroup) {
+      const timer = setTimeout(() => {
+        bubbleRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'end'
+        });
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isFirstInGroup]);
 
   const handleCopy = () => {
     if (message.content) {
@@ -184,9 +247,10 @@ export const ChatBubble = React.memo(({
     <Menu.Root>
       <Menu.ContextTrigger>
         <Box
+          ref={bubbleRef}
           position="relative"
           px={4}
-          py={3}
+          py={isSingleLine ? 2 : 3}
           width="fit-content"
           maxW="100%"
           borderRadius="xl"
@@ -209,11 +273,187 @@ export const ChatBubble = React.memo(({
           }}
         >
           <Box position="relative" textAlign="left">
-            {/* Use dangerouslySetInnerHTML to render the processed content with styled mentions */}
-            <div
-              dangerouslySetInnerHTML={{ __html: contentWithCursor }}
-              style={{ whiteSpace: "pre-wrap" }}
-            />
+            {isStreaming || !message.content ? (
+              // Use dangerouslySetInnerHTML for streaming or generating state
+              <div
+                dangerouslySetInnerHTML={{ __html: contentWithCursor }}
+                style={{ whiteSpace: "pre-wrap" }}
+              />
+            ) : (
+              // Use ReactMarkdown for regular content with proper table handling
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                  components={{
+                    code({ node, inline, className, children, ...props }: any) {
+                      const match = /language-(\w+)/.exec(className || '');
+                      return !inline && match ? (
+                        <SyntaxHighlighter
+                          style={codeColors.codeStyle}
+                          language={match[1]}
+                          PreTag="div"
+                          {...props}
+                        >
+                          {String(children).replace(/\n$/, '')}
+                        </SyntaxHighlighter>
+                      ) : (
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      );
+                    },
+                    // Override link to open in new tab
+                    a: ({ node, ...props }) => (
+                      <a
+                        {...props}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: isUser ? 'rgba(255,255,255,0.9)' : undefined,
+                          textDecoration: 'underline'
+                        }}
+                      />
+                    ),
+                    // Style other elements as needed
+                    p: ({ node, ...props }) => {
+                      // Check if this paragraph contains a table or is adjacent to a table
+                      const hasTableChild = node?.children?.some(child =>
+                        child.type === 'element' && (child.tagName === 'table' || child.tagName === 'div')
+                      );
+
+                      // Check if paragraph is empty or just contains whitespace
+                      const isEmpty = node?.children?.length === 1 &&
+                        node?.children[0]?.type === 'text' &&
+                        node?.children[0]?.value?.trim() === '';
+
+                      if (isEmpty) {
+                        return null; // Don't render empty paragraphs
+                      }
+
+                      return (
+                        <p style={{
+                          margin: hasTableChild ? 0 : '0.25em 0',
+                          padding: 0,
+                          lineHeight: 1.5
+                        }} {...props} />
+                      );
+                    },
+                    ul: ({ node, ...props }) => (
+                      <ul
+                        style={{
+                          paddingLeft: '1.5em',
+                          margin: '0.5em 0',
+                          listStyleType: 'disc',
+                          listStylePosition: 'outside'
+                        }}
+                        {...props}
+                      />
+                    ),
+                    ol: ({ node, ...props }) => (
+                      <ol
+                        style={{
+                          paddingLeft: '1.5em',
+                          margin: '0.5em 0',
+                          listStyleType: 'decimal',
+                          listStylePosition: 'outside'
+                        }}
+                        {...props}
+                      />
+                    ),
+                    li: ({ node, ...props }) => (
+                      <li
+                        style={{
+                          margin: '0.25em 0',
+                          display: 'list-item'
+                        }}
+                        {...props}
+                      />
+                    ),
+                    blockquote: ({ node, ...props }) => (
+                      <blockquote
+                        style={{
+                          borderLeft: `3px solid ${isUser ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.2)'}`,
+                          paddingLeft: '1em',
+                          margin: '0.5em 0',
+                          color: isUser ? 'rgba(255,255,255,0.9)' : undefined,
+                        }}
+                        {...props}
+                      />
+                    ),
+                    // Add table styling components
+                    table: ({ node, ...props }) => (
+                      <div style={{
+                        overflowX: 'auto',
+                        maxWidth: '100%',
+                        margin: '0',
+                        padding: '0'
+                      }}>
+                        <table
+                          style={{
+                            borderCollapse: 'collapse',
+                            width: '100%',
+                            fontSize: '0.9em',
+                            margin: 0,
+                            padding: 0
+                          }}
+                          {...props}
+                        />
+                      </div>
+                    ),
+                    thead: ({ node, ...props }) => (
+                      <thead
+                        style={{
+                          backgroundColor: isUser
+                            ? 'rgba(255,255,255,0.1)'
+                            : colors.otherBgChat,
+                          margin: 0,     // Added to remove margin
+                          padding: 0     // Added to ensure no padding
+                        }}
+                        {...props}
+                      />
+                    ),
+                    tbody: ({ node, ...props }) => <tbody {...props} />,
+                    tr: ({ node, ...props }) => (
+                      <tr
+                        style={{
+                          borderBottom: `1px solid ${isUser
+                            ? 'rgba(255,255,255,0.2)'
+                            : colors.borderColor}`
+                        }}
+                        {...props}
+                      />
+                    ),
+                    th: ({ node, ...props }) => (
+                      <th
+                        style={{
+                          padding: '0.5em',
+                          textAlign: 'left',
+                          fontWeight: 'bold',
+                          borderBottom: `2px solid ${isUser
+                            ? 'rgba(255,255,255,0.3)'
+                            : colors.borderColor}`
+                        }}
+                        {...props}
+                      />
+                    ),
+                    td: ({ node, ...props }) => (
+                      <td
+                        style={{
+                          padding: '0.5em',
+                          borderRight: `1px solid ${isUser
+                            ? 'rgba(255,255,255,0.1)'
+                            : colors.borderColor}`
+                        }}
+                        {...props}
+                      />
+                    ),
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              </div>
+            )}
           </Box>
         </Box>
       </Menu.ContextTrigger>
@@ -231,6 +471,11 @@ export const ChatBubble = React.memo(({
             borderColor={useColorModeValue("gray.100", "gray.700")}
             minWidth="180px"
             maxWidth="220px"
+            style={{
+              position: "fixed",
+              zIndex: 1000,
+              transform: "none" // Prevent automatic repositioning
+            }}
           >
             {/* Horizontal menu items (emojis) */}
             <Group

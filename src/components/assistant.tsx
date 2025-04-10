@@ -229,7 +229,8 @@ const Assistant: React.FC = () => {
     }, []); // <-- Empty dependency array
 
     const handleMouseDown = (e: React.MouseEvent) => {
-        if (assistantRef.current) {
+        // Only initiate dragging if clicking directly on the button, not the popover content
+        if (assistantRef.current && !isOpen) {
             setIsDragging(true);
             setDragStartPosition({ x: e.clientX, y: e.clientY });
             const rect = assistantRef.current.getBoundingClientRect();
@@ -242,12 +243,13 @@ const Assistant: React.FC = () => {
 
     const handleClick = (e: React.MouseEvent) => {
         // Only toggle popover if it wasn't a drag (moved less than 5px)
+        // and if we're clicking directly on the button
         const moveDistance = Math.sqrt(
             Math.pow(e.clientX - dragStartPosition.x, 2) +
             Math.pow(e.clientY - dragStartPosition.y, 2)
         );
 
-        if (moveDistance < 5) {
+        if (moveDistance < 5 && !isOpen) {
             dispatch(toggleOpen());
         }
     };
@@ -518,9 +520,17 @@ const Assistant: React.FC = () => {
                         <Icon as={FaComment} />
                     </IconButton>
                 </Popover.Trigger>
+
+                {/* Stop propagation on the popover content to prevent dragging */}
                 <Portal>
                     <Popover.Positioner>
-                        <Popover.Content width="350px" boxShadow="xl" border="1px solid" borderColor={borderColor}>
+                        <Popover.Content
+                            width="350px"
+                            boxShadow="xl"
+                            border="1px solid"
+                            borderColor={borderColor}
+                            onMouseDown={(e) => e.stopPropagation()}
+                        >
                             <Popover.Arrow bg={bgColor} borderColor={borderColor} />
                             <Flex justifyContent="space-between" alignItems="center" p={2} borderBottom="1px solid" borderColor={borderColor}>
                                 <Text fontWeight="bold">{t("ai_assistant")}</Text>

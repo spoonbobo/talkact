@@ -1,5 +1,6 @@
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { useColorMode } from "@/components/ui/color-mode";
+import { oneDark, oneLight } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 // Chat room list colors
 export const useChatRoomColors = () => {
@@ -185,6 +186,17 @@ export const usePlansColors = () => {
         statusTerminated: isDarkMode ? "red.400" : "red.400",
         statusFailure: isDarkMode ? "red.500" : "red.500",
         statusDefault: isDarkMode ? "gray.500" : "gray.500",
+    };
+};
+
+// Code syntax highlighting colors
+export const useCodeSyntaxHighlightColors = () => {
+    return {
+        codeStyle: useColorModeValue(oneLight, oneDark),
+        codeBg: useColorModeValue("gray.50", "gray.800"),
+        codeBorder: useColorModeValue("gray.200", "gray.700"),
+        inlineCodeBg: useColorModeValue("gray.100", "gray.700"),
+        inlineCodeColor: useColorModeValue("blue.600", "blue.300"),
     };
 };
 

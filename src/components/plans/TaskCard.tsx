@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Box,
     Flex,
@@ -73,6 +73,14 @@ export default function TaskCard({
     const shouldHighlightAsCurrent = isCurrentTask &&
         planStatus !== 'pending' &&
         planStatus !== 'terminated';
+
+    // Add useEffect to reset loading state when task status changes
+    useEffect(() => {
+        // If we were approving and the task status has changed, reset the loading state
+        if (isApprovingTask && task.status !== 'pending') {
+            setIsApprovingTask(false);
+        }
+    }, [task.status, isApprovingTask]);
 
     return (
         <Box
@@ -165,8 +173,10 @@ export default function TaskCard({
                                             setIsApprovingTask(true);
                                             try {
                                                 await onApproveTask(task, plan);
-                                            } finally {
+                                            } catch (error) {
+                                                // Only reset on error
                                                 setIsApprovingTask(false);
+                                                console.error('Error approving task:', error);
                                             }
                                         } else {
                                             console.log('Approve task:', task.task_id);

@@ -230,7 +230,9 @@
     "request_mcp": "MCPをリクエスト",
     "task_details": "タスク詳細",
     "no_task_selected": "タスクが選択されていません",
-    "logs": "ログ"
+    "logs": "ログ",
+    "success": "成功",
+    "close": "閉じる"
   },
   "Learn": {
     "learn": "学ぶ",

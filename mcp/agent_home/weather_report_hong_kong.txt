@@ -1,0 +1,14 @@
+Current Weather in Hong Kong:
+
+Location: Hong Kong
+Local Time: 2025-04-10 23:32
+Temperature: 24.2°C (75.6°F)
+Condition: Partly cloudy
+Wind: 6.1 kph (SSW)
+Humidity: 83%
+Pressure: 1009.0 mb
+Visibility: 10.0 km
+UV Index: 0.0
+Feels Like: 26.5°C (79.7°F)
+
+Data retrieved from Weather API.
