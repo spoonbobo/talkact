@@ -10,7 +10,7 @@ from llama_index.core import VectorStoreIndex, StorageContext
 from llama_index.vector_stores.qdrant import QdrantVectorStore # type: ignore
 from llama_index.embeddings.ollama import OllamaEmbedding # type: ignore
 from llama_index.core.llms import ChatMessage
-from llama_index.llms.deepseek import DeepSeek
+from llama_index.llms.deepseek import DeepSeek # type: ignore
 
 from schemas.document import Folder, DataSource
 from schemas.document import QueryRequest
@@ -27,6 +27,9 @@ class KBManager:
         "ja": "日本語",
         "en": "English",
         "ko": "한국어",
+        "zh-CN": "简体中文",
+        "th-TH": "ภาษาไทย",
+        "vi-VN": "Tiếng Việt",
     }
     
     lng_prompt = {
@@ -85,6 +88,48 @@ class KBManager:
         사용자의 질문: {query}
         
         당신의 답변:
+        """,
+        "zh-CN": """
+        请用{preferred_language}回答用户的问题。
+        尽量以友好的态度回答用户的问题。
+        如果在对话背景中完全找不到相关信息，你可以表示你不知道答案。
+        
+        {conversation_history}
+        
+        以下是对话的背景：
+        {context}
+        
+        用户的问题: {query}
+        
+        你的回答:
+        """,
+        "th-TH": """
+        กรุณาตอบคำถามของผู้ใช้เป็น{preferred_language}
+        พยายามตอบคำถามของผู้ใช้ด้วยท่าทีที่เป็นมิตร
+        หากคุณไม่พบข้อมูลที่เกี่ยวข้องในบริบทของการสนทนา คุณสามารถระบุว่าคุณไม่ทราบคำตอบได้
+        
+        {conversation_history}
+        
+        นี่คือบริบทสำหรับการสนทนา:
+        {context}
+        
+        คำถามของผู้ใช้: {query}
+        
+        คำตอบของคุณ:
+        """,
+        "vi-VN": """
+        Vui lòng trả lời câu hỏi của người dùng bằng {preferred_language}.
+        Cố gắng trả lời câu hỏi của người dùng một cách thân thiện.
+        Nếu bạn không tìm thấy thông tin liên quan trong ngữ cảnh cuộc trò chuyện, bạn có thể nói rằng bạn không biết câu trả lời.
+        
+        {conversation_history}
+        
+        Đây là ngữ cảnh cho cuộc trò chuyện:
+        {context}
+        
+        Câu hỏi của người dùng: {query}
+        
+        Câu trả lời của bạn:
         """
     }
 

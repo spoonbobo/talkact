@@ -72,8 +72,11 @@ export default function SettingsPage() {
     items: [
       { label: "English", value: "en" },
       { label: "中文(繁體)", value: "zh-HK" },
+      { label: "中文(简体)", value: "zh-CN" },
       { label: "한국어 (Korean)", value: "ko" },
       { label: "日本語 (Japanese)", value: "ja" },
+      { label: "ไทย (Thai)", value: "th-TH" },
+      { label: "Tiếng Việt (Vietnamese)", value: "vi-VN" },
     ],
   });
 

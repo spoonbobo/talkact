@@ -20,7 +20,7 @@
   "Home": {
     "welcome": "歡迎來到光說不做",
     "learn_title": "學習",
-    "learn_description": "探索 onlysaid 的學習功能",
+    "learn_description": "探索知識庫，MCP工具，以及更多",
     "tasks_title": "任務",
     "tasks_description": "查看和完成任務",
     "mcp_title": "MCP",
@@ -53,7 +53,8 @@
     "ai_assistant_title": "AI助手",
     "ai_assistant_description": "在應用任何一個地方都可以回答你的問題，並且會不斷學習新的知識。",
     "chatroom_title": "聊天室",
-    "chatroom_description": "與你的團隊和AI代理聊天，以創建可執行的計劃"
+    "chatroom_description": "與你的團隊和AI代理聊天，以創建可執行的計劃",
+    "learn_more": "了解更多"
   },
   "Signup": {
     "signup": "註冊",
