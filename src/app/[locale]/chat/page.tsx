@@ -40,10 +40,7 @@ import {
   clearSelectedRoom,
   quitRoom,
   updateRoom,
-  removeUserFromRoom,
-  loadMoreMessages,
-  prependMessages,
-  setLoadingMoreMessages
+  removeUserFromRoom
 } from '@/store/features/chatSlice';
 import React from "react";
 import { ChatRoomList } from "@/components/chat/room_list";
@@ -141,28 +138,49 @@ const ChatPageContent = () => {
   // Add ref for message container to enable auto-scrolling
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
-  // Function to scroll to bottom
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   // Auto-scroll when messages change or when a room is selected
   useEffect(() => {
-    scrollToBottom();
+    // Use a small timeout to ensure the DOM has updated with new messages
+    const scrollTimeout = setTimeout(() => {
+      if (messagesEndRef.current) {
+        // Force immediate scroll to bottom
+        messagesEndRef.current.scrollIntoView({ block: 'end', behavior: 'auto' });
+
+        // For some browsers/situations, we might need to scroll the parent container too
+        const chatContainer = messagesEndRef.current.closest('[overflow="auto"]');
+        if (chatContainer) {
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+      }
+    }, 50); // Small delay to ensure DOM update
+
+    return () => clearTimeout(scrollTimeout);
   }, [currentMessages, selectedRoomId]);
 
-  // Add this new useEffect to ensure scrolling on initial load
+  // Also add this effect to handle room switching specifically
   useEffect(() => {
-    // This will run after the component has mounted and the DOM is ready
-    scrollToBottom();
+    if (selectedRoomId) {
+      // When room changes, force immediate scroll
+      const scrollToBottom = () => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ block: 'end', behavior: 'auto' });
 
-    // Add a small delay to ensure content is fully rendered
-    const timer = setTimeout(() => {
+          // Also try to scroll the parent container
+          const chatContainer = messagesEndRef.current.closest('[overflow="auto"]');
+          if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+          }
+        }
+      };
+
+      // Try immediately
       scrollToBottom();
-    }, 100);
 
-    return () => clearTimeout(timer);
-  }, []);
+      // And also with a slight delay to ensure content is rendered
+      const timer = setTimeout(scrollToBottom, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedRoomId]);
 
   // Use the centralized colors instead of direct useColorModeValue calls
   const bgSubtle = colors.bgSubtle;
@@ -419,17 +437,40 @@ const ChatPageContent = () => {
         if (!hasLoadedMessages) {
           try {
             dispatch(setLoadingMessages(true));
-            const response = await axios.get(`/api/chat/get_messages?roomId=${selectedRoomId}&limit=20`);
+            const response = await axios.get(`/api/chat/get_messages?roomId=${selectedRoomId}`);
+
+            // Merge with any existing messages we might have
+            const existingMessages = messages[selectedRoomId] || [];
+            const serverMessages = response.data;
+
+            // Create a map of existing messages by ID for quick lookup
+            const existingMessageMap = new Map(
+              existingMessages.map(msg => [msg.id, msg])
+            );
+
+            // Combine messages, avoiding duplicates
+            const combinedMessages = [
+              ...existingMessages,
+              ...serverMessages.filter((msg: IMessage) => !existingMessageMap.has(msg.id))
+            ];
+
+            // Sort by created_at
+            combinedMessages.sort((a, b) =>
+              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            );
 
             dispatch(setMessages({
               roomId: selectedRoomId,
-              messages: response.data.messages,
-              hasMore: response.data.hasMore
+              messages: combinedMessages
             }));
 
             dispatch(markRoomMessagesLoaded(selectedRoomId));
           } catch (error) {
-            console.log("error", error);
+            toaster.create({
+              title: t("error"),
+              description: t("error_fetching_messages"),
+              type: "error"
+            });
           } finally {
             dispatch(setLoadingMessages(false));
           }
@@ -438,7 +479,7 @@ const ChatPageContent = () => {
     };
 
     fetchMessages();
-  }, [selectedRoomId, dispatch, messagesLoaded]);
+  }, [selectedRoomId, dispatch, messages, messagesLoaded]);
 
   const handleFlipLayout = () => {
     setIsLayoutFlipped(!isLayoutFlipped);
