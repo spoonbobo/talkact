@@ -14,6 +14,8 @@ import { FaPlus } from "react-icons/fa";
 import { IChatRoom } from "@/types/chat";
 import { useTranslations } from "next-intl";
 import { useChatRoomColors } from "@/utils/colors";
+import { useEffect, useState } from "react";
+import { User } from "@/types/user";
 
 interface ChatRoomListProps {
     rooms: IChatRoom[];
@@ -34,12 +36,65 @@ export const ChatRoomList = ({
 }: ChatRoomListProps) => {
     const t = useTranslations("Chat");
     const colors = useChatRoomColors();
+    const [roomUsers, setRoomUsers] = useState<Record<string, User[]>>({});
 
     const sortedRooms = [...rooms].sort((a, b) => {
         return (
             new Date(b.last_updated).getTime() - new Date(a.last_updated).getTime()
         );
     });
+
+    useEffect(() => {
+        const fetchRoomUsers = async () => {
+            // Collect all unique user IDs from all rooms
+            const allUserIds = new Set<string>();
+            rooms.forEach(room => {
+                room.active_users.forEach(userId => {
+                    allUserIds.add(userId);
+                });
+            });
+
+            if (allUserIds.size === 0) return;
+
+            try {
+                const response = await fetch('/api/user/get_users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_ids: Array.from(allUserIds),
+                        limit: 100 // Adjust as needed
+                    }),
+                });
+
+                if (!response.ok) throw new Error('Failed to fetch users');
+
+                const data = await response.json();
+                const users = data.users;
+
+                // Create a map of user_id to user object
+                const userMap = users.reduce((acc: Record<string, User>, user: User) => {
+                    acc[user.user_id] = user;
+                    return acc;
+                }, {});
+
+                // Map room users
+                const roomUsersMap: Record<string, User[]> = {};
+                rooms.forEach(room => {
+                    roomUsersMap[room.id] = room.active_users
+                        .map(userId => userMap[userId])
+                        .filter(Boolean); // Filter out any undefined users
+                });
+
+                setRoomUsers(roomUsersMap);
+            } catch (error) {
+                console.error('Error fetching room users:', error);
+            }
+        };
+
+        fetchRoomUsers();
+    }, [rooms]);
 
     return (
         <Box
@@ -100,12 +155,9 @@ export const ChatRoomList = ({
                                     {room.name}
                                 </Text>
                                 <AvatarGroup gap="0" size="xs">
-                                    {room.active_users.slice(0, 3).map((user, idx) => (
+                                    {(roomUsers[room.id] || []).slice(0, 3).map((user, idx) => (
                                         <Avatar.Root key={idx}>
-                                            {/* TODO: use user avatar */}
-                                            {/* @ts-ignore */}
                                             <Avatar.Fallback name={user.username} />
-                                            {/* @ts-ignore */}
                                             <Avatar.Image src={user.avatar} />
                                         </Avatar.Root>
                                     ))}

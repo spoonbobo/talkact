@@ -145,6 +145,161 @@ export const ChatInput = React.memo(({
         }
     }, [mentionState.isActive]);
 
+    // Add this effect to handle scrolling when selection changes
+    useEffect(() => {
+        if (mentionState.isActive && suggestions.length > 0) {
+            // Use setTimeout to ensure the DOM has updated
+            setTimeout(() => {
+                const suggestionBox = document.querySelector('[data-mention-suggestions="true"]');
+                const selectedItem = document.querySelector('[data-selected-suggestion="true"]');
+
+                if (suggestionBox && selectedItem) {
+                    // Get the position of the selected item relative to the suggestion box
+                    const boxRect = suggestionBox.getBoundingClientRect();
+                    const itemRect = selectedItem.getBoundingClientRect();
+
+                    // Check if the selected item is outside the visible area
+                    if (itemRect.top < boxRect.top) {
+                        // If the item is above the visible area, scroll up to show it
+                        selectedItem.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                    } else if (itemRect.bottom > boxRect.bottom) {
+                        // If the item is below the visible area, scroll down to show it
+                        selectedItem.scrollIntoView({ block: 'end', behavior: 'smooth' });
+                    }
+                }
+            }, 10);
+        }
+    }, [mentionState.isActive, suggestions.length, selectedSuggestionIndex]);
+
+    // Add state to track cursor position
+    const [cursorPosition, setCursorPosition] = useState({ left: 10, top: 0 });
+
+    // Simplify the cursor position calculation
+    const updateCursorPosition = useCallback(() => {
+        if (!textareaRef.current) return;
+
+        const textarea = textareaRef.current;
+        const { selectionStart } = textarea;
+
+        // Get the text before the cursor
+        const text = textarea.value;
+        const textBeforeCursor = text.substring(0, selectionStart);
+
+        // Find the position of the last @ symbol
+        const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+        if (lastAtIndex === -1) return;
+
+        // Create a hidden div with the same styling as the textarea
+        const temp = document.createElement('div');
+        temp.style.position = 'absolute';
+        temp.style.visibility = 'hidden';
+        temp.style.whiteSpace = 'pre-wrap';
+        temp.style.wordBreak = 'break-word';
+        temp.style.width = `${textarea.clientWidth}px`;
+        temp.style.fontSize = getComputedStyle(textarea).fontSize;
+        temp.style.fontFamily = getComputedStyle(textarea).fontFamily;
+        temp.style.padding = getComputedStyle(textarea).padding;
+        temp.style.boxSizing = 'border-box';
+        temp.style.letterSpacing = getComputedStyle(textarea).letterSpacing;
+
+        // Calculate the position of the @ symbol
+        const textBeforeLastLine = textBeforeCursor.substring(0, lastAtIndex);
+        const lastNewlineIndex = textBeforeLastLine.lastIndexOf('\n');
+        const charsInLastLine = lastAtIndex - (lastNewlineIndex === -1 ? 0 : lastNewlineIndex + 1);
+
+        // Create a span for the text in the last line up to the @ symbol
+        const span = document.createElement('span');
+        span.textContent = textBeforeLastLine.substring(lastNewlineIndex + 1);
+        temp.appendChild(span);
+        document.body.appendChild(temp);
+
+        // Get the actual width of the text
+        const actualWidth = span.getBoundingClientRect().width;
+
+        // Calculate the position
+        const lineHeight = parseInt(getComputedStyle(textarea).lineHeight) || parseInt(getComputedStyle(textarea).fontSize) * 1.2;
+        const newlines = (textBeforeCursor.substring(0, lastAtIndex).match(/\n/g) || []).length;
+        const top = (newlines * lineHeight) - 200;
+
+        document.body.removeChild(temp);
+
+        setCursorPosition({
+            left: actualWidth + parseInt(getComputedStyle(textarea).paddingLeft),
+            top: Math.max(top, 0)
+        });
+    }, []);
+
+    // Update cursor position when input changes or when mention state activates
+    useEffect(() => {
+        if (mentionState.isActive) {
+            updateCursorPosition();
+        }
+    }, [mentionState.isActive, updateCursorPosition]);
+
+    // Separate effect for adjusting the position of the suggestion box
+    const hasAdjustedRef = React.useRef(false);
+
+    useEffect(() => {
+        if (!mentionState.isActive) {
+            hasAdjustedRef.current = false;
+            return;
+        }
+
+        if (hasAdjustedRef.current) return;
+
+        // Add a small delay to ensure the DOM has updated
+        const timeoutId = setTimeout(() => {
+            const suggestionBox = document.querySelector('[data-mention-suggestions="true"]');
+            if (suggestionBox) {
+                const boxRect = suggestionBox.getBoundingClientRect();
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                const textareaRect = textareaRef.current?.getBoundingClientRect();
+
+                if (textareaRect) {
+                    // Check if the box exceeds the right edge of the viewport or textarea
+                    const rightBoundary = Math.min(viewportWidth, textareaRect.right) - 10;
+                    if (boxRect.right > rightBoundary) {
+                        const overflowRight = boxRect.right - rightBoundary;
+                        (suggestionBox as HTMLElement).style.left = `${Math.max(10, cursorPosition.left - overflowRight)}px`;
+                    }
+
+                    // Check if the box exceeds the left edge
+                    if (boxRect.left < 10) {
+                        (suggestionBox as HTMLElement).style.left = '10px';
+                    }
+
+                    // Check if the box exceeds the top of the viewport
+                    if (boxRect.top < 10) {
+                        // Flip the box to appear below the cursor instead of above
+                        (suggestionBox as HTMLElement).style.bottom = 'auto';
+                        (suggestionBox as HTMLElement).style.top = `${cursorPosition.top + 30}px`;
+                        (suggestionBox as HTMLElement).style.transformOrigin = 'top left';
+                    }
+
+                    // Check if the box exceeds the bottom of the viewport
+                    if (boxRect.bottom > viewportHeight - 10) {
+                        // Ensure it doesn't go below the viewport
+                        const maxHeight = viewportHeight - boxRect.top - 20;
+                        (suggestionBox as HTMLElement).style.maxHeight = `${Math.max(100, maxHeight)}px`;
+                    }
+
+                    // Adjust width if needed for small screens
+                    if (viewportWidth < 300) {
+                        (suggestionBox as HTMLElement).style.width = `${Math.min(250, viewportWidth - 20)}px`;
+                    }
+                }
+
+                hasAdjustedRef.current = true;
+            }
+        }, 10); // Slightly longer timeout to ensure DOM is ready
+
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, [mentionState.isActive, cursorPosition.left, cursorPosition.top]);
+
+    // Update handleInputChange to call updateCursorPosition
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const newValue = e.target.value;
         setMessageInput(newValue);
@@ -165,12 +320,14 @@ export const ChatInput = React.memo(({
                         startPosition: lastAtIndex,
                         searchText: searchText
                     });
+                    // Update cursor position when mention state activates
+                    updateCursorPosition();
                 }
             }
         } else if (mentionState.isActive) {
             setMentionState({ isActive: false, startPosition: 0, searchText: '' });
         }
-    }, [mentionState.isActive, mentionState.startPosition, mentionState.searchText, setMessageInput]);
+    }, [mentionState.isActive, mentionState.startPosition, mentionState.searchText, setMessageInput, updateCursorPosition]);
 
     const handleSelectMention = useCallback((user: User) => {
         const beforeMention = messageInput.substring(0, mentionState.startPosition);
@@ -264,133 +421,6 @@ export const ChatInput = React.memo(({
         }
     }, [messageInput, selectedRoomId, createNewMessage, handleSendMessage]);
 
-    // Memoize the mention suggestion list to prevent rerenders
-    const renderSuggestions = useMemo(() => {
-        if (!mentionState.isActive) return null;
-
-        return (
-            <MotionBox
-                position="absolute"
-                bottom="100%"
-                left="10px"
-                width="250px"
-                bg={colors.mentionBg}
-                borderRadius="md"
-                boxShadow="lg"
-                zIndex={1000}
-                maxHeight="200px"
-                overflowY="auto"
-                overflowX="hidden"
-                border="1px solid"
-                borderColor="gray.200"
-                mb={2}
-                variants={{
-                    hidden: { opacity: 0, y: 10, scale: 0.95 },
-                    visible: {
-                        opacity: 1,
-                        y: 0,
-                        scale: 1,
-                        transition: {
-                            type: "spring",
-                            stiffness: 500,
-                            damping: 30,
-                            staggerChildren: 0.03
-                        }
-                    },
-                    exit: {
-                        opacity: 0,
-                        y: 10,
-                        scale: 0.95,
-                        transition: { duration: 0.2 }
-                    }
-                }}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-            >
-                {suggestions.length > 0 ? (
-                    suggestions.map((user, index) => (
-                        <MotionBox
-                            key={user.user_id}
-                            p={2}
-                            cursor="pointer"
-                            bg={index === selectedSuggestionIndex ? colors.mentionSelectedBg : "transparent"}
-                            _hover={{ bg: colors.mentionHoverBg }}
-                            onClick={() => handleSelectMention(user)}
-                            variants={{
-                                hidden: { opacity: 0, x: -5 },
-                                visible: { opacity: 1, x: 0 },
-                                exit: { opacity: 0, x: 5 }
-                            }}
-                            display="flex"
-                            alignItems="center"
-                            borderBottom={index < suggestions.length - 1 ? "1px solid" : "none"}
-                            borderColor="gray.200"
-                            color={colors.textColorStrong}
-                        >
-                            <Box
-                                borderRadius="full"
-                                bg={user.username.startsWith('agent') ? "green.100" : "blue.100"}
-                                color={user.username.startsWith('agent') ? "green.700" : "blue.700"}
-                                p={1}
-                                mr={2}
-                                fontSize="xs"
-                                width="24px"
-                                height="24px"
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
-                            >
-                                {user.username[0].toUpperCase()}
-                            </Box>
-                            <Flex flex="1" alignItems="center" justifyContent="space-between">
-                                <Box>{user.username}</Box>
-                                {user.role && (
-                                    <Box
-                                        ml={2}
-                                        px={2}
-                                        py={0.5}
-                                        borderRadius="full"
-                                        fontSize="xs"
-                                        fontWeight="medium"
-                                        bg={user.role === "agent" ? "green.100" : "blue.100"}
-                                        color={user.role === "agent" ? "green.700" : "blue.700"}
-                                        _dark={{
-                                            bg: user.role === "agent" ? "green.800" : "blue.800",
-                                            color: user.role === "agent" ? "green.200" : "blue.200"
-                                        }}
-                                    >
-                                        {user.role}
-                                    </Box>
-                                )}
-                            </Flex>
-                        </MotionBox>
-                    ))
-                ) : (
-                    <MotionBox
-                        p={2}
-                        color={colors.textColor}
-                        variants={{
-                            hidden: { opacity: 0 },
-                            visible: { opacity: 1 },
-                            exit: { opacity: 0 }
-                        }}
-                        textAlign="center"
-                    >
-                        {t("no_users_found")}
-                    </MotionBox>
-                )}
-            </MotionBox>
-        );
-    }, [
-        mentionState.isActive,
-        suggestions,
-        selectedSuggestionIndex,
-        colors,
-        handleSelectMention,
-        t
-    ]);
-
     // Add a ref for the textarea
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
@@ -479,7 +509,130 @@ export const ChatInput = React.memo(({
                 }
                 document.body.style.overflowX = '';
             }}>
-                {mentionState.isActive && renderSuggestions}
+                {mentionState.isActive && (
+                    <MotionBox
+                        data-mention-suggestions="true"
+                        position="absolute"
+                        bottom={`calc(100% - ${cursorPosition.top}px)`}
+                        left={`${cursorPosition.left}px`}
+                        width="250px"
+                        maxHeight="200px"
+                        maxWidth="calc(100vw - 20px)"
+                        bg={colors.mentionBg}
+                        borderRadius="md"
+                        boxShadow="lg"
+                        zIndex={1000}
+                        overflowY="auto"
+                        overflowX="hidden"
+                        border="1px solid"
+                        borderColor="gray.200"
+                        variants={{
+                            hidden: { opacity: 0, y: 10, scale: 0.95 },
+                            visible: {
+                                opacity: 1,
+                                y: 0,
+                                scale: 1,
+                                transition: {
+                                    type: "spring",
+                                    stiffness: 500,
+                                    damping: 30,
+                                    staggerChildren: 0.03
+                                }
+                            },
+                            exit: {
+                                opacity: 0,
+                                y: 10,
+                                scale: 0.95,
+                                transition: { duration: 0.2 }
+                            }
+                        }}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        style={{
+                            transformOrigin: "bottom left",
+                            scrollbarWidth: "none",
+                            msOverflowStyle: "none",
+                        }}
+
+                    >
+                        {suggestions.length > 0 ? (
+                            <Box>
+                                {suggestions.map((user, index) => (
+                                    <MotionBox
+                                        key={user.user_id}
+                                        data-selected-suggestion={index === selectedSuggestionIndex ? "true" : "false"}
+                                        p={2}
+                                        cursor="pointer"
+                                        bg={index === selectedSuggestionIndex ? colors.mentionSelectedBg : "transparent"}
+                                        _hover={{ bg: colors.mentionHoverBg }}
+                                        onClick={() => handleSelectMention(user)}
+                                        variants={{
+                                            hidden: { opacity: 0, x: -5 },
+                                            visible: { opacity: 1, x: 0 },
+                                            exit: { opacity: 0, x: 5 }
+                                        }}
+                                        display="flex"
+                                        alignItems="center"
+                                        borderBottom={index < suggestions.length - 1 ? "1px solid" : "none"}
+                                        borderColor="gray.200"
+                                        color={colors.textColorStrong}
+                                    >
+                                        <Box
+                                            borderRadius="full"
+                                            bg={user.username.startsWith('agent') ? "green.100" : "blue.100"}
+                                            color={user.username.startsWith('agent') ? "green.700" : "blue.700"}
+                                            p={1}
+                                            mr={2}
+                                            fontSize="xs"
+                                            width="24px"
+                                            height="24px"
+                                            display="flex"
+                                            alignItems="center"
+                                            justifyContent="center"
+                                        >
+                                            {user.username[0].toUpperCase()}
+                                        </Box>
+                                        <Flex flex="1" alignItems="center" justifyContent="space-between">
+                                            <Box>{user.username}</Box>
+                                            {user.role && (
+                                                <Box
+                                                    ml={2}
+                                                    px={2}
+                                                    py={0.5}
+                                                    borderRadius="full"
+                                                    fontSize="xs"
+                                                    fontWeight="medium"
+                                                    bg={user.role === "agent" ? "green.100" : "blue.100"}
+                                                    color={user.role === "agent" ? "green.700" : "blue.700"}
+                                                    _dark={{
+                                                        bg: user.role === "agent" ? "green.800" : "blue.800",
+                                                        color: user.role === "agent" ? "green.200" : "blue.200"
+                                                    }}
+                                                >
+                                                    {user.role}
+                                                </Box>
+                                            )}
+                                        </Flex>
+                                    </MotionBox>
+                                ))}
+                            </Box>
+                        ) : (
+                            <MotionBox
+                                p={2}
+                                color={colors.textColor}
+                                variants={{
+                                    hidden: { opacity: 0 },
+                                    visible: { opacity: 1 },
+                                    exit: { opacity: 0 }
+                                }}
+                                textAlign="center"
+                            >
+                                {t("no_users_found")}
+                            </MotionBox>
+                        )}
+                    </MotionBox>
+                )}
             </AnimatePresence>
         </Flex>
     );
