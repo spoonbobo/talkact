@@ -14,7 +14,7 @@ import {
   FaSignInAlt,
   FaUserCog,
 } from "react-icons/fa";
-import { toaster } from "./ui/toaster";
+import { useSession } from "next-auth/react";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { useParams } from "next/navigation";
 import { RootState } from "@/store/store";
@@ -221,6 +221,9 @@ const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: 
   const { currentUser, isAuthenticated, isLoading, isSigningOut } = useSelector(
     (state: RootState) => state.user
   );
+  const { data: session, status } = useSession();
+  console.log("-------------------", session, status);
+  console.log("-------------------", currentUser, isAuthenticated, isLoading, isSigningOut);
   const isLoggedIn = isAuthenticated;
   const logoBgColor = useColorModeValue("gray.100", "gray.700");
   const logoTextColor = useColorModeValue("gray.800", "gray.100");

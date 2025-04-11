@@ -34,4 +34,4 @@ ollama pull nomic-embed-text
 
 ```
 
-Visit `onlysaid-dev.com` to open the web application.
+Visit `onlysaid.com` to open the web application.

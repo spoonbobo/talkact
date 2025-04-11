@@ -69,30 +69,30 @@ export function GuestHomePage({
 
     // Add testimonials data
     const testimonials = [
-        {
-            id: "testimonial1",
-            name: "Sarah Johnson",
-            role: "AI Engineer",
-            company: "TechCorp",
-            content: t("testimonial_1") || "MCP has revolutionized how we build context-aware AI applications. The standardized protocol saves us countless development hours.",
-            avatar: "https://randomuser.me/api/portraits/women/44.jpg"
-        },
-        {
-            id: "testimonial2",
-            name: "Michael Chen",
-            role: "CTO",
-            company: "AI Innovations",
-            content: t("testimonial_2") || "Implementing MCP into our workflow has improved our AI models' performance by 40%. The context handling is simply unmatched.",
-            avatar: "https://randomuser.me/api/portraits/men/32.jpg"
-        },
-        {
-            id: "testimonial3",
-            name: "Elena Rodriguez",
-            role: "Product Manager",
-            company: "DataSense",
-            content: t("testimonial_3") || "Our team was able to integrate MCP in just days. The documentation is excellent and the community support is outstanding.",
-            avatar: "https://randomuser.me/api/portraits/women/68.jpg"
-        }
+        // {
+        //     id: "testimonial1",
+        //     name: "Sarah Johnson",
+        //     role: "AI Engineer",
+        //     company: "TechCorp",
+        //     content: t("testimonial_1") || "MCP has revolutionized how we build context-aware AI applications. The standardized protocol saves us countless development hours.",
+        //     avatar: "https://randomuser.me/api/portraits/women/44.jpg"
+        // },
+        // {
+        //     id: "testimonial2",
+        //     name: "Michael Chen",
+        //     role: "CTO",
+        //     company: "AI Innovations",
+        //     content: t("testimonial_2") || "Implementing MCP into our workflow has improved our AI models' performance by 40%. The context handling is simply unmatched.",
+        //     avatar: "https://randomuser.me/api/portraits/men/32.jpg"
+        // },
+        // {
+        //     id: "testimonial3",
+        //     name: "Elena Rodriguez",
+        //     role: "Product Manager",
+        //     company: "DataSense",
+        //     content: t("testimonial_3") || "Our team was able to integrate MCP in just days. The documentation is excellent and the community support is outstanding.",
+        //     avatar: "https://randomuser.me/api/portraits/women/68.jpg"
+        // }
     ];
 
     return (
