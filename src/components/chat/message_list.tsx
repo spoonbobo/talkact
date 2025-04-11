@@ -68,7 +68,7 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                 {messageGroups.map((group, groupIndex) => (
                     <Flex
                         key={`${group.sender}-${groupIndex}`}
-                        gap={3}
+                        gap={group.isCurrentUser ? 2 : 3}
                         justifyContent={
                             group.isCurrentUser ? "flex-end" : "flex-start"
                         }
@@ -78,15 +78,16 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                         animate={{ opacity: 1, y: 0 }}
                         // @ts-ignore
                         transition={{ duration: 0.2, delay: groupIndex * 0.02 }}
-                        mb={4}
+                        mb={3}
+                        px={2}
+                        width="100%"
                     >
-                        {/* Avatar for other users - improved positioning */}
+                        {/* Avatar for other users */}
                         {!group.isCurrentUser && (
                             <Avatar.Root
                                 size="sm"
-                                mt={2}
+                                mt={1}
                                 cursor="pointer"
-                                // TODO: do not delete
                                 // @ts-ignore
                                 onClick={() => handleUserProfileClick(group.sender, group.senderId, group.avatar)}
                             >
@@ -99,7 +100,8 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                             align={group.isCurrentUser ? "flex-end" : "flex-start"}
                             maxWidth="70%"
                             // @ts-ignore
-                            spacing={1}
+                            spacing={0.5}
+                            width="auto"
                         >
                             {/* User name display - only for other users */}
                             {!group.isCurrentUser && (
@@ -121,6 +123,12 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ duration: 0.15, delay: msgIndex * 0.02 }}
+                                        style={{
+                                            width: "100%",
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            alignItems: group.isCurrentUser ? "flex-end" : "flex-start"
+                                        }}
                                     >
                                         <ChatBubble
                                             key={message.id}
@@ -131,15 +139,14 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                                             isStreaming={!message.content}
                                         />
 
-                                        {/* Timestamp with improved colors */}
+                                        {/* Timestamp with improved colors and positioning */}
                                         {msgIndex === group.messages.length - 1 && (
                                             <Text
                                                 fontSize="xs"
                                                 color={colors.textColorSecondary}
-                                                textAlign={group.isCurrentUser ? "right" : "left"}
                                                 mt={1}
-                                                mr={group.isCurrentUser ? 2 : 0}
-                                                ml={group.isCurrentUser ? 0 : 2}
+                                                width="auto"
+                                                display="block"
                                             >
                                                 {new Date(message.created_at).toLocaleTimeString([], {
                                                     hour: '2-digit',
@@ -152,9 +159,12 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                             )}
                         </VStack>
 
-                        {/* Avatar for current user - improved positioning */}
+                        {/* Avatar for current user */}
                         {group.isCurrentUser && (
-                            <Avatar.Root size="sm" mt={1}>
+                            <Avatar.Root
+                                size="sm"
+                                mt={1}
+                            >
                                 <Avatar.Fallback name={group.sender} />
                                 <Avatar.Image src={group.avatar} />
                             </Avatar.Root>
