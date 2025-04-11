@@ -107,7 +107,7 @@ export default function SigninPage() {
               e.preventDefault();
               try {
                 signIn("google", {
-                  callbackUrl: "https://onlysaid.com/api/auth/callback/google",
+                  callbackUrl: `${process.env.NEXT_PUBLIC_DOMAIN}/api/auth/callback/google`,
                   redirect: true
                 });
               } catch (error) {
@@ -128,7 +128,7 @@ export default function SigninPage() {
               e.preventDefault();
 
               signIn("github", {
-                callbackUrl: `https://onlysaid.com/api/redirect/third_party_login?locale=${locale}`,
+                callbackUrl: `${process.env.NEXT_PUBLIC_DOMAIN}/api/redirect/third_party_login?locale=${locale}`,
                 redirect: true
               });
             }}

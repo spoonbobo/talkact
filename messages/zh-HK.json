@@ -176,7 +176,8 @@
     "user_not_found": "用戶不存在",
     "success": "成功",
     "left_room_successfully": "已成功離開聊天室",
-    "users_invited_successfully": "已成功邀請用戶"
+    "users_invited_successfully": "已成功邀請用戶",
+    "load_earlier_messages": "加載更多"
   },
   "Plans": {
     "plans": "計劃",

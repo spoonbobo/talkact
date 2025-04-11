@@ -40,7 +40,10 @@ import {
   clearSelectedRoom,
   quitRoom,
   updateRoom,
-  removeUserFromRoom
+  removeUserFromRoom,
+  loadMoreMessages,
+  prependMessages,
+  setLoadingMoreMessages
 } from '@/store/features/chatSlice';
 import React from "react";
 import { ChatRoomList } from "@/components/chat/room_list";
@@ -416,40 +419,17 @@ const ChatPageContent = () => {
         if (!hasLoadedMessages) {
           try {
             dispatch(setLoadingMessages(true));
-            const response = await axios.get(`/api/chat/get_messages?roomId=${selectedRoomId}`);
-
-            // Merge with any existing messages we might have
-            const existingMessages = messages[selectedRoomId] || [];
-            const serverMessages = response.data;
-
-            // Create a map of existing messages by ID for quick lookup
-            const existingMessageMap = new Map(
-              existingMessages.map(msg => [msg.id, msg])
-            );
-
-            // Combine messages, avoiding duplicates
-            const combinedMessages = [
-              ...existingMessages,
-              ...serverMessages.filter((msg: IMessage) => !existingMessageMap.has(msg.id))
-            ];
-
-            // Sort by created_at
-            combinedMessages.sort((a, b) =>
-              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-            );
+            const response = await axios.get(`/api/chat/get_messages?roomId=${selectedRoomId}&limit=20`);
 
             dispatch(setMessages({
               roomId: selectedRoomId,
-              messages: combinedMessages
+              messages: response.data.messages,
+              hasMore: response.data.hasMore
             }));
 
             dispatch(markRoomMessagesLoaded(selectedRoomId));
           } catch (error) {
-            toaster.create({
-              title: t("error"),
-              description: t("error_fetching_messages"),
-              type: "error"
-            });
+            console.log("error", error);
           } finally {
             dispatch(setLoadingMessages(false));
           }
@@ -458,7 +438,7 @@ const ChatPageContent = () => {
     };
 
     fetchMessages();
-  }, [selectedRoomId, dispatch, messages, messagesLoaded]);
+  }, [selectedRoomId, dispatch, messagesLoaded]);
 
   const handleFlipLayout = () => {
     setIsLayoutFlipped(!isLayoutFlipped);

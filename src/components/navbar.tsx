@@ -222,8 +222,6 @@ const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: 
     (state: RootState) => state.user
   );
   const { data: session, status } = useSession();
-  console.log("-------------------", session, status);
-  console.log("-------------------", currentUser, isAuthenticated, isLoading, isSigningOut);
   const isLoggedIn = isAuthenticated;
   const logoBgColor = useColorModeValue("gray.100", "gray.700");
   const logoTextColor = useColorModeValue("gray.800", "gray.100");
