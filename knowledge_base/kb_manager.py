@@ -12,7 +12,6 @@ from llama_index.embeddings.ollama import OllamaEmbedding # type: ignore
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.deepseek import DeepSeek
 
-
 from schemas.document import Folder, DataSource
 from schemas.document import QueryRequest
 from readers.base_reader import BaseReader
@@ -236,24 +235,8 @@ class KBManager:
         )
         
         # Stream tokens from the LLM
-        for chunk in self.llm.stream_complete(prompt):
-            # Extract the text from the CompletionResponse object
-            if hasattr(chunk, 'delta'):
-                token = chunk.delta
-            elif hasattr(chunk, 'text'):
-                token = chunk.text
-            elif isinstance(chunk, dict) and 'text' in chunk:
-                token = chunk['text']
-            elif isinstance(chunk, str):
-                token = chunk
-            else:
-                # Log the unexpected type for debugging
-                logger.warning(f"Unexpected token type: {type(chunk)}, value: {chunk}")
-                token = str(chunk)
-            
-            yield token
-            await asyncio.sleep(0.01) 
-
+        return await self.llm.astream_complete(prompt)
+    
     # Methods for message persistence
     def store_message(self, message_id: str, message_data: dict):
         """Store message data for potential resumption"""
@@ -280,31 +263,6 @@ class KBManager:
         """Remove a message from storage"""
         if message_id in self._message_store:
             del self._message_store[message_id]
-
-    def answer_with_context(self, query: QueryRequest):
-        """
-        Generate an answer using RAG
-        """
-        # Handle both string and list inputs
-        query_text = query.query[-1] if isinstance(query.query, list) else query.query
-        
-        # Generate context based on the latest query
-        context = self.generate_context(query_text, query.source_id, query.top_k)
-        
-        prompt_template = self.lng_prompt[query.preferred_language]
-        prompt = prompt_template.format(
-            preferred_language=self.lng_map[query.preferred_language],
-            context=context,
-            conversation_history=query.conversation_history,
-            query=query_text
-        )
-                
-        if query.streaming:
-            # Return generator for streaming
-            return self.llm.stream_complete(prompt)
-        else:
-            answer = self.llm.complete(prompt)
-            return answer
 
     def _build_folder_structure(self, documents):
         """Build a hierarchical folder structure from document paths"""

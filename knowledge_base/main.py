@@ -47,5 +47,6 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=35430,
-        reload=True,
+        workers=4,  # Use multiple worker processes
+        # reload=True,  # Disable reload in production
     )

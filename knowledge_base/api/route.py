@@ -83,27 +83,39 @@ async def cleanup_session(kb_manager, session_id):
 
 async def stream_tokens(kb_manager, query, session_id):
     """Generate server-sent events for streaming tokens with disconnect handling"""
-    response_gen = kb_manager.answer_with_context(query)
     accumulated_content = ""
     
     # Send initial event
     yield "event: start\ndata: {}\n\n"
+    gen = await kb_manager.stream_answer_with_context(query)
     
     try:
-        # Stream each token as an event
-        for response in response_gen:
-            if hasattr(response, 'delta'):
-                token = response.delta
-                accumulated_content += token
+        # Use the async streaming method
+        async for chunk in gen:
+            # Extract the text from the CompletionResponse object
+            if hasattr(chunk, 'delta'):
+                token = chunk.delta
+            elif hasattr(chunk, 'text'):
+                token = chunk.text
+            elif isinstance(chunk, dict) and 'text' in chunk:
+                token = chunk['text']
+            elif isinstance(chunk, str):
+                token = chunk
+            else:
+                # Log the unexpected type for debugging
+                logger.warning(f"Unexpected token type: {type(chunk)}, value: {chunk}")
+                token = str(chunk)
                 
-                # Update stored content
-                kb_manager.update_message_content(session_id, accumulated_content)
-                
-                data = json.dumps({"token": token})
-                yield f"event: token\ndata: {data}\n\n"
-                
-                # Small delay to prevent overwhelming the client
-                await asyncio.sleep(0.01)
+            accumulated_content += token
+            
+            # Update stored content
+            kb_manager.update_message_content(session_id, accumulated_content)
+            
+            data = json.dumps({"token": token})
+            yield f"event: token\ndata: {data}\n\n"
+            
+            # Small delay to prevent overwhelming the client
+            await asyncio.sleep(0.01)
     except Exception as e:
         logger.error(f"Streaming error: {str(e)}")
         # We'll mark the session as complete even on error
@@ -114,50 +126,3 @@ async def stream_tokens(kb_manager, query, session_id):
         
         # Send completion event
         yield "event: end\ndata: {}\n\n"
-
-# Add a reconnection endpoint
-@router.get("/api/stream/{session_id}")
-async def reconnect_stream(request: Request, session_id: str):
-    kb_manager = request.app.state.kb_manager
-    
-    # Check if session exists
-    session_data = kb_manager.get_message_by_id(session_id)
-    if not session_data:
-        raise HTTPException(status_code=404, detail="Stream session not found")
-    
-    # If the stream is already complete, just return the final content
-    if session_data.get("is_complete", False):
-        return {"status": "complete", "content": session_data.get("current_content", "")}
-    
-    # Otherwise, resume streaming
-    query = QueryRequest(**session_data["query"])
-    current_content = session_data.get("current_content", "")
-    
-    async def resume_stream():
-        # Send the current accumulated content first
-        yield f"event: resume\ndata: {json.dumps({'content': current_content})}\n\n"
-        
-        # Then continue with new tokens
-        async for chunk in kb_manager.stream_answer_with_context(query):
-            if chunk:
-                data = json.dumps({"token": chunk})
-                yield f"event: token\ndata: {data}\n\n"
-                
-                # Update the stored content
-                kb_manager.update_message_content(
-                    session_id, 
-                    session_data.get("current_content", "") + chunk
-                )
-        
-        # Mark as complete
-        if session_id in kb_manager._message_store:
-            kb_manager._message_store[session_id]["is_complete"] = True
-            
-        # Send completion event
-        yield "event: end\ndata: {}\n\n"
-    
-    return StreamingResponse(
-        resume_stream(),
-        media_type="text/event-stream",
-        background=BackgroundTask(cleanup_session, kb_manager, session_id)
-    ) 
