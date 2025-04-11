@@ -14,12 +14,12 @@ import {
     Textarea,
     Heading
 } from "@chakra-ui/react";
-import { FaComment, FaPaperPlane, FaTimes, FaStop } from "react-icons/fa";
+import { FaComment, FaPaperPlane, FaTimes, FaStop, FaThumbtack } from "react-icons/fa";
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { toaster } from "@/components/ui/toaster";
 import { useColorModeValue } from "@/components/ui/color-mode";
-import { updatePosition, toggleOpen, setIsOpen, addMessage, clearMessages, updateMessage, setStreamingState, startStreaming, stopStreaming, resumeGeneration, updateSize } from '@/store/features/assistantSlice';
+import { updatePosition, toggleOpen, setIsOpen, addMessage, clearMessages, updateMessage, setStreamingState, startStreaming, stopStreaming, resumeGeneration, updateSize, setPinned } from '@/store/features/assistantSlice';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslations } from "next-intl";
 import { useChatPageColors } from "@/utils/colors";
@@ -36,7 +36,7 @@ const Assistant: React.FC = () => {
     const dispatch = useDispatch();
     const { data: session } = useSession();
     const { currentUser, isAuthenticated } = useSelector((state: RootState) => state.user);
-    const { position, isOpen, messages, isStreaming, streamingMessageId, size = { width: 350, height: 500 } } = useSelector((state: RootState) => state.assistant);
+    const { position, isOpen, messages, isStreaming, streamingMessageId, size = { width: 350, height: 500 }, isPinned } = useSelector((state: RootState) => state.assistant);
     const t = useTranslations("Assistant");
     const colors = useChatPageColors();
     const params = useParams();
@@ -51,6 +51,7 @@ const Assistant: React.FC = () => {
     const inputBg = useColorModeValue("white", "#1A202C");
     const containerBg = useColorModeValue("rgba(240, 255, 244, 0.8)", "rgba(26, 32, 44, 0.8)");
     const buttonHoverBgValue = useColorModeValue("green.50", "gray.700");
+    const titleTextColor = useColorModeValue("gray.800", "white");
 
     const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
@@ -76,6 +77,10 @@ const Assistant: React.FC = () => {
     const cancelHoverBg = "red.600";
     const placeholderColor = colors.textColor;
     const inputTextColor = colors.textColorHeading;
+
+    // Color for the pin button
+    const pinColor = useColorModeValue("gray.600", "gray.400");
+    const activePinColor = useColorModeValue("blue.500", "blue.300");
 
     const scrollToBottom = () => {
         // Use requestAnimationFrame to avoid forced reflow
@@ -528,6 +533,23 @@ const Assistant: React.FC = () => {
         };
     }, [resizing, resizeStartPosition, resizeStartSize, dispatch]);
 
+    // Handle open change with pin logic
+    const handleOpenChange = (details: { open: boolean }) => {
+        // Only allow closing if not pinned
+        if (!isPinned || details.open) {
+            dispatch(setIsOpen(details.open));
+        }
+    };
+
+    // Toggle pin state
+    const togglePin = () => {
+        dispatch(setPinned(!isPinned));
+        // Ensure popover stays open when pinning
+        if (!isPinned) {
+            dispatch(setIsOpen(true));
+        }
+    };
+
     if (!isAuthenticated) {
         return null;
     }
@@ -549,7 +571,7 @@ const Assistant: React.FC = () => {
                     placement: "bottom-start"
                 }}
                 open={isOpen}
-                onOpenChange={(details) => dispatch(setIsOpen(details.open))}
+                onOpenChange={handleOpenChange}
             >
                 <Popover.Trigger asChild>
                     <IconButton
@@ -581,7 +603,7 @@ const Assistant: React.FC = () => {
                         >
                             <Popover.Arrow bg={bgColor} borderColor={borderColor} />
                             <Flex justifyContent="space-between" alignItems="center" p={2} borderBottom="1px solid" borderColor={borderColor}>
-                                <Text fontWeight="bold">{t("ai_assistant")}</Text>
+                                <Text fontWeight="bold" color={titleTextColor}>{t("ai_assistant")}</Text>
                                 <Flex>
                                     <Button
                                         size="xs"
@@ -597,10 +619,26 @@ const Assistant: React.FC = () => {
                                             aria-label="Close"
                                             size="xs"
                                             variant="ghost"
+                                            disabled={isPinned}
+                                            title={isPinned ? "Unpin first to close" : "Close"}
                                         >
                                             <Icon as={FaTimes} />
                                         </IconButton>
                                     </Popover.CloseTrigger>
+                                    <IconButton
+                                        aria-label={isPinned ? "Unpin popover" : "Pin popover"}
+                                        size="xs"
+                                        variant="ghost"
+                                        color={isPinned ? activePinColor : pinColor}
+                                        transform={isPinned ? "rotate(0deg)" : "rotate(45deg)"}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            togglePin();
+                                        }}
+                                        title={isPinned ? "Unpin (allow closing)" : "Pin (prevent closing)"}
+                                    >
+                                        <Icon as={FaThumbtack} />
+                                    </IconButton>
                                 </Flex>
                             </Flex>
                             <Popover.Body p={0} height={`calc(${size?.height || 500}px - 80px)`} display="flex" flexDirection="column">

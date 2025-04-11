@@ -32,6 +32,7 @@ interface AssistantState {
     resumeMessageId: string | null;
     currentRoute: string; // Add this new state property
     size: { width: number, height: number }; // Add size state
+    isPinned: boolean; // Add isPinned state
 }
 
 // Default position for server-side rendering - no window references here
@@ -86,6 +87,7 @@ const initialState: AssistantState = {
     resumeMessageId: null,
     currentRoute: typeof window !== 'undefined' ? window.location.pathname : '/', // Initialize with current route
     size: getInitialSize(),
+    isPinned: false, // Initialize isPinned state
 };
 
 const assistantSlice = createSlice({
@@ -139,6 +141,10 @@ const assistantSlice = createSlice({
                 localStorage.setItem('assistantSize', JSON.stringify(action.payload));
             }
         },
+        // Add a reducer to handle pinned state
+        setPinned: (state, action: PayloadAction<boolean>) => {
+            state.isPinned = action.payload;
+        },
     },
     // Add extraReducers to handle the createAction
     extraReducers: (builder) => {
@@ -156,7 +162,8 @@ export const {
     clearMessages,
     updateMessage,
     setStreamingState,
-    updateSize
+    updateSize,
+    setPinned // Export the new action
 } = assistantSlice.actions;
 
 export default assistantSlice.reducer;

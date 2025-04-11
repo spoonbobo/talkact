@@ -40,6 +40,7 @@ const Notification: React.FC = () => {
     const notificationTextColor = useColorModeValue("gray.800", "gray.100");
     const mutedTextColor = useColorModeValue("gray.500", "gray.400");
     const iconHoverBg = useColorModeValue("blue.50", "gray.700"); // Added for the icon button hover
+    const titleColor = useColorModeValue("gray.800", "white"); // Added for the title text color
 
     // TODO: if not authenticated, just hide.
 
@@ -216,7 +217,7 @@ const Notification: React.FC = () => {
                             onMouseDown={(e) => e.stopPropagation()}
                         >
                             <Flex justifyContent="space-between" alignItems="center" p={2} borderBottom="1px solid" borderColor={borderColor}>
-                                <Text fontWeight="bold" color={notificationTextColor}>{t("notifications")}</Text>
+                                <Text fontWeight="bold" color={titleColor}>{t("notifications")}</Text>
                                 {notifications.length > 0 && (
                                     <HStack gap={1}>
                                         <Button
