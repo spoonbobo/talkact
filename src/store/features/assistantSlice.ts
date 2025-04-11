@@ -31,6 +31,7 @@ interface AssistantState {
     canResume: boolean;
     resumeMessageId: string | null;
     currentRoute: string; // Add this new state property
+    size: { width: number, height: number }; // Add size state
 }
 
 // Default position for server-side rendering - no window references here
@@ -59,6 +60,21 @@ const getInitialPosition = () => {
     return defaultPosition;
 };
 
+// Get initial size from localStorage or use default
+const getInitialSize = () => {
+    if (typeof window !== 'undefined') {
+        try {
+            const savedSize = localStorage.getItem('assistantSize');
+            if (savedSize) {
+                return JSON.parse(savedSize);
+            }
+        } catch (e) {
+            // Fallback if localStorage fails
+        }
+    }
+    return { width: 350, height: 500 }; // Default size
+};
+
 const initialState: AssistantState = {
     messages: [],
     position: getInitialPosition(),
@@ -68,7 +84,8 @@ const initialState: AssistantState = {
     streamController: null,
     canResume: false,
     resumeMessageId: null,
-    currentRoute: typeof window !== 'undefined' ? window.location.pathname : '/' // Initialize with current route
+    currentRoute: typeof window !== 'undefined' ? window.location.pathname : '/', // Initialize with current route
+    size: getInitialSize(),
 };
 
 const assistantSlice = createSlice({
@@ -114,7 +131,14 @@ const assistantSlice = createSlice({
         // Add a reducer to handle route changes
         setCurrentRoute: (state, action: PayloadAction<string>) => {
             state.currentRoute = action.payload;
-        }
+        },
+        updateSize: (state, action: PayloadAction<{ width: number, height: number }>) => {
+            state.size = action.payload;
+            // Save to localStorage when size changes
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('assistantSize', JSON.stringify(action.payload));
+            }
+        },
     },
     // Add extraReducers to handle the createAction
     extraReducers: (builder) => {
@@ -131,7 +155,8 @@ export const {
     addMessage,
     clearMessages,
     updateMessage,
-    setStreamingState
+    setStreamingState,
+    updateSize
 } = assistantSlice.actions;
 
 export default assistantSlice.reducer;

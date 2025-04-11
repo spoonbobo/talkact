@@ -42,6 +42,7 @@
     "pg": "^8.14.1",
     "pg-native": "^3.3.0",
     "pg-query-stream": "^4.8.1",
+    "re-resizable": "^6.11.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-i18next": "^15.4.1",

@@ -19,7 +19,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { toaster } from "@/components/ui/toaster";
 import { useColorModeValue } from "@/components/ui/color-mode";
-import { updatePosition, toggleOpen, setIsOpen, addMessage, clearMessages, updateMessage, setStreamingState, startStreaming, stopStreaming, resumeGeneration } from '@/store/features/assistantSlice';
+import { updatePosition, toggleOpen, setIsOpen, addMessage, clearMessages, updateMessage, setStreamingState, startStreaming, stopStreaming, resumeGeneration, updateSize } from '@/store/features/assistantSlice';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslations } from "next-intl";
 import { useChatPageColors } from "@/utils/colors";
@@ -36,7 +36,7 @@ const Assistant: React.FC = () => {
     const dispatch = useDispatch();
     const { data: session } = useSession();
     const { currentUser, isAuthenticated } = useSelector((state: RootState) => state.user);
-    const { position, isOpen, messages, isStreaming, streamingMessageId } = useSelector((state: RootState) => state.assistant);
+    const { position, isOpen, messages, isStreaming, streamingMessageId, size = { width: 350, height: 500 } } = useSelector((state: RootState) => state.assistant);
     const t = useTranslations("Assistant");
     const colors = useChatPageColors();
     const params = useParams();
@@ -62,6 +62,9 @@ const Assistant: React.FC = () => {
     const eventSourceRef = useRef<EventSource | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const lastScrollEventTime = useRef(0);
+    const [resizing, setResizing] = useState(false);
+    const [resizeStartPosition, setResizeStartPosition] = useState({ x: 0, y: 0 });
+    const [resizeStartSize, setResizeStartSize] = useState({ width: 0, height: 0 });
 
     // Add constants for boundary margins
     const BOUNDARY_MARGIN = 20; // pixels from edge of screen
@@ -483,6 +486,48 @@ const Assistant: React.FC = () => {
         );
     }, [messages]);
 
+    // Handle resize start
+    const handleResizeStart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setResizing(true);
+        setResizeStartPosition({ x: e.clientX, y: e.clientY });
+        setResizeStartSize({ width: size.width, height: size.height });
+    };
+
+    // Add effect for resize handling
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (resizing) {
+                const deltaX = e.clientX - resizeStartPosition.x;
+                const deltaY = e.clientY - resizeStartPosition.y;
+
+                // Calculate new size with minimum constraints
+                const newWidth = Math.max(300, resizeStartSize.width + deltaX);
+                const newHeight = Math.max(300, resizeStartSize.height + deltaY);
+
+                dispatch(updateSize({
+                    width: newWidth,
+                    height: newHeight
+                }));
+            }
+        };
+
+        const handleMouseUp = () => {
+            setResizing(false);
+        };
+
+        if (resizing) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [resizing, resizeStartPosition, resizeStartSize, dispatch]);
+
     if (!isAuthenticated) {
         return null;
     }
@@ -523,15 +568,16 @@ const Assistant: React.FC = () => {
                     </IconButton>
                 </Popover.Trigger>
 
-                {/* Stop propagation on the popover content to prevent dragging */}
                 <Portal>
                     <Popover.Positioner>
                         <Popover.Content
-                            width="350px"
+                            width={`${size?.width || 350}px`}
+                            height={`${size?.height || 500}px`}
                             boxShadow="xl"
                             border="1px solid"
                             borderColor={borderColor}
                             onMouseDown={(e) => e.stopPropagation()}
+                            position="relative"
                         >
                             <Popover.Arrow bg={bgColor} borderColor={borderColor} />
                             <Flex justifyContent="space-between" alignItems="center" p={2} borderBottom="1px solid" borderColor={borderColor}>
@@ -557,7 +603,7 @@ const Assistant: React.FC = () => {
                                     </Popover.CloseTrigger>
                                 </Flex>
                             </Flex>
-                            <Popover.Body p={0} height="400px" display="flex" flexDirection="column">
+                            <Popover.Body p={0} height={`calc(${size?.height || 500}px - 80px)`} display="flex" flexDirection="column">
                                 {/* Use the extracted message list component */}
                                 <AssistantMessageList
                                     messages={messages}
@@ -577,6 +623,29 @@ const Assistant: React.FC = () => {
                                     bgColor={bgColor}
                                 />
                             </Popover.Body>
+
+                            {/* Resize handle */}
+                            <Box
+                                position="absolute"
+                                bottom="0"
+                                right="0"
+                                width="15px"
+                                height="15px"
+                                cursor="nwse-resize"
+                                onMouseDown={handleResizeStart}
+                                _before={{
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: '3px',
+                                    right: '3px',
+                                    width: '8px',
+                                    height: '8px',
+                                    borderRight: '2px solid',
+                                    borderBottom: '2px solid',
+                                    borderColor: borderColor,
+                                    opacity: 0.7
+                                }}
+                            />
                         </Popover.Content>
                     </Popover.Positioner>
                 </Portal>
