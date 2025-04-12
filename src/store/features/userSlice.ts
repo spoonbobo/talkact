@@ -71,6 +71,29 @@ export const userSlice = createSlice({
                 state.expiresAt = Date.now() + SESSION_TTL;
                 console.log("Session TTL refreshed to:", new Date(state.expiresAt).toLocaleString());
             }
+        },
+        // New reducer to update active rooms
+        updateActiveRooms: (state, action: PayloadAction<{ roomId: string, action: 'add' | 'remove' }>) => {
+            if (!state.currentUser) return;
+
+            const { roomId, action: roomAction } = action.payload;
+
+            if (roomAction === 'add') {
+                // Create active_rooms array if it doesn't exist
+                if (!state.currentUser.active_rooms) {
+                    state.currentUser.active_rooms = [];
+                }
+
+                // Add roomId if it's not already in the array
+                if (!state.currentUser.active_rooms.includes(roomId)) {
+                    state.currentUser.active_rooms.push(roomId);
+                }
+            } else if (roomAction === 'remove') {
+                // Remove roomId if active_rooms exists
+                if (state.currentUser.active_rooms) {
+                    state.currentUser.active_rooms = state.currentUser.active_rooms.filter(id => id !== roomId);
+                }
+            }
         }
     }
 });
@@ -82,7 +105,8 @@ export const {
     setSigningOut,
     setError,
     checkSessionExpiration,
-    refreshSessionTTL
+    refreshSessionTTL,
+    updateActiveRooms
 } = userSlice.actions;
 
 // Create a persisted reducer

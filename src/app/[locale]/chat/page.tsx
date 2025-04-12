@@ -42,6 +42,7 @@ import {
   updateRoom,
   removeUserFromRoom
 } from '@/store/features/chatSlice';
+import { updateActiveRooms } from '@/store/features/userSlice';
 import React from "react";
 import { ChatRoomList } from "@/components/chat/room_list";
 import { ChatMessageList } from "@/components/chat/message_list";
@@ -54,46 +55,6 @@ import { RoomInvitation } from "@/components/chat/room_invitation";
 import { useRouter } from "next/navigation";
 
 const MotionBox = motion.create(Box);
-
-// Add this dummy TaskLog component
-const TaskLog = () => {
-  const t = useTranslations("Chat");
-  const colors = useChatPageColors();
-
-  return (
-    <Box
-      height="100%"
-      width="100%"
-      bg={colors.bgSubtle}
-      borderRadius="md"
-      borderWidth="1px"
-      borderColor={colors.borderColor}
-      overflow="hidden"
-      display="flex"
-      flexDirection="column"
-      transition="all 0.3s ease"
-      boxShadow="sm"
-    >
-      <Flex
-        p={4}
-        borderBottomWidth="1px"
-        borderColor={colors.borderColor}
-        bg={colors.bgSubtle}
-        align="center"
-      >
-        <Icon as={FaTasks} color="blue.500" mr={2} />
-        <Text fontWeight="bold" color={colors.textColorHeading}>{t("task_log")}</Text>
-      </Flex>
-
-      <Box flex="1" p={4} overflow="auto">
-        {/* Empty content for now - will be replaced later */}
-        <Text color={colors.textColor} fontSize="sm" textAlign="center" mt={10}>
-          {t("task_log_empty")}
-        </Text>
-      </Box>
-    </Box>
-  );
-};
 
 export default function ChatPage() {
   const { currentUser, isAuthenticated } = useSelector((state: RootState) => state.user);
@@ -138,25 +99,11 @@ const ChatPageContent = () => {
   const [isCreatingRoom, setIsCreatingRoom] = useState<boolean>(false);
   const [newRoomName, setNewRoomName] = useState<string>("");
   const [isCreatingRoomLoading, setIsCreatingRoomLoading] = useState<boolean>(false);
-  const [isLayoutFlipped, setIsLayoutFlipped] = useState<boolean>(false);
   const [users, setUsers] = useState<User[]>([]);
   const [agents, setAgents] = useState<User[]>([]);
 
   // Add ref for message container to enable auto-scrolling
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
-
-  // Remove or simplify the multiple scroll effects in the page component
-  // and just keep one simplified effect:
-
-  useEffect(() => {
-    // Only try to force scroll on room change
-    if (selectedRoomId) {
-      // Let the MessageList component handle the actual scrolling
-      // Just trigger a custom event that it can listen for
-      const event = new CustomEvent('chatRoomChanged');
-      window.dispatchEvent(event);
-    }
-  }, [selectedRoomId]);
 
   // Use the centralized colors instead of direct useColorModeValue calls
   const bgSubtle = colors.bgSubtle;
@@ -277,6 +224,17 @@ const ChatPageContent = () => {
       }
 
       await axios.post(url, payload);
+
+      dispatch(joinRoom(roomId));
+
+      // Add the room to the user's active_rooms
+      await axios.post("/api/user/update_active_rooms", {
+        roomId: roomId,
+        action: "add"
+      });
+
+      // Update the Redux state to match the database
+      dispatch(updateActiveRooms({ roomId, action: "add" }));
     }
     catch (error) {
       toaster.create({
@@ -309,6 +267,9 @@ const ChatPageContent = () => {
           roomId: roomId,
           action: "add"
         });
+
+        // Update the Redux state to match the database
+        dispatch(updateActiveRooms({ roomId, action: "add" }));
 
         if (currentUser) {
           await axios.put("/api/chat/update_room", {
@@ -457,10 +418,6 @@ const ChatPageContent = () => {
     fetchMessages();
   }, [selectedRoomId, dispatch, messages, messagesLoaded]);
 
-  const handleFlipLayout = () => {
-    setIsLayoutFlipped(!isLayoutFlipped);
-  };
-
   // If there are no rooms but a room is selected, clear the selection
   useEffect(() => {
     if (rooms.length === 0 && selectedRoomId) {
@@ -560,12 +517,12 @@ const ChatPageContent = () => {
           overflow="hidden"
           gap={4}
         >
-          {/* Room List or Task Log Component with fixed width */}
+          {/* Room List Component with fixed width - simplified without layout flipping */}
           <MotionBox
             layout
             initial={false}
             animate={{
-              left: isLayoutFlipped ? "calc(100% - 300px)" : 0,
+              left: 0,
               opacity: 1,
               scale: 1,
               width: "300px",
@@ -583,91 +540,25 @@ const ChatPageContent = () => {
             zIndex={1}
             whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
           >
-            <AnimatePresence mode="wait" initial={false}>
-              {isLayoutFlipped ? (
-                <motion.div
-                  key="task-log"
-                  initial={{
-                    opacity: 0,
-                    scale: 0.92,
-                    filter: "blur(8px)",
-                    x: -20
-                  }}
-                  animate={{
-                    opacity: 1,
-                    scale: 1,
-                    filter: "blur(0px)",
-                    x: 0
-                  }}
-                  exit={{
-                    opacity: 0,
-                    scale: 0.95,
-                    filter: "blur(4px)",
-                    x: 20
-                  }}
-                  transition={{
-                    duration: 0.5,
-                    ease: "easeOut",
-                    opacity: { duration: 0.4 },
-                    scale: { duration: 0.5 },
-                    filter: { duration: 0.4 },
-                    x: { duration: 0.4 }
-                  }}
-                  style={{ height: '100%' }}
-                >
-                  <TaskLog />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="chat-room-list"
-                  initial={{
-                    opacity: 0,
-                    scale: 0.92,
-                    filter: "blur(8px)",
-                    x: -20
-                  }}
-                  animate={{
-                    opacity: 1,
-                    scale: 1,
-                    filter: "blur(0px)",
-                    x: 0
-                  }}
-                  exit={{
-                    opacity: 0,
-                    scale: 0.95,
-                    filter: "blur(4px)",
-                    x: 20
-                  }}
-                  transition={{
-                    duration: 0.5,
-                    ease: "easeOut",
-                    opacity: { duration: 0.4 },
-                    scale: { duration: 0.5 },
-                    filter: { duration: 0.4 },
-                    x: { duration: 0.4 }
-                  }}
-                  style={{ height: '100%' }}
-                >
-                  <ChatRoomList
-                    rooms={rooms}
-                    selectedRoomId={selectedRoomId}
-                    unreadCounts={unreadCounts}
-                    onSelectRoom={(roomId) => dispatch(setSelectedRoom(roomId))}
-                    onCreateRoomClick={() => setIsCreatingRoom(true)}
-                    isCreatingRoomLoading={isCreatingRoomLoading}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <Box height="100%">
+              <ChatRoomList
+                rooms={rooms}
+                selectedRoomId={selectedRoomId}
+                unreadCounts={unreadCounts}
+                onSelectRoom={(roomId) => dispatch(setSelectedRoom(roomId))}
+                onCreateRoomClick={() => setIsCreatingRoom(true)}
+                isCreatingRoomLoading={isCreatingRoomLoading}
+              />
+            </Box>
           </MotionBox>
 
-          {/* Chat Interface Component */}
+          {/* Chat Interface Component - simplified without layout flipping */}
           <MotionBox
             layout
             initial={false}
             animate={{
-              left: isLayoutFlipped ? 0 : "300px",
-              width: isLayoutFlipped ? "calc(100% - 300px - 1rem)" : "calc(100% - 300px - 1rem)",
+              left: "300px",
+              width: "calc(100% - 300px - 1rem)",
               opacity: 1,
               scale: 1,
             }}
@@ -701,6 +592,7 @@ const ChatPageContent = () => {
               minHeight="80px"
               width="100%"
               position="relative"
+              justifyContent="space-between"
             >
               <AnimatePresence mode="wait">
                 {isCreatingRoom ? (
@@ -731,69 +623,6 @@ const ChatPageContent = () => {
                         alignItems="center"
                       >
                         {currentRoom?.name || t("select_room")}
-                        {currentRoom && (
-                          <RoomMenu
-                            onRoomDetails={() => {
-                              setIsRoomDetailsOpen(true);
-                            }}
-                            onExitRoom={async () => {
-                              try {
-                                // Call API to remove room from active rooms
-                                const response = await fetch('/api/user/update_active_rooms', {
-                                  method: 'POST',
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                  },
-                                  body: JSON.stringify({
-                                    roomId: currentRoom.id,
-                                    action: 'remove'
-                                  }),
-                                });
-
-                                // Call the remove_user_from_room endpoint
-                                await axios.put(`/api/chat/remove_user_from_room`, {
-                                  roomId: currentRoom.id,
-                                  userId: currentUser?.user_id
-                                });
-
-                                // Only dispatch if currentUser and user_id exist
-                                if (currentUser?.user_id) {
-                                  dispatch(removeUserFromRoom({
-                                    roomId: currentRoom.id,
-                                    userId: currentUser.user_id
-                                  }));
-                                }
-
-                                if (!response.ok) {
-                                  throw new Error('Failed to exit room');
-                                }
-
-                                // Clear the selected room in Redux
-                                dispatch(clearSelectedRoom());
-
-                                // notice server to quit room
-                                dispatch(quitRoom(currentRoom.id));
-
-                                // refresh room list
-                                const roomsResponse = await axios.get("/api/chat/get_rooms");
-                                dispatch(setRooms(roomsResponse.data));
-
-                                toaster.create({
-                                  title: t("success"),
-                                  description: t("left_room_successfully"),
-                                  type: "info"
-                                });
-                              } catch (error) {
-                                console.error("Error exiting room:", error);
-                                toaster.create({
-                                  title: t("error"),
-                                  description: t("error_leaving_room"),
-                                  type: "error"
-                                });
-                              }
-                            }}
-                          />
-                        )}
                       </Text>
                       <AnimatePresence>
                         {currentRoom && (
@@ -806,11 +635,11 @@ const ChatPageContent = () => {
                             <Flex align="center">
                               <Icon
                                 as={FaUsers}
-                                color="blue.500"
+                                color={colors.aiNameColor}
                                 boxSize={3}
                                 mr={1}
                               />
-                              <Text fontSize="xs" color={textColor}>
+                              <Text fontSize="xs" color={colors.textColor}>
                                 {t("active_users")}:{" "}
                                 {currentRoom?.active_users?.length || 0}
                               </Text>
@@ -823,50 +652,78 @@ const ChatPageContent = () => {
                 )}
               </AnimatePresence>
 
-              {/* Layout toggle button with text - only show when not creating a room */}
-              <AnimatePresence>
-                {!isCreatingRoom && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    style={{
-                      position: "absolute",
-                      right: "16px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px"
+              {/* Room Menu moved to right side */}
+              {currentRoom && !isCreatingRoom && (
+                <Box>
+                  <RoomMenu
+                    onRoomDetails={() => {
+                      setIsRoomDetailsOpen(true);
                     }}
-                  >
-                    {/* Layout toggle */}
-                    <Text
-                      as="button"
-                      color="blue.500"
-                      fontWeight="medium"
-                      cursor="pointer"
-                      onClick={handleFlipLayout}
-                      _hover={{ color: "blue.600", textDecoration: "underline" }}
-                      transition="color 0.2s ease"
-                    >
-                      {isLayoutFlipped ? t("switch_to_room_view") : t("switch_to_task_view")}
-                    </Text>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    onExitRoom={async () => {
+                      try {
+                        // Call API to remove room from active rooms
+                        const response = await fetch('/api/user/update_active_rooms', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            roomId: currentRoom.id,
+                            action: 'remove'
+                          }),
+                        });
+
+                        // Call the remove_user_from_room endpoint
+                        await axios.put(`/api/chat/remove_user_from_room`, {
+                          roomId: currentRoom.id,
+                          userId: currentUser?.user_id
+                        });
+
+                        // Only dispatch if currentUser and user_id exist
+                        if (currentUser?.user_id) {
+                          dispatch(removeUserFromRoom({
+                            roomId: currentRoom.id,
+                            userId: currentUser.user_id
+                          }));
+                        }
+
+                        if (!response.ok) {
+                          throw new Error('Failed to exit room');
+                        }
+
+                        // Clear the selected room in Redux
+                        dispatch(clearSelectedRoom());
+
+                        // notice server to quit room
+                        dispatch(quitRoom(currentRoom.id));
+
+                        // refresh room list
+                        const roomsResponse = await axios.get("/api/chat/get_rooms");
+                        dispatch(setRooms(roomsResponse.data));
+
+                        toaster.create({
+                          title: t("success"),
+                          description: t("left_room_successfully"),
+                          type: "info"
+                        });
+                      } catch (error) {
+                        console.error("Error exiting room:", error);
+                        toaster.create({
+                          title: t("error"),
+                          description: t("error_leaving_room"),
+                          type: "error"
+                        });
+                      }
+                    }}
+                  />
+                </Box>
+              )}
             </Flex>
 
-            {/* Messages area - pass isTaskMode based on layout */}
+            {/* Messages area - remove isTaskMode prop */}
             <ChatMessageList
               messageGroups={groupedMessages}
               messagesEndRef={messagesEndRef}
-              isTaskMode={!isLayoutFlipped}
-            // style={{
-            //   backgroundColor: messageListBg,
-            //   color: messageTextColor,
-            // }}
             />
 
             {/* Input area */}

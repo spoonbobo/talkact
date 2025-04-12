@@ -48,6 +48,10 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
         (state: RootState) => state.plan
     );
 
+    const { currentUser } = useSelector(
+        (state: RootState) => state.user
+    );
+
     const colors = usePlansColors();
 
     // Add state for search, filter, and pagination
@@ -76,6 +80,26 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
         }
     }, [isAuthenticated, router]);
 
+    // // Add this after fetching plans
+    // useEffect(() => {
+    //     if (plans.length > 0 && currentUser) {
+    //         console.log("All plans:", plans);
+    //         console.log("User active rooms:", currentUser.active_rooms);
+
+    //         // Check which plans match active rooms
+    //         const plansInActiveRooms = plans.filter(plan =>
+    //             currentUser.active_rooms?.includes(plan.room_id)
+    //         );
+    //         console.log("Plans in active rooms:", plansInActiveRooms);
+
+    //         // Check if the specific plan exists
+    //         const specificPlan = plans.find(plan =>
+    //             plan.plan_id === "2540061f-031f-4050-8061-25f0e07a6600"
+    //         );
+    //         console.log("Specific plan found:", specificPlan);
+    //     }
+    // }, [plans, currentUser]);
+
     if (!isAuthenticated) {
         return null;
     }
@@ -95,12 +119,14 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
     const currentPlanId = pathname.split('/').pop();
     const isDetailView = pathname !== '/plans' && pathname !== '/plans/';
 
-    // Filter plans based on search query and status filter
+    // Filter plans based on search query, status filter, and user's active rooms
     const filteredPlans = plans
         .filter((plan: any) => {
-            const matchesSearch = plan.plan_overview.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesSearch = plan.plan_overview.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                plan.plan_name.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesStatus = statusFilter === "all" || plan.status === statusFilter;
-            return matchesSearch && matchesStatus;
+            const isInActiveRooms = currentUser?.active_rooms?.includes(plan.room_id);
+            return matchesSearch && matchesStatus && isInActiveRooms;
         })
         .sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
@@ -167,7 +193,7 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                         bg={colors.timelineBg}
                     >
                         <Text fontSize="lg" fontWeight="bold" mb={4} color={colors.textColorHeading}>
-                            {t("available_plans")} {plans.length > 0 && `(${plans.length})`}
+                            {t("available_plans")} {filteredPlans.length > 0 && `(${filteredPlans.length})`}
                         </Text>
 
                         {/* Search bar with Chakra UI v3 syntax */}

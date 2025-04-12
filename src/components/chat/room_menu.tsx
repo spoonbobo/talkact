@@ -1,6 +1,7 @@
 import { Icon, Menu, Portal } from "@chakra-ui/react";
-import { FaEllipsisH } from "react-icons/fa";
+import { FaEllipsisV } from "react-icons/fa";
 import { useTranslations } from "next-intl";
+import { useChatPageColors } from "@/utils/colors";
 
 interface RoomMenuProps {
     onRoomDetails?: () => void;
@@ -9,17 +10,19 @@ interface RoomMenuProps {
 
 export const RoomMenu = ({ onRoomDetails, onExitRoom }: RoomMenuProps) => {
     const t = useTranslations("Chat");
+    const colors = useChatPageColors();
 
     return (
         <Menu.Root positioning={{ placement: "bottom-start" }}>
             <Menu.Trigger asChild>
                 <Icon
-                    as={FaEllipsisH}
+                    as={FaEllipsisV}
                     ml={2}
                     cursor="pointer"
                     opacity={0.7}
                     _hover={{ opacity: 1 }}
                     boxSize={4}
+                    color={colors.textColor}
                 />
             </Menu.Trigger>
             <Portal>
