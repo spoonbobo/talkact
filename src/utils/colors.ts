@@ -200,3 +200,32 @@ export const useCodeSyntaxHighlightColors = () => {
     };
 };
 
+// Knowledge base colors
+export const useKnowledgeBaseColors = () => {
+    return {
+        accentColor: "blue.500",
+        bgColor: useColorModeValue("bg.subtle", "gray.800"),
+        borderColor: useColorModeValue("gray.200", "gray.700"),
+        hoverBg: useColorModeValue("gray.50", "gray.700"),
+        textColor: useColorModeValue("gray.600", "gray.400"),
+        textColorStrong: useColorModeValue("gray.700", "gray.300"),
+        textColorHeading: useColorModeValue("gray.800", "gray.100"),
+        textColorMuted: useColorModeValue("gray.500", "gray.500"),
+        cardBg: useColorModeValue("white", "gray.800"),
+        emptyStateBg: useColorModeValue("gray.50", "gray.700"),
+        scrollbarThumbColor: useColorModeValue("rgba(0,0,0,0.1)", "rgba(255,255,255,0.1)"),
+        scrollbarThumbHoverColor: useColorModeValue("rgba(0,0,0,0.2)", "rgba(255,255,255,0.2)"),
+        folderBg: useColorModeValue("gray.50", "gray.700"),
+        folderActiveBg: useColorModeValue("blue.50", "blue.900"),
+        folderActiveColor: useColorModeValue("blue.600", "blue.300"),
+        categoryHeaderBg: useColorModeValue("gray.50", "gray.700"),
+        selectedCategoryBg: useColorModeValue("blue.50", "blue.800"),
+        selectedCategoryBorderColor: useColorModeValue("blue.500", "blue.300"),
+        categoryHoverBg: useColorModeValue("gray.50", "gray.700"),
+        cardBorderColor: useColorModeValue("gray.200", "gray.700"),
+        cardHoverBorderColor: useColorModeValue("blue.200", "blue.300"),
+        cardHeadingColor: useColorModeValue("blue.700", "blue.300"),
+        loadingOverlayBg: useColorModeValue("rgba(255,255,255,0.9)", "rgba(26,32,44,0.9)"),
+    };
+};
+

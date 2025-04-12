@@ -149,7 +149,7 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                 <Flex
                     bg={colors.cardBg}
                     borderRadius="lg"
-                    boxShadow="sm"
+                    boxShadow={colors.cardShadow}
                     height="calc(100vh - 160px)"
                     borderWidth="1px"
                     borderColor={colors.borderColor}
@@ -164,8 +164,9 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                         p={4}
                         display="flex"
                         flexDirection="column"
+                        bg={colors.timelineBg}
                     >
-                        <Text fontSize="lg" fontWeight="bold" mb={4}>
+                        <Text fontSize="lg" fontWeight="bold" mb={4} color={colors.textColorHeading}>
                             {t("available_plans")} {plans.length > 0 && `(${plans.length})`}
                         </Text>
 
@@ -178,8 +179,9 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                 placeholder={t("search_plans")}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                borderColor={colors.borderColor}
-                                _focus={{ borderColor: colors.accentColor }}
+                                borderColor={colors.inputBorder}
+                                bg={colors.inputBg}
+                                _focus={{ borderColor: colors.accentColor, boxShadow: `0 0 0 1px ${colors.focusRingColor}` }}
                                 pl={10}
                                 size="sm"
                             />
@@ -200,6 +202,9 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                         borderRadius="full"
                                         px={3}
                                         minW="auto"
+                                        _hover={{
+                                            bg: statusFilter !== option.value ? colors.hoverBg : undefined
+                                        }}
                                     >
                                         {option.value !== "all" ? (
                                             <Flex align="center" gap={1}>
@@ -220,7 +225,7 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                         {loading.plans ? (
                             <VStack py={8}>
                                 <Spinner size="md" color={colors.accentColor} mb={2} />
-                                <Text fontSize="sm">{t("loading_plans")}</Text>
+                                <Text fontSize="sm" color={colors.textColor}>{t("loading_plans")}</Text>
                             </VStack>
                         ) : filteredPlans.length > 0 ? (
                             <VStack align="stretch" gap={3} flex="1">
@@ -233,6 +238,8 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                         completed_at: plan.completed_at ? new Date(plan.completed_at) : null
                                     };
 
+                                    const isSelected = currentPlanId === typedPlan.id;
+
                                     return (
                                         <Link
                                             href={`/plans/${typedPlan.id}`}
@@ -243,18 +250,18 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                                 p={3}
                                                 borderWidth="1px"
                                                 borderRadius="md"
-                                                borderColor={currentPlanId === typedPlan.id ? colors.accentColor : colors.borderColor}
-                                                bg={currentPlanId === typedPlan.id ? `${colors.accentColor}15` : colors.cardBg}
+                                                borderColor={isSelected ? colors.selectedBorder : colors.borderColor}
+                                                bg={isSelected ? colors.subtleSelectedItemBg : colors.planItemBg}
                                                 cursor="pointer"
                                                 _hover={{
-                                                    boxShadow: "sm",
-                                                    borderColor: colors.accentColor,
-                                                    bg: currentPlanId === typedPlan.id ? `${colors.accentColor}20` : colors.hoverBg
+                                                    boxShadow: isSelected ? colors.selectedCardShadow : colors.cardShadow,
+                                                    borderColor: colors.selectedBorderColor,
+                                                    bg: isSelected ? colors.subtleSelectedItemBg : colors.planItemHoverBg
                                                 }}
                                                 transition="all 0.2s"
                                             >
                                                 <Flex justify="space-between" align="center" mb={1}>
-                                                    <Text fontWeight="bold" fontSize="md" lineClamp={1}>
+                                                    <Text fontWeight="bold" fontSize="md" lineClamp={1} color={colors.textColorHeading}>
                                                         {typedPlan.plan_name.substring(0, 30)}
                                                         {typedPlan.plan_name.length > 30 ? '...' : ''}
                                                     </Text>
@@ -288,6 +295,9 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                             setSearchQuery("");
                                             setStatusFilter("all");
                                         }}
+                                        borderColor={colors.borderColor}
+                                        color={colors.textColor}
+                                        _hover={{ bg: colors.hoverBg }}
                                     >
                                         {t("clear_filters")}
                                     </Button>
@@ -306,6 +316,8 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                     disabled={currentPage === 1}
                                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                     mr={2}
+                                    color={colors.accentColor}
+                                    _hover={{ bg: colors.hoverBg }}
                                 >
                                     <Icon as={FiChevronLeft} />
                                 </IconButton>
@@ -322,6 +334,8 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                     disabled={currentPage === totalPages}
                                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                     ml={2}
+                                    color={colors.accentColor}
+                                    _hover={{ bg: colors.hoverBg }}
                                 >
                                     <Icon as={FiChevronRight} />
                                 </IconButton>
@@ -330,7 +344,7 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                     </Box>
 
                     {/* Main content area */}
-                    <Box flex="1" p={0} position="relative" overflowY="auto">
+                    <Box flex="1" p={0} position="relative" overflowY="auto" bg={colors.detailsBg}>
                         {!isDetailView && !loading.plans ? (
                             <Flex
                                 direction="column"

@@ -19,6 +19,8 @@ import { useColorModeValue } from "@/components/ui/color-mode";
 import { useTranslations } from 'next-intl';
 import { toaster } from "@/components/ui/toaster";
 import { DataSource, Folder, Document } from "@/types/kb";
+import { KnowledgeModal } from "./knowledge_modal";
+import { useKnowledgeBaseColors } from "@/utils/colors";
 const MotionBox = motion.create(Box) as React.FC<Omit<React.ComponentProps<typeof Box>, "transition"> & HTMLMotionProps<"div">>;
 const MotionFlex = motion.create(Flex);
 
@@ -49,27 +51,38 @@ export const KnowledgeBase = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 25;
 
-    // Color mode values - MOVED HERE to ensure consistent hook order
-    const bgColor = useColorModeValue("white", "gray.800");
-    const textColor = useColorModeValue("gray.600", "gray.400");
-    const textColorStrong = useColorModeValue("gray.700", "gray.300");
-    const textColorHeading = useColorModeValue("gray.800", "gray.100");
-    const borderColor = useColorModeValue("gray.200", "gray.700");
-    const categoryHeaderBg = useColorModeValue("gray.50", "gray.700");
-    const selectedCategoryBg = useColorModeValue("blue.50", "blue.800");
-    const selectedCategoryBorderColor = useColorModeValue("blue.500", "blue.300");
-    const categoryHoverBg = useColorModeValue("gray.50", "gray.700");
-    const emptyStateBg = useColorModeValue("gray.50", "gray.700");
-    const scrollbarThumbColor = useColorModeValue("rgba(0,0,0,0.1)", "rgba(255,255,255,0.1)");
-    const scrollbarThumbHoverColor = useColorModeValue("rgba(0,0,0,0.2)", "rgba(255,255,255,0.2)");
-    const cardBg = useColorModeValue("white", "gray.800");
-    const cardBorderColor = useColorModeValue("gray.200", "gray.700");
-    const cardHoverBorderColor = useColorModeValue("blue.200", "blue.300");
-    const cardHeadingColor = useColorModeValue("blue.700", "blue.300");
-    const folderBg = useColorModeValue("gray.50", "gray.700");
-    const folderActiveBg = useColorModeValue("blue.50", "blue.900");
-    const folderActiveColor = useColorModeValue("blue.600", "blue.300");
-    const loadingOverlayBg = useColorModeValue("rgba(255,255,255,0.9)", "rgba(26,32,44,0.9)");
+    // Use the knowledge base colors hook
+    const colors = useKnowledgeBaseColors();
+
+    // These variables are now defined from the colors hook
+    const {
+        textColor,
+        textColorStrong,
+        textColorHeading,
+        textColorMuted,
+        borderColor,
+        bgColor,
+        categoryHeaderBg,
+        selectedCategoryBg,
+        selectedCategoryBorderColor,
+        categoryHoverBg,
+        emptyStateBg,
+        scrollbarThumbColor,
+        scrollbarThumbHoverColor,
+        cardBg,
+        cardBorderColor,
+        cardHoverBorderColor,
+        cardHeadingColor,
+        folderBg,
+        folderActiveBg,
+        folderActiveColor,
+        loadingOverlayBg,
+        accentColor
+    } = colors;
+
+    // Add state for the document modal
+    const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+    const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
 
     // Fetch knowledge base data
     const fetchKnowledgeBase = async () => {
@@ -182,9 +195,11 @@ export const KnowledgeBase = () => {
         }, 500);
     };
 
-    // Handle document click to open URL
-    const handleDocumentClick = (url: string) => {
-        window.open(url, '_blank', 'noopener,noreferrer');
+    // Handle document click to open modal instead of directly opening URL
+    const handleDocumentClick = (doc: Document, e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent default link behavior
+        setSelectedDocument(doc);
+        setIsDocumentModalOpen(true);
     };
 
     // Toggle folder open/closed state
@@ -605,9 +620,11 @@ export const KnowledgeBase = () => {
                                                 style={{ width: 'calc(33.33% - 11px)' }}
                                             >
                                                 <MotionBox
+                                                    key={doc.id}
                                                     p={4}
-                                                    borderRadius="md"
+                                                    cursor="pointer"
                                                     bg={cardBg}
+                                                    borderRadius="md"
                                                     border="1px"
                                                     borderColor={cardBorderColor}
                                                     boxShadow="sm"
@@ -619,13 +636,7 @@ export const KnowledgeBase = () => {
                                                     position="relative"
                                                     overflow="hidden"
                                                     whileHover={{ y: -4 }}
-                                                    cursor="pointer"
-                                                    onClick={() => handleDocumentClick(doc.url)}
-                                                    as="a"
-                                                    // @ts-ignore
-                                                    href={doc.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
+                                                    onClick={(e) => handleDocumentClick(doc, e)}
                                                 >
                                                     <Flex justifyContent="space-between" mb={3}>
                                                         <Icon
@@ -766,6 +777,21 @@ export const KnowledgeBase = () => {
                     )}
                 </Box>
             </MotionFlex>
-        </MotionBox >
+
+            {/* Add the Knowledge Modal with properly defined colors */}
+            <KnowledgeModal
+                isOpen={isDocumentModalOpen}
+                onClose={() => setIsDocumentModalOpen(false)}
+                document={selectedDocument}
+                colors={{
+                    textColorHeading,
+                    textColorStrong,
+                    textColor,
+                    textColorMuted,
+                    borderColor,
+                    accentColor
+                }}
+            />
+        </MotionBox>
     );
 };

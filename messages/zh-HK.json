@@ -283,7 +283,15 @@
       "data_sources": "知識源",
       "folder_structure": "知識結構",
       "search_data_sources": "搜索數據源",
-      "search_folders": "搜索文件夾"
+      "search_folders": "搜索文件夾",
+      "preview": "預覽",
+      "tags": "標籤",
+      "source": "來源",
+      "close": "關閉",
+      "no_document_selected": "沒有選擇文檔",
+      "open_document": "打開文檔",
+      "download": "下載文檔",
+      "document_details": "文檔詳情"
     }
   },
   "Dashboard": {
