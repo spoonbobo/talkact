@@ -14,6 +14,7 @@
     "@chakra-ui/icons": "^2.2.4",
     "@chakra-ui/react": "^3.13.0",
     "@emotion/react": "^11.14.0",
+    "@hello-pangea/dnd": "^18.0.1",
     "@logto/next": "^4.2.0",
     "@prisma/client": "^6.5.0",
     "@reduxjs/toolkit": "^2.6.1",

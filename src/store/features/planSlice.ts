@@ -31,6 +31,11 @@ interface PlanState {
     };
     statusFilter: PlanStatus | null;
     searchQuery: string;
+    layout: {
+        containerWidth: number | null;
+        sidebarWidth: number;
+        viewMode: 'kanban' | 'calendar';
+    };
 }
 
 // Initial state
@@ -51,6 +56,11 @@ const initialState: PlanState = {
     },
     statusFilter: null,
     searchQuery: '',
+    layout: {
+        containerWidth: null,
+        sidebarWidth: 300,
+        viewMode: 'kanban'
+    }
 };
 
 // Async thunks for API calls
@@ -177,6 +187,32 @@ export const fetchTasks = createAsyncThunk(
     }
 );
 
+export const updatePlanStatus = createAsyncThunk(
+    'plan/updateStatus',
+    async ({ planId, status }: { planId: string, status: PlanStatus }, { rejectWithValue }) => {
+        try {
+            // Make API call to update plan status
+            const response = await fetch(`/api/plan/update_status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ planId, status }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to update plan status: ${response.statusText}`);
+            }
+
+            const updatedPlan = await response.json();
+            return { planId, status, updatedPlan };
+        } catch (error) {
+            console.error('Error updating plan status:', error);
+            return rejectWithValue(error instanceof Error ? error.message : 'An unknown error occurred');
+        }
+    }
+);
+
 // Create the slice
 const planSlice = createSlice({
     name: 'plan',
@@ -214,6 +250,15 @@ const planSlice = createSlice({
                     ? { ...plan, status: 'running' }
                     : plan
             );
+        },
+        updateContainerWidth: (state, action: PayloadAction<number | null>) => {
+            state.layout.containerWidth = action.payload;
+        },
+        updateSidebarWidth: (state, action: PayloadAction<number>) => {
+            state.layout.sidebarWidth = action.payload;
+        },
+        updateViewMode: (state, action: PayloadAction<'kanban' | 'calendar'>) => {
+            state.layout.viewMode = action.payload;
         }
     },
     extraReducers: (builder) => {
@@ -250,6 +295,27 @@ const planSlice = createSlice({
             state.loading.tasks = false;
             state.error.tasks = action.payload as string;
         });
+
+        // Handle updatePlanStatus
+        builder.addCase(updatePlanStatus.pending, (state) => {
+            // You could add a loading state for the specific plan if needed
+        });
+
+        builder.addCase(updatePlanStatus.fulfilled, (state, action) => {
+            const { planId, status } = action.payload;
+
+            // Update the plan in the state
+            state.plans = state.plans.map(plan =>
+                plan.plan_id === planId || plan.id === planId
+                    ? { ...plan, status }
+                    : plan
+            );
+        });
+
+        builder.addCase(updatePlanStatus.rejected, (state, action) => {
+            // Handle error if needed
+            console.error('Failed to update plan status:', action.payload);
+        });
     }
 });
 
@@ -263,7 +329,10 @@ export const {
     clearPlansError,
     forceResetTasksLoading,
     setCurrentTaskId,
-    approvePlan
+    approvePlan,
+    updateContainerWidth,
+    updateSidebarWidth,
+    updateViewMode
 } = planSlice.actions;
 
 export default planSlice.reducer;

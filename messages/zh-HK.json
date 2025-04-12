@@ -255,7 +255,9 @@
     "task_details": "任務詳情",
     "no_task_selected": "沒有選擇任務",
     "close": "關閉",
-    "logs": "日誌"
+    "logs": "日誌",
+    "no_plans_in_status": "沒有計劃",
+    "today": "今天"
   },
   "Learn": {
     "learn": "學習",

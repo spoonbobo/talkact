@@ -24,7 +24,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
     key: 'root',
     storage,
-    whitelist: ['chat', 'user', 'notification', 'assistant'], // Persist notification state too
+    whitelist: ['chat', 'user', 'notification', 'assistant', 'plan'], // Added 'plan' to whitelist
 };
 
 // Create a persisted reducer
