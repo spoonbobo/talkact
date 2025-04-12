@@ -416,7 +416,9 @@
       "task_details": "태스크 세부 정보",
       "no_task_selected": "선택된 태스크가 없습니다",
       "close": "닫기",
-      "logs": "로그"
+      "logs": "로그",
+      "no_plans_in_status": "이 상태의 플랜이 없습니다",
+      "today": "오늘"
     },
     "Notification": {
       "notifications": "알림",

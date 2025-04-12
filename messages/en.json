@@ -415,8 +415,11 @@
     "readonly": "Read-only",
     "request_mcp": "Request MCP",
     "task_details": "Task Details",
+    "no_task_selected": "No task selected",
     "close": "Close",
-    "logs": "Logs"
+    "logs": "Logs",
+    "no_plans_in_status": "No plans in this status",
+    "today": "Today"
   },
   "Notification": {
     "notifications": "Notifications",
