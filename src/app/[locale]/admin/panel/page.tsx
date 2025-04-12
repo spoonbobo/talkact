@@ -28,6 +28,29 @@ interface User {
 
 export default function AdminPanelPage() {
   const t = useTranslations("AdminPanel");
+  const router = useRouter();
+  const { currentUser, isAuthenticated, isLoading, isOwner } = useSelector(
+    (state: RootState) => state.user
+  );
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/signin');
+    } else if (currentUser && !isOwner) {
+      router.push('/redirect/no_access?reason=Access denied');
+    }
+  }, [currentUser, isOwner, router, isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return <AdminPanelContent />;
+}
+
+// The main AdminPanelContent component
+const AdminPanelContent = () => {
+  const t = useTranslations("AdminPanel");
   const { data: session } = useSession();
   const router = useRouter();
   const { currentUser, isAuthenticated, isLoading, isOwner } = useSelector(
@@ -147,22 +170,9 @@ export default function AdminPanelPage() {
     fetchUsers();
   };
 
-  // Use useEffect for navigation instead of doing it during render
-  useEffect(() => {
-    if (currentUser && !isOwner) {
-      router.push('/redirect/no_access?reason=Not available for UAT');
-    }
-  }, [currentUser, isOwner, router]);
-
   // Show loading state while checking authentication
   if (isLoading || !session) {
     return <Loading />;
-  }
-
-  // Redirect if not authenticated
-  if (!isAuthenticated && !session) {
-    router.push('/login');
-    return null;
   }
 
   return (

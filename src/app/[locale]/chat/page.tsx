@@ -51,6 +51,7 @@ import { toaster } from "@/components/ui/toaster";
 import { useChatPageColors } from "@/utils/colors";
 import { RoomMenu } from "@/components/chat/room_menu";
 import { RoomInvitation } from "@/components/chat/room_invitation";
+import { useRouter } from "next/navigation";
 
 const MotionBox = motion.create(Box);
 
@@ -95,11 +96,17 @@ const TaskLog = () => {
 };
 
 export default function ChatPage() {
-  const { data: session } = useSession();
-  const { currentUser } = useSelector((state: RootState) => state.user);
+  const { currentUser, isAuthenticated } = useSelector((state: RootState) => state.user);
+  const router = useRouter();
 
-  if (!session) {
-    return <Loading />;
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/signin");
+    }
+  }, [isAuthenticated, router]);
+
+  if (!isAuthenticated) {
+    return null;
   }
 
   return <ChatPageContent />;
@@ -138,47 +145,16 @@ const ChatPageContent = () => {
   // Add ref for message container to enable auto-scrolling
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
-  // Auto-scroll when messages change or when a room is selected
+  // Remove or simplify the multiple scroll effects in the page component
+  // and just keep one simplified effect:
+
   useEffect(() => {
-    // Use a small timeout to ensure the DOM has updated with new messages
-    const scrollTimeout = setTimeout(() => {
-      if (messagesEndRef.current) {
-        // Force immediate scroll to bottom
-        messagesEndRef.current.scrollIntoView({ block: 'end', behavior: 'auto' });
-
-        // For some browsers/situations, we might need to scroll the parent container too
-        const chatContainer = messagesEndRef.current.closest('[overflow="auto"]');
-        if (chatContainer) {
-          chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-      }
-    }, 50); // Small delay to ensure DOM update
-
-    return () => clearTimeout(scrollTimeout);
-  }, [currentMessages, selectedRoomId]);
-
-  // Also add this effect to handle room switching specifically
-  useEffect(() => {
+    // Only try to force scroll on room change
     if (selectedRoomId) {
-      // When room changes, force immediate scroll
-      const scrollToBottom = () => {
-        if (messagesEndRef.current) {
-          messagesEndRef.current.scrollIntoView({ block: 'end', behavior: 'auto' });
-
-          // Also try to scroll the parent container
-          const chatContainer = messagesEndRef.current.closest('[overflow="auto"]');
-          if (chatContainer) {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-          }
-        }
-      };
-
-      // Try immediately
-      scrollToBottom();
-
-      // And also with a slight delay to ensure content is rendered
-      const timer = setTimeout(scrollToBottom, 100);
-      return () => clearTimeout(timer);
+      // Let the MessageList component handle the actual scrolling
+      // Just trigger a custom event that it can listen for
+      const event = new CustomEvent('chatRoomChanged');
+      window.dispatchEvent(event);
     }
   }, [selectedRoomId]);
 
@@ -882,16 +858,15 @@ const ChatPageContent = () => {
               </AnimatePresence>
             </Flex>
 
-            {/* Messages area */}
+            {/* Messages area - pass isTaskMode based on layout */}
             <ChatMessageList
               messageGroups={groupedMessages}
               messagesEndRef={messagesEndRef}
-              // TODO: Add isTaskMode prop
-              // @ts-ignore
-              style={{
-                backgroundColor: messageListBg,
-                color: messageTextColor,
-              }}
+              isTaskMode={!isLayoutFlipped}
+            // style={{
+            //   backgroundColor: messageListBg,
+            //   color: messageTextColor,
+            // }}
             />
 
             {/* Input area */}

@@ -69,14 +69,26 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
         setCurrentPage(1);
     }, [searchQuery, statusFilter]);
 
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            router.push("/signin");
+        }
+    }, [isAuthenticated, router]);
+
+    if (!isAuthenticated) {
+        return null;
+    }
+
     // Show loading state while checking authentication
     if (userLoading || !session) {
-        return <Loading />;
+        return null;
     }
+
 
     // Redirect if not authenticated
     if (!isAuthenticated && !session) {
-        return <Loading />; // Show loading instead of direct navigation
+        return null; // Show loading instead of direct navigation
     }
 
     // Extract the current plan ID from the pathname

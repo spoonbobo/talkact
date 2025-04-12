@@ -303,17 +303,15 @@ const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: 
 
       {/* Bottom section with settings and sign out */}
       <div className="flex flex-col w-full mt-auto mb-4 items-center">
-        {/* Settings only visible when logged in */}
-        {isLoggedIn && (
-          <NavIconButton
-            to="/settings"
-            icon={FaCog}
-            label="Settings"
-            tooltipContent={t("settings")}
-            isMobile={isMobile}
-            isExpanded={isExpanded}
-          />
-        )}
+        {/* Settings - visible to all users, whether logged in or not */}
+        <NavIconButton
+          to="/settings"
+          icon={FaCog}
+          label="Settings"
+          tooltipContent={t("settings")}
+          isMobile={isMobile}
+          isExpanded={isExpanded}
+        />
 
         {/* Sign in/out button - always visible */}
         <NavIconButton

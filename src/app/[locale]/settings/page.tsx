@@ -40,7 +40,7 @@ const MotionVStack = motion.create(VStack);
 export default function SettingsPage() {
   const t = useTranslations("Settings");
   const { data: session } = useSession();
-  const { isOwner } = useSelector((state: RootState) => state.user);
+  const { isOwner, isAuthenticated } = useSelector((state: RootState) => state.user);
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams();
@@ -97,9 +97,6 @@ export default function SettingsPage() {
     window.location.href = newPath;
   };
 
-  if (!session) {
-    return <Loading />;
-  }
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -280,13 +277,15 @@ export default function SettingsPage() {
             {[
               { icon: FaUserCircle, label: t("general"), id: 0 },
               // { icon: FaDatabase, label: t("system"), id: 1 },
-              {
-                icon: FaTrash,
-                label: t("danger_zone"),
-                id: 2,
-                color: "red.500",
-                disabled: !isOwner
-              },
+              // Only show danger zone tab for authenticated owners
+              ...(isAuthenticated && isOwner ? [
+                {
+                  icon: FaTrash,
+                  label: t("danger_zone"),
+                  id: 2,
+                  color: "red.500",
+                }
+              ] : [])
             ].map((item) => (
               <motion.div key={item.id} variants={tabVariants}>
                 <Box
@@ -300,12 +299,9 @@ export default function SettingsPage() {
                   fontSize="sm"
                   width="100%"
                   textAlign="left"
-                  _hover={{ bg: item.disabled ? "transparent" : hoverBg }}
+                  _hover={{ bg: hoverBg }}
                   _active={{ bg: activeTab === item.id ? hoverBg : "gray.100" }}
-                  onClick={() => !item.disabled && setActiveTab(item.id)}
-                  opacity={item.disabled ? 0.5 : 1}
-                  cursor={item.disabled ? "not-allowed" : "pointer"}
-                  pointerEvents={item.disabled ? "none" : "auto"}
+                  onClick={() => setActiveTab(item.id)}
                 >
                   <Flex align="center">
                     <Icon
@@ -341,23 +337,6 @@ export default function SettingsPage() {
                   <Text color="red.500">{t("danger_zone")}</Text>
                 )}
               </Heading>
-
-              {/* {activeTab !== 2 && (
-                <Box
-                  as="button"
-                  py={2}
-                  px={4}
-                  borderRadius="md"
-                  bg="blue.500"
-                  color="white"
-                  fontWeight="medium"
-                  fontSize="sm"
-                  _hover={{ bg: "blue.600" }}
-                  _active={{ bg: "blue.700" }}
-                >
-                  {t("save_changes")}
-                </Box>
-              )} */}
             </Flex>
             <Separator mb={6} />
 
@@ -366,62 +345,56 @@ export default function SettingsPage() {
               {activeTab === 0 && (
                 <Box>
                   <VStack align="stretch" gap={4}>
-                    <Box>
-                      <Text fontWeight="medium" mb={1} color={textColor}>
-                        {t("display_name")}
-                        <Icon
-                          as={FiLock}
-                          ml={2}
-                          fontSize="sm"
-                          color="gray.500"
-                        />
-                      </Text>
-                      <Input
-                        color={textColor}
-                        placeholder={t("your_display_name")}
-                        maxW="400px"
-                        defaultValue={session?.user?.name || ""}
-                        disabled={true}
-                        _disabled={{ opacity: 0.7, cursor: "not-allowed" }}
-                      />
-                      <Text fontSize="xs" color="gray.500" mt={1}>
-                        {t("managed_by_provider")}
-                      </Text>
-                    </Box>
+                    {/* Only show user info if authenticated */}
+                    {isAuthenticated && session && (
+                      <>
+                        <Box>
+                          <Text fontWeight="medium" mb={1} color={textColor}>
+                            {t("display_name")}
+                            <Icon
+                              as={FiLock}
+                              ml={2}
+                              fontSize="sm"
+                              color="gray.500"
+                            />
+                          </Text>
+                          <Input
+                            color={textColor}
+                            placeholder={t("your_display_name")}
+                            maxW="400px"
+                            defaultValue={session?.user?.name || ""}
+                            disabled={true}
+                            _disabled={{ opacity: 0.7, cursor: "not-allowed" }}
+                          />
+                          <Text fontSize="xs" color="gray.500" mt={1}>
+                            {t("managed_by_provider")}
+                          </Text>
+                        </Box>
 
-                    <Box>
-                      <Text fontWeight="medium" mb={1} color={textColor}>
-                        {t("email")}
-                        <Icon
-                          as={FiLock}
-                          ml={2}
-                          fontSize="sm"
-                          color="gray.500"
-                        />
-                      </Text>
-                      <Input
-                        color={textColor}
-                        placeholder={t("your_email")}
-                        maxW="400px"
-                        defaultValue={session?.user?.email || ""}
-                        disabled={true}
-                        _disabled={{ opacity: 0.7, cursor: "not-allowed" }}
-                      />
-                      <Text fontSize="xs" color="gray.500" mt={1}>
-                        {t("managed_by_provider")}
-                      </Text>
-                    </Box>
-
-                    {/* <Box>
-                      <Text fontWeight="medium" mb={1} color={textColor}>
-                        {t("bio")}
-                      </Text>
-                      <Input
-                        color={textColor}
-                        placeholder={t("tell_us_about_yourself")}
-                        maxW="400px"
-                      />
-                    </Box> */}
+                        <Box>
+                          <Text fontWeight="medium" mb={1} color={textColor}>
+                            {t("email")}
+                            <Icon
+                              as={FiLock}
+                              ml={2}
+                              fontSize="sm"
+                              color="gray.500"
+                            />
+                          </Text>
+                          <Input
+                            color={textColor}
+                            placeholder={t("your_email")}
+                            maxW="400px"
+                            defaultValue={session?.user?.email || ""}
+                            disabled={true}
+                            _disabled={{ opacity: 0.7, cursor: "not-allowed" }}
+                          />
+                          <Text fontSize="xs" color="gray.500" mt={1}>
+                            {t("managed_by_provider")}
+                          </Text>
+                        </Box>
+                      </>
+                    )}
 
                     <Box>
                       <Text fontWeight="medium" mb={1} color={textColor}>
@@ -585,154 +558,89 @@ export default function SettingsPage() {
                 </Box>
               )} */}
 
-              {/* Danger Zone */}
-              {activeTab === 2 && (
+              {/* Danger Zone - only shown if authenticated and owner */}
+              {activeTab === 2 && isAuthenticated && isOwner && (
                 <Box>
-                  {isOwner ? (
-                    <>
-                      <Box
-                        p={4}
-                        borderWidth="1px"
-                        borderColor={dangerZoneBorder}
-                        borderRadius="md"
-                        bg={dangerZoneBg}
-                        mb={6}
-                      >
-                        <HStack align="flex-start">
-                          <Icon as={FiInfo} color="red.500" boxSize={5} mt={0.5} />
-                          <Box>
-                            <Heading size="sm" color={dangerZoneHeading} mb={1}>
-                              {t("delete_all_rooms")}
-                            </Heading>
-                            <Text color={dangerZoneText} fontSize="sm">
-                              {t("delete_all_rooms_warning")}
-                            </Text>
-                            <Box
-                              as="button"
-                              mt={3}
-                              py={2}
-                              px={4}
-                              borderRadius="md"
-                              bg="red.500"
-                              color="white"
-                              fontWeight="medium"
-                              fontSize="sm"
-                              _hover={{ bg: "red.600" }}
-                              _active={{ bg: "red.700" }}
-                              _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-                              onClick={handleDeleteAllRooms}
-                              // @ts-ignore
-                              disabled={isDeletingAllRooms}
-                            >
-                              {isDeletingAllRooms ? t("deleting") : t("delete_all_rooms")}
-                            </Box>
-                          </Box>
-                        </HStack>
-                      </Box>
-
-                      {/* Add Delete All Users section */}
-                      <Box
-                        p={4}
-                        borderWidth="1px"
-                        borderColor={dangerZoneBorder}
-                        borderRadius="md"
-                        bg={dangerZoneBg}
-                        mb={6}
-                      >
-                        <HStack align="flex-start">
-                          <Icon as={FiInfo} color="red.500" boxSize={5} mt={0.5} />
-                          <Box>
-                            <Heading size="sm" color={dangerZoneHeading} mb={1}>
-                              {t("delete_all_users")}
-                            </Heading>
-                            <Text color={dangerZoneText} fontSize="sm">
-                              {t("delete_all_users_warning")}
-                            </Text>
-                            <Box
-                              as="button"
-                              mt={3}
-                              py={2}
-                              px={4}
-                              borderRadius="md"
-                              bg="red.500"
-                              color="white"
-                              fontWeight="medium"
-                              fontSize="sm"
-                              _hover={{ bg: "red.600" }}
-                              _active={{ bg: "red.700" }}
-                              _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-                              // disabled={true}
-                              onClick={handleDeleteAllUsers}
-                            // @ts-ignore
-                            // disabled={isDeletingAllUsers}
-                            // disabled={true}
-                            >
-                              {isDeletingAllUsers ? t("deleting") : t("delete_all_users")}
-                            </Box>
-                          </Box>
-                        </HStack>
-                      </Box>
-
-                      {/* Add Delete All Tasks section */}
-                      {/* <Box
-                        p={4}
-                        borderWidth="1px"
-                        borderColor={dangerZoneBorder}
-                        borderRadius="md"
-                        bg={dangerZoneBg}
-                        mb={6}
-                      >
-                        <HStack align="flex-start">
-                          <Icon as={FiInfo} color="red.500" boxSize={5} mt={0.5} />
-                          <Box>
-                            <Heading size="sm" color={dangerZoneHeading} mb={1}>
-                              {t("delete_all_tasks")}
-                            </Heading>
-                            <Text color={dangerZoneText} fontSize="sm">
-                              {t("delete_all_tasks_warning")}
-                            </Text>
-                            <Box
-                              as="button"
-                              mt={3}
-                              py={2}
-                              px={4}
-                              borderRadius="md"
-                              bg="red.500"
-                              color="white"
-                              fontWeight="medium"
-                              fontSize="sm"
-                              _hover={{ bg: "red.600" }}
-                              _active={{ bg: "red.700" }}
-                              _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-                              onClick={handleDeleteAllTasks}
-                              // @ts-ignore
-                              disabled={isDeletingAllTasks}
-                            >
-                              {isDeletingAllTasks ? t("deleting") : t("delete_all_tasks")}
-                            </Box>
-                          </Box>
-                        </HStack>
-                      </Box> */}
-                    </>
-                  ) : (
-                    <Box
-                      p={4}
-                      borderWidth="1px"
-                      borderRadius="md"
-                      borderColor={borderColor}
-                      bg={cardBg}
-                    >
-                      <Flex align="center" justify="center" direction="column" py={6}>
-                        <Icon as={FiInfo} color="gray.400" boxSize={8} mb={3} />
-                        <Text color={textColor} fontWeight="medium">
-                          {t("admin_only_access")}
+                  <Box
+                    p={4}
+                    borderWidth="1px"
+                    borderColor={dangerZoneBorder}
+                    borderRadius="md"
+                    bg={dangerZoneBg}
+                    mb={6}
+                  >
+                    <HStack align="flex-start">
+                      <Icon as={FiInfo} color="red.500" boxSize={5} mt={0.5} />
+                      <Box>
+                        <Heading size="sm" color={dangerZoneHeading} mb={1}>
+                          {t("delete_all_rooms")}
+                        </Heading>
+                        <Text color={dangerZoneText} fontSize="sm">
+                          {t("delete_all_rooms_warning")}
                         </Text>
-                        <Text color="gray.500" fontSize="sm" textAlign="center" mt={2}>
-                          {t("admin_only_access_description")}
+                        <Box
+                          as="button"
+                          mt={3}
+                          py={2}
+                          px={4}
+                          borderRadius="md"
+                          bg="red.500"
+                          color="white"
+                          fontWeight="medium"
+                          fontSize="sm"
+                          _hover={{ bg: "red.600" }}
+                          _active={{ bg: "red.700" }}
+                          _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+                          onClick={handleDeleteAllRooms}
+                          // @ts-ignore
+                          disabled={isDeletingAllRooms}
+                        >
+                          {isDeletingAllRooms ? t("deleting") : t("delete_all_rooms")}
+                        </Box>
+                      </Box>
+                    </HStack>
+                  </Box>
+
+                  {/* Add Delete All Users section */}
+                  <Box
+                    p={4}
+                    borderWidth="1px"
+                    borderColor={dangerZoneBorder}
+                    borderRadius="md"
+                    bg={dangerZoneBg}
+                    mb={6}
+                  >
+                    <HStack align="flex-start">
+                      <Icon as={FiInfo} color="red.500" boxSize={5} mt={0.5} />
+                      <Box>
+                        <Heading size="sm" color={dangerZoneHeading} mb={1}>
+                          {t("delete_all_users")}
+                        </Heading>
+                        <Text color={dangerZoneText} fontSize="sm">
+                          {t("delete_all_users_warning")}
                         </Text>
-                      </Flex>
-                    </Box>
-                  )}
+                        <Box
+                          as="button"
+                          mt={3}
+                          py={2}
+                          px={4}
+                          borderRadius="md"
+                          bg="red.500"
+                          color="white"
+                          fontWeight="medium"
+                          fontSize="sm"
+                          _hover={{ bg: "red.600" }}
+                          _active={{ bg: "red.700" }}
+                          _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+                          onClick={handleDeleteAllUsers}
+                        >
+                          {isDeletingAllUsers ? t("deleting") : t("delete_all_users")}
+                        </Box>
+                      </Box>
+                    </HStack>
+                  </Box>
+
+                  {/* Delete All Tasks section (commented out) */}
                 </Box>
               )}
             </Box>

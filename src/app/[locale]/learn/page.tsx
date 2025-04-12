@@ -6,17 +6,20 @@ import { motion } from "framer-motion";
 import { FiServer, FiBook } from "react-icons/fi";
 import { FaBookOpen } from "react-icons/fa";
 import { useTranslations } from "next-intl";
-import { useSession } from "next-auth/react";
-import Loading from "@/components/loading";
+// import { useSession } from "next-auth/react";
+// import Loading from "@/components/loading";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { KnowledgeBase } from "@/components/learn/knowledge_base";
 import { MCPResourceExplorer } from "@/components/learn/mcp_explorer";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 const MotionBox = motion.create(Box);
 
 export default function LearnPage() {
   const t = useTranslations("Learn");
-  const { data: session } = useSession();
 
   // Dark mode adaptive colors
   const textColorHeading = useColorModeValue("gray.800", "gray.100");
@@ -25,8 +28,17 @@ export default function LearnPage() {
   const scrollbarColor = useColorModeValue("rgba(0,0,0,0.1)", "rgba(255,255,255,0.1)");
   const tabContentBg = useColorModeValue("white", "gray.800");
 
-  if (!session) {
-    return <Loading />;
+  const { currentUser, isAuthenticated } = useSelector((state: RootState) => state.user);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/signin");
+    }
+  }, [isAuthenticated, router]);
+
+  if (!isAuthenticated) {
+    return null;
   }
 
   // Define tabs with placeholder components

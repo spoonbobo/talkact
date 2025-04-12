@@ -134,11 +134,12 @@ class ChatSocketClient {
                 const messageData = typeof data === 'string' ? JSON.parse(data) : data;
 
                 if (messageData && messageData.room_id) {
-                    toaster.create({
-                        title: "Message Processed",
-                        description: "Valid message received",
-                        type: "success"
-                    });
+                    // toaster.create({
+                    //     title: "Message Processed",
+                    //     description: "Valid message received",
+                    //     type: "success"
+                    // });
+                    console.log("Message received in socket client:", messageData);
                     callback(messageData);
                 } else {
                     toaster.create({

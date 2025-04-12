@@ -174,135 +174,78 @@ export const ChatInput = React.memo(({
     // Add state to track cursor position
     const [cursorPosition, setCursorPosition] = useState({ left: 10, top: 0 });
 
-    // Simplify the cursor position calculation
+    // Debounce the cursor position update to reduce calculations
+    const debouncedUpdateCursorPosition = useCallback(
+        debounce((textarea: HTMLTextAreaElement) => {
+            if (!textarea) return;
+
+            const { selectionStart } = textarea;
+            const text = textarea.value;
+            const textBeforeCursor = text.substring(0, selectionStart);
+            const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+            if (lastAtIndex === -1) return;
+
+            // Create a hidden div with the same styling as the textarea
+            const temp = document.createElement('div');
+            temp.style.position = 'absolute';
+            temp.style.visibility = 'hidden';
+            temp.style.whiteSpace = 'pre-wrap';
+            temp.style.wordBreak = 'break-word';
+            temp.style.width = `${textarea.clientWidth}px`;
+            temp.style.fontSize = getComputedStyle(textarea).fontSize;
+            temp.style.fontFamily = getComputedStyle(textarea).fontFamily;
+            temp.style.padding = getComputedStyle(textarea).padding;
+            temp.style.boxSizing = 'border-box';
+            temp.style.letterSpacing = getComputedStyle(textarea).letterSpacing;
+
+            // Calculate the position of the @ symbol
+            const textBeforeLastLine = textBeforeCursor.substring(0, lastAtIndex);
+            const lastNewlineIndex = textBeforeLastLine.lastIndexOf('\n');
+            const charsInLastLine = lastAtIndex - (lastNewlineIndex === -1 ? 0 : lastNewlineIndex + 1);
+
+            // Create a span for the text in the last line up to the @ symbol
+            const span = document.createElement('span');
+            span.textContent = textBeforeLastLine.substring(lastNewlineIndex + 1);
+            temp.appendChild(span);
+            document.body.appendChild(temp);
+
+            // Get the actual width of the text
+            const actualWidth = span.getBoundingClientRect().width;
+
+            // Calculate the position
+            const lineHeight = parseInt(getComputedStyle(textarea).lineHeight) || parseInt(getComputedStyle(textarea).fontSize) * 1.2;
+            const newlines = (textBeforeCursor.substring(0, lastAtIndex).match(/\n/g) || []).length;
+            const top = (newlines * lineHeight) - 200;
+
+            document.body.removeChild(temp);
+
+            setCursorPosition({
+                left: actualWidth + parseInt(getComputedStyle(textarea).paddingLeft),
+                top: Math.max(top, 0)
+            });
+        }, 100), // 100ms debounce
+        []
+    );
+
+    // Optimize the updateCursorPosition function
     const updateCursorPosition = useCallback(() => {
         if (!textareaRef.current) return;
+        debouncedUpdateCursorPosition(textareaRef.current);
+    }, [debouncedUpdateCursorPosition]);
 
-        const textarea = textareaRef.current;
-        const { selectionStart } = textarea;
-
-        // Get the text before the cursor
-        const text = textarea.value;
-        const textBeforeCursor = text.substring(0, selectionStart);
-
-        // Find the position of the last @ symbol
-        const lastAtIndex = textBeforeCursor.lastIndexOf('@');
-        if (lastAtIndex === -1) return;
-
-        // Create a hidden div with the same styling as the textarea
-        const temp = document.createElement('div');
-        temp.style.position = 'absolute';
-        temp.style.visibility = 'hidden';
-        temp.style.whiteSpace = 'pre-wrap';
-        temp.style.wordBreak = 'break-word';
-        temp.style.width = `${textarea.clientWidth}px`;
-        temp.style.fontSize = getComputedStyle(textarea).fontSize;
-        temp.style.fontFamily = getComputedStyle(textarea).fontFamily;
-        temp.style.padding = getComputedStyle(textarea).padding;
-        temp.style.boxSizing = 'border-box';
-        temp.style.letterSpacing = getComputedStyle(textarea).letterSpacing;
-
-        // Calculate the position of the @ symbol
-        const textBeforeLastLine = textBeforeCursor.substring(0, lastAtIndex);
-        const lastNewlineIndex = textBeforeLastLine.lastIndexOf('\n');
-        const charsInLastLine = lastAtIndex - (lastNewlineIndex === -1 ? 0 : lastNewlineIndex + 1);
-
-        // Create a span for the text in the last line up to the @ symbol
-        const span = document.createElement('span');
-        span.textContent = textBeforeLastLine.substring(lastNewlineIndex + 1);
-        temp.appendChild(span);
-        document.body.appendChild(temp);
-
-        // Get the actual width of the text
-        const actualWidth = span.getBoundingClientRect().width;
-
-        // Calculate the position
-        const lineHeight = parseInt(getComputedStyle(textarea).lineHeight) || parseInt(getComputedStyle(textarea).fontSize) * 1.2;
-        const newlines = (textBeforeCursor.substring(0, lastAtIndex).match(/\n/g) || []).length;
-        const top = (newlines * lineHeight) - 200;
-
-        document.body.removeChild(temp);
-
-        setCursorPosition({
-            left: actualWidth + parseInt(getComputedStyle(textarea).paddingLeft),
-            top: Math.max(top, 0)
-        });
-    }, []);
-
-    // Update cursor position when input changes or when mention state activates
-    useEffect(() => {
-        if (mentionState.isActive) {
-            updateCursorPosition();
-        }
-    }, [mentionState.isActive, updateCursorPosition]);
-
-    // Separate effect for adjusting the position of the suggestion box
-    const hasAdjustedRef = React.useRef(false);
-
-    useEffect(() => {
-        if (!mentionState.isActive) {
-            hasAdjustedRef.current = false;
-            return;
-        }
-
-        if (hasAdjustedRef.current) return;
-
-        // Add a small delay to ensure the DOM has updated
-        const timeoutId = setTimeout(() => {
-            const suggestionBox = document.querySelector('[data-mention-suggestions="true"]');
-            if (suggestionBox) {
-                const boxRect = suggestionBox.getBoundingClientRect();
-                const viewportWidth = window.innerWidth;
-                const viewportHeight = window.innerHeight;
-                const textareaRect = textareaRef.current?.getBoundingClientRect();
-
-                if (textareaRect) {
-                    // Check if the box exceeds the right edge of the viewport or textarea
-                    const rightBoundary = Math.min(viewportWidth, textareaRect.right) - 10;
-                    if (boxRect.right > rightBoundary) {
-                        const overflowRight = boxRect.right - rightBoundary;
-                        (suggestionBox as HTMLElement).style.left = `${Math.max(10, cursorPosition.left - overflowRight)}px`;
-                    }
-
-                    // Check if the box exceeds the left edge
-                    if (boxRect.left < 10) {
-                        (suggestionBox as HTMLElement).style.left = '10px';
-                    }
-
-                    // Check if the box exceeds the top of the viewport
-                    if (boxRect.top < 10) {
-                        // Flip the box to appear below the cursor instead of above
-                        (suggestionBox as HTMLElement).style.bottom = 'auto';
-                        (suggestionBox as HTMLElement).style.top = `${cursorPosition.top + 30}px`;
-                        (suggestionBox as HTMLElement).style.transformOrigin = 'top left';
-                    }
-
-                    // Check if the box exceeds the bottom of the viewport
-                    if (boxRect.bottom > viewportHeight - 10) {
-                        // Ensure it doesn't go below the viewport
-                        const maxHeight = viewportHeight - boxRect.top - 20;
-                        (suggestionBox as HTMLElement).style.maxHeight = `${Math.max(100, maxHeight)}px`;
-                    }
-
-                    // Adjust width if needed for small screens
-                    if (viewportWidth < 300) {
-                        (suggestionBox as HTMLElement).style.width = `${Math.min(250, viewportWidth - 20)}px`;
-                    }
-                }
-
-                hasAdjustedRef.current = true;
-            }
-        }, 10); // Slightly longer timeout to ensure DOM is ready
-
-        return () => {
-            clearTimeout(timeoutId);
-        };
-    }, [mentionState.isActive, cursorPosition.left, cursorPosition.top]);
-
-    // Update handleInputChange to call updateCursorPosition
+    // Optimize handleInputChange to reduce work
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const newValue = e.target.value;
         setMessageInput(newValue);
+
+        // Only process mentions if the value has changed significantly
+        if (Math.abs(newValue.length - messageInput.length) > 3) {
+            // Skip mention processing for large changes (like paste operations)
+            if (mentionState.isActive) {
+                setMentionState({ isActive: false, startPosition: 0, searchText: '' });
+            }
+            return;
+        }
 
         const lastAtIndex = newValue.lastIndexOf('@');
         if (lastAtIndex >= 0 && (lastAtIndex === 0 || newValue[lastAtIndex - 1] === ' ')) {
@@ -320,14 +263,14 @@ export const ChatInput = React.memo(({
                         startPosition: lastAtIndex,
                         searchText: searchText
                     });
-                    // Update cursor position when mention state activates
+                    // Only update cursor position when mention state activates
                     updateCursorPosition();
                 }
             }
         } else if (mentionState.isActive) {
             setMentionState({ isActive: false, startPosition: 0, searchText: '' });
         }
-    }, [mentionState.isActive, mentionState.startPosition, mentionState.searchText, setMessageInput, updateCursorPosition]);
+    }, [mentionState.isActive, mentionState.startPosition, mentionState.searchText, messageInput.length, setMessageInput, updateCursorPosition]);
 
     const handleSelectMention = useCallback((user: User) => {
         const beforeMention = messageInput.substring(0, mentionState.startPosition);
@@ -439,6 +382,15 @@ export const ChatInput = React.memo(({
         // Set the new height
         textarea.style.height = `${newHeight}px`;
     }, [messageInput]);
+
+    // Add a debounce utility function
+    function debounce(func: Function, wait: number) {
+        let timeout: NodeJS.Timeout;
+        return function (...args: any[]) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func(...args), wait);
+        };
+    }
 
     return (
         <Flex

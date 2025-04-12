@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from "@/store/store";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Box, Heading, Flex, Spinner, Badge, Text, VStack, Center } from "@chakra-ui/react";
 import { fetchTasks, selectPlan } from "@/store/features/planSlice";
 import { usePlansColors } from "@/utils/colors";

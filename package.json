@@ -11,6 +11,7 @@
   "dependencies": {
     "@azure/app-configuration": "^1.8.0",
     "@azure/keyvault-secrets": "^4.9.0",
+    "@chakra-ui/icons": "^2.2.4",
     "@chakra-ui/react": "^3.13.0",
     "@emotion/react": "^11.14.0",
     "@logto/next": "^4.2.0",

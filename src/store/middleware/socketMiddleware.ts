@@ -56,18 +56,15 @@ export const socketMiddleware: Middleware = store => next => (action: unknown) =
         });
 
         socketClient.onMessage((message: IMessage) => {
-            toaster.create({
-                title: "Message Received",
-                description: `From room ${message.room_id}: ${message.content}`,
-                type: "info"
-            });
+            // toaster.create({
+            //     title: "Message Received",
+            //     description: `From room ${message.room_id}: ${message.content}`,
+            //     type: "info"
+            // });
+            console.log("Message received in middleware:", message);
 
             if (message && message.room_id) {
-                toaster.create({
-                    title: "Message Dispatched",
-                    description: `To room ${message.room_id}`,
-                    type: "info"
-                });
+                console.log("Adding message to store:", message);
                 dispatch(addMessage({ roomId: message.room_id, message }));
 
                 // If this is not the currently selected room, update unread count
