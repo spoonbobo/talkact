@@ -316,14 +316,25 @@ const ChatPageContent = () => {
         message,
         index
       ) => {
+        // Skip messages with null sender
+        if (!message.sender) {
+          return acc;
+        }
+
         const prevMessage = messages[selectedRoomId][index - 1];
 
         // Check if this message is from the current user
-        const isCurrentUser = message.sender.email === session?.user?.email;
+        // Add null check for message.sender.email
+        const isCurrentUser = message.sender.email && session?.user?.email
+          ? message.sender.email === session.user.email
+          : false;
 
         // Check if this message is from the same sender as the previous one
+        // Add null checks for both message senders
         const isContinuation =
           prevMessage &&
+          prevMessage.sender &&
+          message.sender &&
           prevMessage.sender.email === message.sender.email;
 
         if (isContinuation) {
@@ -332,9 +343,9 @@ const ChatPageContent = () => {
         } else {
           // Create a new group
           acc.push({
-            sender: message.sender.username,
+            sender: message.sender.username || 'Unknown User',
             senderId: message.sender.user_id,
-            avatar: message.avatar,
+            avatar: message.avatar || '',
             messages: [message],
             isCurrentUser: isCurrentUser
           });
