@@ -72,14 +72,17 @@ export async function PUT(request: Request) {
             updateData.completed_at = null;
         }
 
-        console.log('updateData', plan_id)
+        console.log('Updating plan with data:', { plan_id, status, progress, logs, step_number });
 
         // Perform the update
         const updatedCount = await db('plan')
             .where({ plan_id: plan_id })
             .update(updateData);
 
+        console.log('Update result:', updatedCount, 'rows affected');
+
         if (updatedCount === 0) {
+            console.log('Plan not found')
             return NextResponse.json({
                 error: 'Plan not found'
             }, { status: 404 });

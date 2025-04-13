@@ -82,7 +82,7 @@ export default function Providers({
                     flex="1"
                     ml="70px"
                     transition="margin-left 0.4s cubic-bezier(0.22, 1, 0.36, 1)"
-                    overflow="hidden"
+                    overflow="visible"
                     display="flex"
                     flexDirection="column"
                     height="100vh"
@@ -109,7 +109,7 @@ export default function Providers({
                       maxW="container.xl"
                       py={4}
                       height="100%"
-                      overflow="hidden"
+                      overflow="auto"
                       display="flex"
                       flexDirection="column"
                       position="relative"

@@ -261,7 +261,8 @@
     "close": "關閉",
     "logs": "日誌",
     "no_plans_in_status": "沒有計劃",
-    "today": "今天"
+    "today": "今天",
+    "drop_plans_here": "將計劃拖放到這裡"
   },
   "Learn": {
     "learn": "學習",

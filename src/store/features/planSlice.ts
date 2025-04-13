@@ -36,6 +36,7 @@ interface PlanState {
         sidebarWidth: number;
         viewMode: 'kanban' | 'calendar';
     };
+    planOrders: Record<PlanStatus, string[]>;
 }
 
 // Initial state
@@ -60,6 +61,13 @@ const initialState: PlanState = {
         containerWidth: null,
         sidebarWidth: 300,
         viewMode: 'kanban'
+    },
+    planOrders: {
+        pending: [],
+        running: [],
+        success: [],
+        failure: [],
+        terminated: []
     }
 };
 
@@ -104,8 +112,9 @@ export const fetchPlans = createAsyncThunk(
 
 export const fetchTasks = createAsyncThunk(
     'plan/fetchTasks',
-    async (planId: string, { rejectWithValue, signal }) => {
+    async (planId: string, { rejectWithValue, signal, dispatch }) => {
         try {
+            console.log(`[planSlice] Starting fetchTasks for plan ${planId}`);
             const controller = new AbortController();
             signal.addEventListener('abort', () => controller.abort());
 
@@ -118,12 +127,25 @@ export const fetchTasks = createAsyncThunk(
                 }
             });
 
+            console.log(`[planSlice] Got response for plan ${planId}: status ${response.status}`);
+
             if (!response.ok) {
-                throw new Error(`Error fetching tasks: ${response.statusText}`);
+                const errorText = await response.text();
+                console.error(`[planSlice] Error fetching tasks: ${response.status} - ${errorText}`);
+                throw new Error(`Server error (${response.status}): ${errorText}`);
             }
 
-            const data = await response.json();
-            console.log('data', data);
+            const text = await response.text();
+            console.log(`[planSlice] Got response text for plan ${planId}, length: ${text.length}`);
+
+            let data;
+            try {
+                data = JSON.parse(text);
+                console.log(`[planSlice] Successfully parsed JSON for plan ${planId}, found ${data.length} tasks`);
+            } catch (e: any) {
+                console.error(`[planSlice] Response text:`, text.substring(0, 200) + '...');
+                throw new Error(`JSON parse error: ${e.message}`);
+            }
 
             // Process dates as strings for proper serialization
             const processedTasks = data.map((task: any) => {
@@ -133,7 +155,6 @@ export const fetchTasks = createAsyncThunk(
                     try {
                         toolData = JSON.parse(toolData);
                     } catch (e) {
-                        console.error('Error parsing tool data:', e);
                         toolData = null;
                     }
                 }
@@ -144,7 +165,6 @@ export const fetchTasks = createAsyncThunk(
                     try {
                         logsData = JSON.parse(logsData);
                     } catch (e) {
-                        console.error('Error parsing logs data:', e);
                         logsData = {};
                     }
                 }
@@ -159,27 +179,31 @@ export const fetchTasks = createAsyncThunk(
                 };
             });
 
-            console.log('Processed tasks with tool data:', processedTasks);
+            console.log(`[planSlice] Completed processing tasks for plan ${planId}`);
             return processedTasks;
-        } catch (error) {
-            // Don't reject if the request was aborted
-            if (error instanceof DOMException && error.name === 'AbortError') {
-                console.log('Fetch aborted');
-                return [];
-            }
+        } catch (error: any) {
+            console.error(`[planSlice] Task fetch error for plan ${planId}:`, error);
 
-            console.error('Error fetching tasks:', error);
-            return rejectWithValue(error instanceof Error ? error.message : 'An unknown error occurred');
+            // Force reset loading state after a short delay to ensure UI doesn't get stuck
+            setTimeout(() => {
+                dispatch(forceResetTasksLoading());
+            }, 500);
+
+            if (error.name === 'AbortError') {
+                return rejectWithValue('Fetch aborted');
+            }
+            return rejectWithValue(error instanceof Error ? error.message : 'An unknown error occurred fetching tasks');
         }
     },
     {
-        // Add condition to prevent duplicate requests
+        // Modify condition to be more permissive
         condition: (planId, { getState }) => {
             const state = getState() as { plan: PlanState };
-            const { loading, selectedPlanId } = state.plan;
+            const { loading } = state.plan;
 
-            // Skip if we're already loading tasks for this plan
-            if (loading.tasks && selectedPlanId === planId) {
+            // Only skip if we're already loading tasks
+            if (loading.tasks) {
+                console.log(`[planSlice] Skipping fetchTasks for plan ${planId} - already loading`);
                 return false;
             }
             return true;
@@ -189,27 +213,51 @@ export const fetchTasks = createAsyncThunk(
 
 export const updatePlanStatus = createAsyncThunk(
     'plan/updateStatus',
-    async ({ planId, status }: { planId: string, status: PlanStatus }, { rejectWithValue }) => {
+    async ({ planId, status }: { planId: string, status: PlanStatus }, { rejectWithValue, getState }) => {
+        const state = getState() as { plan: PlanState };
+        const planInStore = state.plan.plans.find(p => p.plan_id === planId || p.id === planId);
+        const idToUse = planInStore?.plan_id || planId;
+
         try {
-            // Make API call to update plan status
-            const response = await fetch(`/api/plan/update_status`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ planId, status }),
+            const response = await fetch(`/api/plan/update_plan`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ plan_id: idToUse, status }),
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to update plan status: ${response.statusText}`);
+                const errorText = await response.text();
+                return rejectWithValue(`Failed to update plan status: ${response.statusText} - ${errorText}`);
             }
 
-            const updatedPlan = await response.json();
-            return { planId, status, updatedPlan };
+            let updatedPlanData = null;
+            try {
+                const text = await response.text();
+                if (text) {
+                    updatedPlanData = JSON.parse(text).plan;
+                }
+            } catch (parseError) {
+                // Continue even if parsing fails
+            }
+
+            window.dispatchEvent(new CustomEvent('plan-update', {
+                detail: { planId: planId }
+            }));
+
+            return { planId: planId, status: status, updatedPlan: updatedPlanData };
+
         } catch (error) {
-            console.error('Error updating plan status:', error);
             return rejectWithValue(error instanceof Error ? error.message : 'An unknown error occurred');
         }
+    }
+);
+
+// Add a new action to update plan orders
+export const updatePlanOrders = createAsyncThunk(
+    'plan/updatePlanOrders',
+    async (planOrders: Record<PlanStatus, string[]>, { dispatch }) => {
+        // This is just to persist the state - no API call needed
+        return planOrders;
     }
 );
 
@@ -244,7 +292,6 @@ const planSlice = createSlice({
             state.currentTaskId = action.payload;
         },
         approvePlan: (state, action: PayloadAction<IPlan>) => {
-            console.log('approvePlan reducer', action.payload);
             state.plans = state.plans.map((plan) =>
                 plan.plan_id === action.payload.plan_id
                     ? { ...plan, status: 'running' }
@@ -259,7 +306,11 @@ const planSlice = createSlice({
         },
         updateViewMode: (state, action: PayloadAction<'kanban' | 'calendar'>) => {
             state.layout.viewMode = action.payload;
-        }
+        },
+        // Add a new reducer to update plan orders
+        setPlanOrders: (state, action: PayloadAction<Record<PlanStatus, string[]>>) => {
+            state.planOrders = action.payload;
+        },
     },
     extraReducers: (builder) => {
         // Handle fetchPlans
@@ -277,7 +328,7 @@ const planSlice = createSlice({
         });
 
         // Handle fetchTasks
-        builder.addCase(fetchTasks.pending, (state) => {
+        builder.addCase(fetchTasks.pending, (state, action) => {
             state.loading.tasks = true;
             state.error.tasks = null;
         });
@@ -297,24 +348,47 @@ const planSlice = createSlice({
         });
 
         // Handle updatePlanStatus
-        builder.addCase(updatePlanStatus.pending, (state) => {
-            // You could add a loading state for the specific plan if needed
+        builder.addCase(updatePlanStatus.pending, (state, action) => {
+            // Pending state handling without logs
         });
-
         builder.addCase(updatePlanStatus.fulfilled, (state, action) => {
+            // Payload might be undefined if the thunk logic has issues, guard against it
+            if (!action.payload) {
+                return;
+            }
             const { planId, status } = action.payload;
 
-            // Update the plan in the state
-            state.plans = state.plans.map(plan =>
-                plan.plan_id === planId || plan.id === planId
-                    ? { ...plan, status }
-                    : plan
-            );
+            const planIndex = state.plans.findIndex(p => p.plan_id === planId || p.id === planId);
+
+            if (planIndex !== -1) {
+                const oldStatus = state.plans[planIndex].status;
+                // Update the plan status
+                state.plans[planIndex] = { ...state.plans[planIndex], status: status };
+
+                // Update plan orders if status actually changed
+                if (oldStatus !== status) {
+                    // Remove from old status order
+                    if (state.planOrders[oldStatus]) {
+                        state.planOrders[oldStatus] = state.planOrders[oldStatus].filter(id => id !== planId);
+                    }
+                    // Add to new status order (ensure array exists)
+                    if (!state.planOrders[status]) {
+                        state.planOrders[status] = [];
+                    }
+                    // Avoid duplicates if already present
+                    if (!state.planOrders[status].includes(planId)) {
+                        state.planOrders[status].push(planId);
+                    }
+                }
+            }
+        });
+        builder.addCase(updatePlanStatus.rejected, (state, action) => {
+            // Error handling without logs
         });
 
-        builder.addCase(updatePlanStatus.rejected, (state, action) => {
-            // Handle error if needed
-            console.error('Failed to update plan status:', action.payload);
+        // Handle updatePlanOrders
+        builder.addCase(updatePlanOrders.fulfilled, (state, action) => {
+            state.planOrders = action.payload;
         });
     }
 });
@@ -332,7 +406,8 @@ export const {
     approvePlan,
     updateContainerWidth,
     updateSidebarWidth,
-    updateViewMode
+    updateViewMode,
+    setPlanOrders,
 } = planSlice.actions;
 
 export default planSlice.reducer;

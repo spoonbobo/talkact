@@ -493,6 +493,7 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                             borderWidth="1px"
                             borderColor={colors.borderColor}
                             overflow="hidden"
+                            position="relative"
                         >
                             {/* Sidebar with Kanban board */}
                             <Box
@@ -506,6 +507,7 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                 flexDirection="column"
                                 bg={colors.timelineBg}
                                 position="relative"
+                                minHeight="0"
                             >
                                 <Flex justify="space-between" align="center" mb={4}>
                                     <Text fontSize="lg" fontWeight="bold" color={colors.textColorHeading}>

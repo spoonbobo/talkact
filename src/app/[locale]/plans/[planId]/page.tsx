@@ -6,7 +6,7 @@ import { RootState, AppDispatch } from "@/store/store";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Box, Heading, Flex, Spinner, Badge, Text, VStack, Center } from "@chakra-ui/react";
-import { fetchTasks, selectPlan } from "@/store/features/planSlice";
+import { fetchTasks, selectPlan, updatePlanStatus, forceResetTasksLoading } from "@/store/features/planSlice";
 import { usePlansColors } from "@/utils/colors";
 import { IPlan, ITask } from "@/types/plan";
 import { fetchPlans } from "@/store/features/planSlice";
@@ -88,17 +88,13 @@ export default function PlanDetailsPage() {
     useEffect(() => {
         if (planId) {
             dispatch(selectPlan(planId));
-            setIsLoading(true);
-            dispatch(fetchTasks(planId))
-                .finally(() => setIsLoading(false));
+            dispatch(fetchTasks(planId));
         }
     }, [dispatch, planId]);
 
     // Handle task refresh after editing
     const handleTaskUpdated = () => {
-        setIsLoading(true);
-        dispatch(fetchTasks(planId))
-            .finally(() => setIsLoading(false));
+        dispatch(fetchTasks(planId));
     };
 
     const handleEditTask = (task: ITask) => {
@@ -107,69 +103,47 @@ export default function PlanDetailsPage() {
     };
 
     const handleApprovePlan = async () => {
+        if (!currentPlan) return;
         setIsLoading(true);
-        try {
-            // First update the plan status to running
-            const response = await fetch('/api/plan/update_plan', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    plan_id: currentPlan?.plan_id,
-                    status: 'running'
-                }),
+        // Dispatch the thunk to update status and trigger the event listener
+        dispatch(updatePlanStatus({ planId: currentPlan.id, status: 'running' }))
+            .unwrap() // Use unwrap to catch potential errors from the thunk
+            .catch((error) => {
+                console.error('Error approving plan via thunk:', error);
+                // Optionally show an error message to the user
+            })
+            .finally(() => {
+                setIsLoading(false);
             });
-
-            if (response.ok) {
-                // Refresh plans to get updated status
-                await dispatch(fetchPlans());
-            } else {
-                console.error('Failed to approve plan');
-            }
-        } catch (error) {
-            console.error('Error approving plan:', error);
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     const handleDenyPlan = async () => {
+        if (!currentPlan) return;
         setIsLoading(true);
-        try {
-            const response = await fetch('/api/plan/update_plan', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    plan_id: currentPlan?.plan_id,
-                    status: 'terminated'
-                }),
+        // Dispatch the thunk to update status and trigger the event listener
+        dispatch(updatePlanStatus({ planId: currentPlan.id, status: 'terminated' }))
+            .unwrap() // Use unwrap to catch potential errors from the thunk
+            .catch((error) => {
+                console.error('Error denying plan via thunk:', error);
+                // Optionally show an error message to the user
+            })
+            .finally(() => {
+                setIsLoading(false);
             });
-
-            if (response.ok) {
-                // Refresh both plans and tasks after successful update
-                await dispatch(fetchPlans());
-                await dispatch(fetchTasks(currentPlan?.id || ''));
-            } else {
-                console.error('Failed to deny plan');
-            }
-        } catch (error) {
-            console.error('Error denying plan:', error);
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     const handleRefresh = () => {
+        console.log('[PlanDetailsPage] Manual refresh triggered');
         setIsLoading(true);
         // Refresh both plans and tasks
         Promise.all([
             dispatch(fetchPlans()),
             dispatch(fetchTasks(planId))
         ])
-            .finally(() => setIsLoading(false));
+            .finally(() => {
+                console.log('[PlanDetailsPage] Manual refresh finished');
+                setIsLoading(false);
+            });
     };
 
     const handleMCPRequest = async (task: ITask, plan: IPlan) => {
@@ -210,7 +184,9 @@ export default function PlanDetailsPage() {
             const response = await axios.post(url, mcp_request);
             console.log("Success response:", response);
 
-            // Refresh tasks after successful MCP request
+            // Consider if MCP request should also trigger the 'plan-update' event
+            // For now, keep the direct fetch, but be aware it might overlap if
+            // the backend also triggers an update event after MCP.
             await dispatch(fetchTasks(planId));
         } catch (error) {
             if (axios.isAxiosError(error) && error.response) {
@@ -259,6 +235,8 @@ export default function PlanDetailsPage() {
         try {
             const response = await axios.post(url, mcp_request);
             console.log("Success response:", response);
+            // Add task refresh here if needed, or ensure backend triggers 'plan-update'
+            // await dispatch(fetchTasks(planId));
         } catch (error) {
             if (axios.isAxiosError(error) && error.response) {
                 console.error('Error requesting MCP:', error.response.status, error.response.data);
@@ -273,22 +251,30 @@ export default function PlanDetailsPage() {
         setIsTaskInfoModalOpen(true);
     };
 
+    // Add a safety timeout to reset loading state if it gets stuck
+    useEffect(() => {
+        if (loading.tasks) {
+            const timeoutId = setTimeout(() => {
+                dispatch(forceResetTasksLoading());
+            }, 5000); // 5 seconds timeout
+
+            return () => clearTimeout(timeoutId);
+        }
+    }, [loading.tasks, dispatch]);
+
     // Add this useEffect to listen for plan updates
     useEffect(() => {
         const handlePlanUpdate = (event: CustomEvent) => {
             const { planId: updatedPlanId } = event.detail;
-            // Only refresh if the updated plan is the one we're viewing
             if (updatedPlanId === planId) {
-                console.log('Refreshing tasks for updated plan:', updatedPlanId);
-                dispatch(fetchTasks(updatedPlanId));
+                // Fetch both plans (for status update) and tasks
                 dispatch(fetchPlans());
+                dispatch(fetchTasks(updatedPlanId));
             }
         };
 
-        // Add event listener
         window.addEventListener('plan-update', handlePlanUpdate as EventListener);
 
-        // Clean up
         return () => {
             window.removeEventListener('plan-update', handlePlanUpdate as EventListener);
         };
@@ -347,10 +333,10 @@ export default function PlanDetailsPage() {
                 bg={colors.cardBg}
             >
                 <Flex justify="space-between" align="center" mb={4}>
-                    <Heading size="sm" color={colors.textColorHeading}>{t("tasks")}</Heading>
+                    <Heading size="sm" color={colors.textColorHeading}>{(t("tasks") as string) || "Tasks"}</Heading>
                     {currentTaskId !== null && (
                         <Badge colorScheme="blue">
-                            {t("current_task")}: {currentTaskId + 1} / {tasks.length}
+                            {(t("current_task") as string) || "Current Task"}: {currentTaskId + 1} / {tasks.length}
                         </Badge>
                     )}
                 </Flex>
@@ -366,16 +352,27 @@ export default function PlanDetailsPage() {
                     >
                         <Text fontWeight="medium">
                             {currentPlan.status === 'success'
-                                ? t("plan_completed_successfully") || "This plan has been completed successfully."
-                                : t("plan_terminated") || "This plan has been terminated."}
+                                ? (t("plan_completed_successfully") as string) || "This plan has been completed successfully."
+                                : (t("plan_terminated") as string) || "This plan has been terminated."}
                         </Text>
                     </Box>
                 )}
 
-                {loading.tasks || isLoading ? (
+                {/* Log loading state outside of JSX */}
+                {(() => {
+                    console.log(`[PlanDetailsPage/Render] Checking loading.tasks (${loading.tasks}) before rendering task list.`);
+                    return null;
+                })()}
+
+                {loading.tasks ? (
                     <Center py={8}>
+                        {/* Log spinner rendering outside of JSX */}
+                        {(() => {
+                            console.log("[PlanDetailsPage/Render] Rendering loading spinner.");
+                            return null;
+                        })()}
                         <Spinner size="md" color={colors.accentColor} mr={3} />
-                        <Text color={colors.textColor}>{t("loading_tasks")}</Text>
+                        <Text color={colors.textColor}>{(t("loading_tasks") as string) || "Loading tasks..."}</Text>
                     </Center>
                 ) : tasks.length > 0 ? (
                     <motion.div
@@ -383,6 +380,11 @@ export default function PlanDetailsPage() {
                         initial="hidden"
                         animate="show"
                     >
+                        {/* Log task list rendering outside of JSX */}
+                        {(() => {
+                            console.log(`[PlanDetailsPage/Render] Rendering task list with ${tasks.length} tasks.`);
+                            return null;
+                        })()}
                         <VStack align="stretch" gap={3}>
                             {tasks.map((task: any, index: number) => {
                                 // Convert string dates to Date objects
@@ -426,7 +428,11 @@ export default function PlanDetailsPage() {
                     </motion.div>
                 ) : (
                     <Center py={8}>
-                        <Text color={colors.textColorMuted}>{t("no_tasks_found")}</Text>
+                        {(() => {
+                            console.log("[PlanDetailsPage/Render] Rendering 'No tasks found'.");
+                            return null;
+                        })()}
+                        <Text color={colors.textColorMuted}>{(t("no_tasks_found") as string) || "No tasks found"}</Text>
                     </Center>
                 )}
             </Box>
