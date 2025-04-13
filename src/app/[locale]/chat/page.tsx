@@ -16,10 +16,11 @@ import {
   Avatar,
   Badge,
   Separator,
-  IconButton
+  IconButton,
+  Input
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaComments, FaUsers, FaTasks, FaUserPlus } from "react-icons/fa";
+import { FaComments, FaUsers, FaTasks, FaUserPlus, FaEdit, FaTimes } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
@@ -124,6 +125,8 @@ const ChatPageContent = () => {
   const [isRoomDetailsOpen, setIsRoomDetailsOpen] = useState<boolean>(false);
   const [isInvitingUsers, setIsInvitingUsers] = useState<boolean>(false);
   const [roomUsers, setRoomUsers] = useState<User[]>([]);
+  const [isEditingName, setIsEditingName] = useState<boolean>(false);
+  const [isUpdatingName, setIsUpdatingName] = useState<boolean>(false);
 
   // Fetch rooms
   useEffect(() => {
@@ -954,6 +957,73 @@ const ChatPageContent = () => {
                       <Text fontWeight="bold" mb={2} color={colors.textColorHeading}>{t("room_info")}</Text>
                       <Text fontSize="sm" color={colors.textColor}>ID: {currentRoom.id}</Text>
                       <Text fontSize="sm" color={colors.textColor}>{t("created_at")}: {new Date(currentRoom.created_at || Date.now()).toLocaleString()}</Text>
+
+                      {/* Room Name Edit Section */}
+                      <Box mt={3}>
+                        <HStack justifyContent="space-between" mb={2}>
+                          <Text fontWeight="bold" color={colors.textColorHeading}>{t("room_name")}</Text>
+                          <IconButton
+                            aria-label={isEditingName ? t("cancel") : t("edit")}
+                            size="sm"
+                            variant="outline"
+                            borderRadius="full"
+                            onClick={() => setIsEditingName(!isEditingName)}
+                            colorScheme="blue"
+                          >
+                            <Icon as={isEditingName ? FaTimes : FaEdit} />
+                          </IconButton>
+                        </HStack>
+
+                        {isEditingName ? (
+                          <HStack mt={2}>
+                            <Input
+                              value={newRoomName}
+                              onChange={(e) => setNewRoomName(e.target.value)}
+                              placeholder={t("enter_room_name")}
+                              size="sm"
+                            />
+                            <Button
+                              size="sm"
+                              colorScheme="blue"
+                              loading={isUpdatingName}
+                              onClick={async () => {
+                                if (!newRoomName.trim() || !currentRoom) return;
+
+                                setIsUpdatingName(true);
+                                try {
+                                  const response = await axios.put('/api/chat/update_room', {
+                                    roomId: currentRoom.id,
+                                    name: newRoomName.trim()
+                                  });
+
+                                  if (response.data) {
+                                    dispatch(updateRoom(response.data));
+                                    setIsEditingName(false);
+                                    toaster.create({
+                                      title: t("success"),
+                                      description: t("room_name_updated"),
+                                      type: "success"
+                                    });
+                                  }
+                                } catch (error) {
+                                  console.error("Error updating room name:", error);
+                                  toaster.create({
+                                    title: t("error"),
+                                    description: t("failed_to_update_room_name"),
+                                    type: "error"
+                                  });
+                                } finally {
+                                  setIsUpdatingName(false);
+                                }
+                              }}
+                            >
+                              {t("save")}
+                            </Button>
+                          </HStack>
+                        ) : (
+                          <Text fontSize="md" color={colors.textColor}>{currentRoom.name}</Text>
+                        )}
+                      </Box>
                     </Box>
 
                     <Separator />

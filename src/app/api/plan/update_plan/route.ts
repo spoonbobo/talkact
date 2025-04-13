@@ -4,7 +4,59 @@ import db from '@/lib/db';
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
-        const { plan_id, status, progress, logs, step_number } = body;
+        const { plan_id, status, progress, logs, step_number, reset_plan } = body;
+
+        // Special handling for reset_plan operation
+        if (reset_plan) {
+            console.log('Resetting plan:', plan_id);
+
+            // Update plan to pending status
+            const updateData = {
+                status: 'pending',
+                progress: 0,
+                completed_at: null,
+                updated_at: new Date()
+            };
+
+            // Update the plan
+            const updatedCount = await db('plan')
+                .where({ plan_id: plan_id })
+                .update(updateData);
+
+            if (updatedCount === 0) {
+                return NextResponse.json({
+                    error: 'Plan not found'
+                }, { status: 404 });
+            }
+
+            // Reset all tasks associated with this plan to not_started
+            await db('task')
+                .where({ plan_id: plan_id })
+                .update({
+                    status: 'not_started',
+                    start_time: null,
+                    completed_at: null,
+                    updated_at: new Date()
+                });
+
+            // Fetch the updated plan to return
+            const [updatedPlan] = await db('plan').where({ plan_id: plan_id });
+
+            // Format the response
+            const formattedPlan = {
+                id: updatedPlan.id,
+                plan_id: updatedPlan.plan_id,
+                status: updatedPlan.status,
+                progress: updatedPlan.progress,
+                updated_at: updatedPlan.updated_at,
+                completed_at: updatedPlan.completed_at
+            };
+
+            return NextResponse.json({
+                message: 'Plan reset successfully',
+                plan: formattedPlan
+            }, { status: 200 });
+        }
 
         // Validate required fields
         if (!plan_id) {

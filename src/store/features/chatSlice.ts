@@ -49,7 +49,20 @@ export const chatSlice = createSlice({
         updateRoom: (state, action: PayloadAction<IChatRoom>) => {
             const index = state.rooms.findIndex(room => room.id === action.payload.id);
             if (index !== -1) {
-                state.rooms[index] = action.payload;
+                // Preserve the last_updated timestamp if it's more recent than the incoming one
+                const currentLastUpdated = new Date(state.rooms[index].last_updated).getTime();
+                const newLastUpdated = new Date(action.payload.last_updated).getTime();
+
+                // Create a merged room object
+                const updatedRoom = {
+                    ...action.payload,
+                    // Keep the more recent timestamp
+                    last_updated: currentLastUpdated > newLastUpdated
+                        ? state.rooms[index].last_updated
+                        : action.payload.last_updated
+                };
+
+                state.rooms[index] = updatedRoom;
             }
         },
         removeUserFromRoom: (state, action: PayloadAction<{ roomId: string, userId: string }>) => {
@@ -89,13 +102,29 @@ export const chatSlice = createSlice({
                 state.messages[roomId] = [];
             }
 
-            // Add the message to the array
-            state.messages[roomId].push(message);
-            console.log("REDUCER: Updated messages for room:", state.messages[roomId]);
+            // Check if this message already exists to prevent duplicates
+            const messageExists = state.messages[roomId].some(
+                existingMsg => existingMsg.id === message.id
+            );
 
-            // Increment unread count if not the selected room
-            if (state.selectedRoomId !== roomId) {
-                state.unreadCounts[roomId] = (state.unreadCounts[roomId] || 0) + 1;
+            // Only add the message if it doesn't already exist
+            if (!messageExists) {
+                // Add the message to the array
+                state.messages[roomId].push(message);
+                console.log("REDUCER: Updated messages for room:", state.messages[roomId]);
+
+                // Increment unread count if not the selected room
+                if (state.selectedRoomId !== roomId) {
+                    state.unreadCounts[roomId] = (state.unreadCounts[roomId] || 0) + 1;
+                }
+
+                // Update the room's last_updated timestamp
+                const roomIndex = state.rooms.findIndex(room => room.id === roomId);
+                if (roomIndex !== -1) {
+                    state.rooms[roomIndex].last_updated = message.created_at || new Date().toISOString();
+                }
+            } else {
+                console.log("REDUCER: Skipping duplicate message:", message.id);
             }
         },
         setMessages: (state, action: PayloadAction<{ roomId: string, messages: IMessage[] }>) => {

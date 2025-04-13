@@ -39,9 +39,10 @@ export const ChatRoomList = ({
     const [roomUsers, setRoomUsers] = useState<Record<string, User[]>>({});
 
     const sortedRooms = [...rooms].sort((a, b) => {
-        return (
-            new Date(b.last_updated).getTime() - new Date(a.last_updated).getTime()
-        );
+        // Make sure we're comparing valid dates
+        const dateA = new Date(a.last_updated || 0).getTime();
+        const dateB = new Date(b.last_updated || 0).getTime();
+        return dateB - dateA; // Sort in descending order (newest first)
     });
 
     useEffect(() => {

@@ -88,15 +88,6 @@ export const socketMiddleware: Middleware = store => next => (action: unknown) =
             console.log("Message received in middleware:", message);
             if (message && message.room_id) {
                 dispatch(addMessage({ roomId: message.room_id, message }));
-
-                // If this is not the currently selected room, update unread count
-                const state = getState();
-                if (state.chat.selectedRoomId !== message.room_id) {
-                    dispatch(setUnreadCount({
-                        roomId: message.room_id,
-                        count: (state.chat.unreadCounts[message.room_id] || 0) + 1
-                    }));
-                }
             } else {
                 toaster.create({
                     title: "Invalid message format",

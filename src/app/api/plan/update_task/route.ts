@@ -9,6 +9,7 @@ export async function PUT(request: Request) {
         // Extract all possible fields from the request body
         const {
             task_id,
+            plan_id,
             task_name,
             task_explanation,
             expected_result,
@@ -17,10 +18,30 @@ export async function PUT(request: Request) {
             start_time,
             tool,
             logs,
-            step_number
+            step_number,
+            reset_tasks
         } = body;
 
-        // Validate required fields
+        // Handle batch reset of tasks by plan_id
+        if (reset_tasks && plan_id) {
+            console.log('Resetting all tasks for plan:', plan_id);
+
+            // Reset all tasks for this plan
+            const updatedCount = await db('task')
+                .where({ plan_id: plan_id })
+                .update({
+                    status: 'not_started',
+                    start_time: null,
+                    completed_at: null,
+                    updated_at: new Date()
+                });
+
+            return NextResponse.json({
+                message: `${updatedCount} tasks reset successfully`,
+            }, { status: 200 });
+        }
+
+        // Validate required fields for single task update
         if (!task_id) {
             return NextResponse.json({
                 error: 'Missing required field: task_id'

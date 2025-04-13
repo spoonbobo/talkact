@@ -4,7 +4,7 @@ import db from '@/lib/db';
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
-        const { roomId, active_users } = body;
+        const { roomId, active_users, name } = body;
 
         if (!roomId) {
             return NextResponse.json({ error: 'Room ID is required' }, { status: 400 });
@@ -17,18 +17,32 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: 'Room not found' }, { status: 404 });
         }
 
-        // Update the active_users array
-        const updatedActiveUsers = active_users || [];
+        // Prepare update object
+        const updateData: any = {};
+
+        // Update active_users if provided
+        if (active_users !== undefined) {
+            updateData.active_users = active_users;
+        }
+
+        // Update name if provided
+        if (name !== undefined) {
+            updateData.name = name;
+        }
+
+        // Update last_updated timestamp
+        updateData.last_updated = new Date().toISOString();
 
         const [result] = await db('chat_rooms')
             .where({ id: roomId })
-            .update({ active_users: updatedActiveUsers })
-            .returning(['id', 'name', 'active_users']);
+            .update(updateData)
+            .returning(['id', 'name', 'active_users', 'last_updated']);
 
         return NextResponse.json({
-            room_id: result.id,
+            id: result.id,
             name: result.name,
-            active_users: result.active_users
+            active_users: result.active_users,
+            last_updated: result.last_updated
         }, { status: 200 });
     } catch (error) {
         console.error('Error updating chat room:', error);

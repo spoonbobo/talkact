@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from "@/store/store";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, Heading, Flex, Spinner, Badge, Text, VStack, Center } from "@chakra-ui/react";
+import { Box, Heading, Flex, Spinner, Badge, Text, VStack, Center, Button } from "@chakra-ui/react";
 import { fetchTasks, selectPlan, updatePlanStatus, forceResetTasksLoading } from "@/store/features/planSlice";
 import { usePlansColors } from "@/utils/colors";
 import { IPlan, ITask } from "@/types/plan";
@@ -13,10 +13,10 @@ import { fetchPlans } from "@/store/features/planSlice";
 import axios from "axios";
 import { TaskEditModal } from "@/components/plans/task_edit_modal";
 import PlanHeader from "@/components/plans/PlanHeader";
-import PlanActionButtons from "@/components/plans/PlanActionButtons";
 import TaskCard from "@/components/plans/TaskCard";
 import { motion } from "framer-motion";
 import { TaskInfoModal } from "@/components/plans/task_info_modal"
+import { RepeatIcon } from "@chakra-ui/icons";
 
 // Use typed dispatch
 const useAppDispatch = () => useDispatch<AppDispatch>();
@@ -280,6 +280,33 @@ export default function PlanDetailsPage() {
         };
     }, [dispatch, planId]);
 
+    // Add this new function to handle plan reset
+    const handleResetPlan = async () => {
+        if (!currentPlan) return;
+
+        setIsLoading(true);
+        try {
+            // Call the API to reset the plan
+            const response = await axios.put('/api/plan/update_plan', {
+                plan_id: currentPlan.plan_id,
+                reset_plan: true
+            });
+
+            console.log('Plan reset response:', response.data);
+
+            // Refresh the UI
+            await Promise.all([
+                dispatch(fetchPlans()),
+                dispatch(fetchTasks(planId))
+            ]);
+
+        } catch (error) {
+            console.error('Error resetting plan:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     if (!currentPlan) {
         return (
             <Center height="100%" p={8}>
@@ -306,20 +333,20 @@ export default function PlanDetailsPage() {
                 colors={colors}
             />
 
-            {/* Action Buttons */}
-            <PlanActionButtons
-                plan={currentPlan}
-                currentTask={typedCurrentTask}
-                isLoading={isLoading}
-                loadingTasks={loading.tasks}
-                colors={colors}
-                onApprove={handleApprovePlan}
-                onDeny={handleDenyPlan}
-                onRefresh={handleRefresh}
-            />
-
-            <Flex justify="space-between" mb={6}>
+            <Flex justify="space-between" mb={6} align="center">
                 <PlanHeader plan={currentPlan} colors={colors} />
+
+                {/* Reset Plan Button */}
+                <Button
+                    colorScheme="blue"
+                    variant="outline"
+                    onClick={handleResetPlan}
+                    loading={isLoading}
+                    loadingText="Resetting..."
+                    size="sm"
+                >
+                    Reset Plan
+                </Button>
             </Flex>
 
             <Box
