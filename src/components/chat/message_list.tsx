@@ -1,4 +1,4 @@
-import { Avatar, Box, Flex, Text, VStack, Drawer, Portal, CloseButton, Button, HStack, Separator, Icon, IconButton } from "@chakra-ui/react";
+import { Avatar, Box, Flex, Text, VStack, Drawer, Portal, CloseButton, Button, HStack, Separator, Icon, IconButton, Spinner } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { IMessage } from "@/types/chat";
 import { User } from "@/types/user";
@@ -17,10 +17,18 @@ interface MessageGroup {
 interface ChatMessageListProps {
     messageGroups: MessageGroup[];
     messagesEndRef: React.RefObject<HTMLDivElement | null>;
-    isTaskMode?: boolean;
+    onLoadMore?: () => void;
+    isLoadingMore?: boolean;
+    hasMoreMessages?: boolean;
 }
 
-export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = true }: ChatMessageListProps) => {
+export const ChatMessageList = ({
+    messageGroups,
+    messagesEndRef,
+    onLoadMore,
+    isLoadingMore = false,
+    hasMoreMessages = true
+}: ChatMessageListProps) => {
     const colors = useChatPageColors();
     const t = useTranslations("Chat");
     const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
@@ -46,15 +54,68 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
     const scrollToBottomRAF = React.useRef<number | null>(null);
     const currentRoomChanged = React.useRef<boolean>(false);
 
+    // Move formatMessageDate inside the component to access the t function
+    const formatMessageDate = (date: Date): string => {
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (date.toDateString() === today.toDateString()) {
+            return t("today");
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            return t("yesterday");
+        } else {
+            return date.toLocaleDateString(undefined, {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+    };
+
     // Function to handle scroll events
-    const handleScroll = () => {
+    const handleScroll = useCallback(() => {
         if (!scrollContainerRef.current) return;
 
         const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-        // If user scrolls up more than 100px from bottom, disable auto-scroll
+
+        // Check if user is near bottom for auto-scroll
         const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
         shouldScrollToBottom.current = isNearBottom;
-    };
+
+        // Check if user is near top for loading more messages
+        // Use a more generous threshold (10% of container height) to trigger loading earlier
+        const loadMoreThreshold = clientHeight * 0.1;
+        if (scrollTop < loadMoreThreshold && onLoadMore && !isLoadingMore && hasMoreMessages) {
+            // Save current scroll position and height
+            const currentScrollHeight = scrollContainerRef.current.scrollHeight;
+            const currentScrollPosition = scrollContainerRef.current.scrollTop;
+
+            // Load more messages
+            onLoadMore();
+
+            // After loading, restore scroll position with a smoother approach
+            // Use multiple attempts with increasing delays for smoother experience
+            const restoreScrollPosition = () => {
+                if (scrollContainerRef.current) {
+                    const newScrollHeight = scrollContainerRef.current.scrollHeight;
+                    const heightDifference = newScrollHeight - currentScrollHeight;
+
+                    // Use smooth scrolling for a better experience
+                    scrollContainerRef.current.scrollTo({
+                        top: currentScrollPosition + heightDifference,
+                        behavior: 'auto' // Use 'auto' instead of 'smooth' to prevent jank
+                    });
+                }
+            };
+
+            // Multiple attempts with increasing delays
+            setTimeout(restoreScrollPosition, 50);
+            setTimeout(restoreScrollPosition, 150);
+            setTimeout(restoreScrollPosition, 300);
+        }
+    }, [onLoadMore, isLoadingMore, hasMoreMessages]);
 
     // Improved function to scroll to bottom with less jank
     const scrollToBottom = useCallback(() => {
@@ -102,24 +163,13 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
         };
     }, [scrollToBottom]);
 
-    // Scroll to bottom when component mounts
+    // Simplify the useEffect for initial scroll
     useEffect(() => {
-        // Initial scroll to bottom
-        scrollToBottom();
-
-        // Set multiple timeouts to ensure it works across different browsers/situations
-        const timeoutIds = [
-            setTimeout(scrollToBottom, 100),
-            setTimeout(scrollToBottom, 300),
-            setTimeout(() => {
-                scrollToBottom();
-                hasMounted.current = true;
-                // Set loading to false after a short delay to allow smooth animation
-                setTimeout(() => setIsLoading(false), 100);
-            }, 500)
-        ];
-
-        return () => timeoutIds.forEach(id => clearTimeout(id));
+        // Only scroll to bottom once on initial mount
+        if (!hasMounted.current) {
+            scrollToBottom();
+            hasMounted.current = true;
+        }
     }, [scrollToBottom]);
 
     // Scroll to bottom when new messages arrive, but only if we're already at the bottom
@@ -133,10 +183,258 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
         }
     }, [messageGroups, scrollToBottom]);
 
+    // Add this effect to ensure the loading indicator is visible initially
+    useEffect(() => {
+        // If we have messages and hasMoreMessages is true, show a visual indicator
+        if (messageGroups.length > 0 && hasMoreMessages) {
+            // Add a small instruction text at the top
+            const instructionEl = document.createElement('div');
+            instructionEl.id = 'scroll-instruction';
+            instructionEl.style.textAlign = 'center';
+            instructionEl.style.padding = '8px';
+            instructionEl.style.fontSize = '12px';
+            instructionEl.style.color = colors.textColorSecondary;
+            instructionEl.textContent = t("scroll_up_for_more");
+
+            // Add it to the top of the container if it doesn't exist yet
+            if (scrollContainerRef.current && !document.getElementById('scroll-instruction')) {
+                scrollContainerRef.current.prepend(instructionEl);
+
+                // Remove it after 5 seconds
+                setTimeout(() => {
+                    document.getElementById('scroll-instruction')?.remove();
+                }, 5000);
+            }
+        }
+    }, [messageGroups.length, hasMoreMessages, colors.textColorSecondary, t]);
+
+    // Listen for message sent events to scroll to bottom
+    useEffect(() => {
+        const handleMessageSent = () => {
+            // Force scroll to bottom when a message is sent
+            shouldScrollToBottom.current = true;
+            scrollToBottom();
+        };
+
+        window.addEventListener('scrollToBottom', handleMessageSent);
+        return () => {
+            window.removeEventListener('scrollToBottom', handleMessageSent);
+        };
+    }, [scrollToBottom]);
+
     // Function to handle avatar click
     const handleUserProfileClick = (username: string, userId?: string, avatar?: string) => {
         setSelectedUser({ username, userId, avatar });
         setIsUserProfileOpen(true);
+    };
+
+    // Function to render day separators between message groups
+    const renderMessageGroups = () => {
+        let lastDate: string | null = null;
+        const result: React.ReactNode[] = [];
+
+        // Add initial date separator for the first group
+        if (messageGroups.length > 0 && messageGroups[0].messages.length > 0) {
+            const firstMessageDate = new Date(messageGroups[0].messages[0].created_at);
+            const firstDateStr = firstMessageDate.toDateString();
+
+            result.push(
+                <Flex
+                    key={`date-first-${firstDateStr}`}
+                    justify="center"
+                    width="100%"
+                    my={4}
+                    position="relative"
+                >
+                    <Box
+                        position="absolute"
+                        width="100%"
+                        height="1px"
+                        bg={colors.borderColor}
+                        top="50%"
+                    />
+                    <Text
+                        fontSize="xs"
+                        fontWeight="medium"
+                        color={colors.textColorSecondary}
+                        bg={colors.bgSubtle}
+                        px={3}
+                        zIndex={1}
+                        borderRadius="full"
+                    >
+                        {formatMessageDate(firstMessageDate)}
+                    </Text>
+                </Flex>
+            );
+
+            lastDate = firstDateStr;
+        }
+
+        messageGroups.forEach((group, groupIndex) => {
+            // Get the date of the first message in the group
+            if (group.messages.length > 0) {
+                const messageDate = new Date(group.messages[0].created_at);
+                const currentDateStr = messageDate.toDateString();
+
+                // Only add a day separator when crossing to a different day
+                if (lastDate !== null && currentDateStr !== lastDate) {
+                    result.push(
+                        <Flex
+                            key={`date-${currentDateStr}`}
+                            justify="center"
+                            width="100%"
+                            my={4}
+                            position="relative"
+                        >
+                            <Box
+                                position="absolute"
+                                width="100%"
+                                height="1px"
+                                bg={colors.borderColor}
+                                top="50%"
+                            />
+                            <Text
+                                fontSize="xs"
+                                fontWeight="medium"
+                                color={colors.textColorSecondary}
+                                bg={colors.bgSubtle}
+                                px={3}
+                                zIndex={1}
+                                borderRadius="full"
+                            >
+                                {formatMessageDate(messageDate)}
+                            </Text>
+                        </Flex>
+                    );
+                }
+
+                // Update the last date
+                lastDate = currentDateStr;
+            }
+
+            // Add the message group
+            result.push(
+                <Box
+                    key={`${group.sender}-${groupIndex}`}
+                    width="100%"
+                >
+                    <Flex
+                        gap={group.isCurrentUser ? 2 : 3}
+                        justifyContent={
+                            group.isCurrentUser ? "flex-end" : "flex-start"
+                        }
+                        alignItems="flex-start"
+                        mb={3}
+                        px={2}
+                        width="100%"
+                    >
+                        {/* Avatar for other users */}
+                        {!group.isCurrentUser && (
+                            <Avatar.Root
+                                size="sm"
+                                mt={1}
+                                cursor="pointer"
+                                onClick={() => handleUserProfileClick(
+                                    typeof group.sender === 'string' ? group.sender : group.sender?.username || 'Unknown',
+                                    typeof group.sender === 'string' ? undefined : group.sender?.user_id,
+                                    group.avatar
+                                )}
+                            >
+                                <Avatar.Fallback name={typeof group.sender === 'string' ? group.sender : group.sender?.username || 'Unknown'} />
+                                <Avatar.Image src={group.avatar} />
+                            </Avatar.Root>
+                        )}
+
+                        <VStack
+                            align={group.isCurrentUser ? "flex-end" : "flex-start"}
+                            maxWidth="70%"
+                            gap={0.5}
+                            width="auto"
+                        >
+                            {/* User name display - only for other users */}
+                            {!group.isCurrentUser && (
+                                <Text
+                                    fontSize="xs"
+                                    fontWeight="bold"
+                                    color={colors.textColorHeading}
+                                    ml={1}
+                                    mb={0}
+                                >
+                                    {typeof group.sender === 'string' ? group.sender : group.sender?.username || 'Unknown'}
+                                </Text>
+                            )}
+
+                            {group.messages.map(
+                                (message: IMessage, msgIndex: number) => (
+                                    <div
+                                        key={message.id}
+                                        style={{
+                                            width: "100%",
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            alignItems: group.isCurrentUser ? "flex-end" : "flex-start"
+                                        }}
+                                    >
+                                        <motion.div
+                                            // Only animate new messages, not on initial load
+                                            initial={hasMounted.current ? { scale: 0.95, opacity: 0.5 } : { scale: 1, opacity: 1 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            transition={{
+                                                duration: 0.1,
+                                                delay: 0 // No delay between messages
+                                            }}
+                                        >
+                                            <ChatBubble
+                                                key={message.id}
+                                                message={message}
+                                                isUser={group.isCurrentUser}
+                                                isFirstInGroup={msgIndex === 0}
+                                                isStreaming={!message.content}
+                                            />
+                                        </motion.div>
+
+                                        {/* Timestamp with improved colors and positioning */}
+                                        {msgIndex === group.messages.length - 1 && (
+                                            <Text
+                                                fontSize="xs"
+                                                color={colors.textColorSecondary}
+                                                mt={1}
+                                                width="auto"
+                                                display="block"
+                                            >
+                                                {new Date(message.created_at).toLocaleTimeString([], {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </Text>
+                                        )}
+                                    </div>
+                                )
+                            )}
+                        </VStack>
+
+                        {/* Avatar for current user */}
+                        {group.isCurrentUser && (
+                            <Avatar.Root
+                                size="sm"
+                                mt={1}
+                                cursor="pointer"
+                                onClick={() => handleUserProfileClick(
+                                    typeof group.sender === 'string' ? group.sender : group.sender?.username || 'Unknown',
+                                    typeof group.sender === 'string' ? undefined : group.sender?.user_id,
+                                    group.avatar
+                                )}
+                            >
+                                <Avatar.Fallback name={typeof group.sender === 'string' ? group.sender : group.sender?.username || 'Unknown'} />
+                                <Avatar.Image src={group.avatar} />
+                            </Avatar.Root>
+                        )}
+                    </Flex>
+                </Box>
+            );
+        });
+
+        return result;
     };
 
     return (
@@ -146,7 +444,7 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                 flex="1"
                 overflowY="auto"
                 p={4}
-                bg={isTaskMode ? colors.bgSubtle : colors.chatModeBg}
+                bg={colors.bgSubtle}
                 position="relative"
                 onScroll={handleScroll}
                 css={{
@@ -166,131 +464,46 @@ export const ChatMessageList = ({ messageGroups, messagesEndRef, isTaskMode = tr
                     },
                 }}
             >
+                {/* Loading indicator at the top - improved with animation */}
+                {isLoadingMore && (
+                    <Flex
+                        justify="center"
+                        py={3}
+                        width="100%"
+                        bg={colors.bgSubtle}
+                        position="sticky"
+                        top="0"
+                        zIndex="1"
+                        as={motion.div}
+                    >
+                        <HStack gap={2}>
+                            <Spinner size="sm" color={colors.textColorSecondary} />
+                            <Text fontSize="sm" color={colors.textColorSecondary}>{t("loading_more_messages")}</Text>
+                        </HStack>
+                    </Flex>
+                )}
+
+                {/* No more messages indicator - improved with animation */}
+                {!hasMoreMessages && messageGroups.length > 0 && (
+                    <Text
+                        textAlign="center"
+                        fontSize="sm"
+                        color={colors.textColorSecondary}
+                        py={3}
+                        as={motion.div}
+                    >
+                        {t("no_more_messages")}
+                    </Text>
+                )}
+
                 {/* Display messages in a flex container that pushes content to the bottom */}
                 <Flex
                     direction="column"
                     minHeight="100%"
                     justify="flex-end"
                 >
-                    {messageGroups.map((group, groupIndex) => (
-                        <Box
-                            key={`${group.sender}-${groupIndex}`}
-                            width="100%"
-                        >
-                            <Flex
-                                gap={group.isCurrentUser ? 2 : 3}
-                                justifyContent={
-                                    group.isCurrentUser ? "flex-end" : "flex-start"
-                                }
-                                alignItems="flex-start"
-                                mb={3}
-                                px={2}
-                                width="100%"
-                            >
-                                {/* Avatar for other users */}
-                                {!group.isCurrentUser && (
-                                    <Avatar.Root
-                                        size="sm"
-                                        mt={1}
-                                        cursor="pointer"
-                                        onClick={() => handleUserProfileClick(
-                                            typeof group.sender === 'string' ? group.sender : group.sender?.username || 'Unknown',
-                                            typeof group.sender === 'string' ? undefined : group.sender?.user_id,
-                                            group.avatar
-                                        )}
-                                    >
-                                        <Avatar.Fallback name={typeof group.sender === 'string' ? group.sender : group.sender?.username || 'Unknown'} />
-                                        <Avatar.Image src={group.avatar} />
-                                    </Avatar.Root>
-                                )}
-
-                                <VStack
-                                    align={group.isCurrentUser ? "flex-end" : "flex-start"}
-                                    maxWidth="70%"
-                                    gap={0.5}
-                                    width="auto"
-                                >
-                                    {/* User name display - only for other users */}
-                                    {!group.isCurrentUser && (
-                                        <Text
-                                            fontSize="xs"
-                                            fontWeight="bold"
-                                            color={colors.textColorHeading}
-                                            ml={1}
-                                            mb={0}
-                                        >
-                                            {typeof group.sender === 'string' ? group.sender : group.sender?.username || 'Unknown'}
-                                        </Text>
-                                    )}
-
-                                    {group.messages.map(
-                                        (message: IMessage, msgIndex: number) => (
-                                            <div
-                                                key={message.id}
-                                                style={{
-                                                    width: "100%",
-                                                    display: "flex",
-                                                    flexDirection: "column",
-                                                    alignItems: group.isCurrentUser ? "flex-end" : "flex-start"
-                                                }}
-                                            >
-                                                <motion.div
-                                                    initial={hasMounted.current ? { scale: 0.95, opacity: 0.5 } : { scale: 1, opacity: 1 }}
-                                                    animate={{ scale: 1, opacity: 1 }}
-                                                    transition={{
-                                                        duration: 0.1,
-                                                        delay: 0 // No delay between messages
-                                                    }}
-                                                >
-                                                    <ChatBubble
-                                                        key={message.id}
-                                                        message={message}
-                                                        isUser={group.isCurrentUser}
-                                                        isFirstInGroup={msgIndex === 0}
-                                                        isTaskMode={isTaskMode}
-                                                        isStreaming={!message.content}
-                                                    />
-                                                </motion.div>
-
-                                                {/* Timestamp with improved colors and positioning */}
-                                                {msgIndex === group.messages.length - 1 && (
-                                                    <Text
-                                                        fontSize="xs"
-                                                        color={colors.textColorSecondary}
-                                                        mt={1}
-                                                        width="auto"
-                                                        display="block"
-                                                    >
-                                                        {new Date(message.created_at).toLocaleTimeString([], {
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
-                                                        })}
-                                                    </Text>
-                                                )}
-                                            </div>
-                                        )
-                                    )}
-                                </VStack>
-
-                                {/* Avatar for current user */}
-                                {group.isCurrentUser && (
-                                    <Avatar.Root
-                                        size="sm"
-                                        mt={1}
-                                        cursor="pointer"
-                                        onClick={() => handleUserProfileClick(
-                                            typeof group.sender === 'string' ? group.sender : group.sender?.username || 'Unknown',
-                                            typeof group.sender === 'string' ? undefined : group.sender?.user_id,
-                                            group.avatar
-                                        )}
-                                    >
-                                        <Avatar.Fallback name={typeof group.sender === 'string' ? group.sender : group.sender?.username || 'Unknown'} />
-                                        <Avatar.Image src={group.avatar} />
-                                    </Avatar.Root>
-                                )}
-                            </Flex>
-                        </Box>
-                    ))}
+                    {/* Render message groups with day separators */}
+                    {renderMessageGroups()}
 
                     {/* Add invisible div at the end for auto-scrolling */}
                     <div ref={messagesEndRef} />

@@ -188,7 +188,11 @@
     "success": "成功",
     "left_room_successfully": "已成功離開聊天室",
     "users_invited_successfully": "已成功邀請用戶",
-    "load_earlier_messages": "加載更多"
+    "no_more_messages": "沒有更多訊息了",
+    "loading_more_messages": "加載更多訊息中...",
+    "scroll_up_for_more": "向上滑動以加載更多訊息",
+    "today": "今天",
+    "yesterday": "昨天"
   },
   "Plans": {
     "plans": "計劃",

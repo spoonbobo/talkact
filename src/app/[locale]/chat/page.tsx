@@ -40,7 +40,8 @@ import {
   clearSelectedRoom,
   quitRoom,
   updateRoom,
-  removeUserFromRoom
+  removeUserFromRoom,
+  setUnreadCount
 } from '@/store/features/chatSlice';
 import { updateActiveRooms } from '@/store/features/userSlice';
 import React from "react";
@@ -55,6 +56,7 @@ import { RoomInvitation } from "@/components/chat/room_invitation";
 import { useRouter } from "next/navigation";
 
 const MotionBox = motion.create(Box);
+const MESSAGE_LIMIT = 30;
 
 export default function ChatPage() {
   const { currentUser, isAuthenticated } = useSelector((state: RootState) => state.user);
@@ -88,6 +90,7 @@ const ChatPageContent = () => {
   const isLoadingRooms = useSelector((state: RootState) => state.chat.isLoadingRooms);
   const isLoadingMessages = useSelector((state: RootState) => state.chat.isLoadingMessages);
   const messagesLoaded = useSelector((state: RootState) => state.chat.messagesLoaded);
+  const isSocketConnected = useSelector((state: RootState) => state.chat.isSocketConnected);
 
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const isOwner = useSelector((state: RootState) => state.user.isOwner);
@@ -115,12 +118,18 @@ const ChatPageContent = () => {
   const messageListBg = bgSubtle;
   const messageTextColor = colors.messageTextColor || textColor;
 
+  // Add these state variables
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isRoomDetailsOpen, setIsRoomDetailsOpen] = useState<boolean>(false);
+  const [isInvitingUsers, setIsInvitingUsers] = useState<boolean>(false);
+  const [roomUsers, setRoomUsers] = useState<User[]>([]);
+
   // Fetch rooms
   useEffect(() => {
     const fetchRooms = async () => {
       try {
         const response = await axios.get("/api/chat/get_rooms");
-        console.log("response", response);
         // Make sure rooms have their active_users properly populated
         const roomsWithUsers = response.data.map((room: IChatRoom) => {
           // If active_users is null or undefined, initialize as empty array
@@ -339,7 +348,6 @@ const ChatPageContent = () => {
 
   // Update to use selectedRoomId from Redux
   const currentRoom = rooms.find((r) => r.id === selectedRoomId);
-  const [roomUsers, setRoomUsers] = useState<User[]>([]);
 
   // Fetch user details when currentRoom changes
   useEffect(() => {
@@ -368,55 +376,77 @@ const ChatPageContent = () => {
   useEffect(() => {
     const fetchMessages = async () => {
       if (selectedRoomId) {
-        // Check if we already have messages for this room and if they've been loaded from server
-        const hasLoadedMessages = messagesLoaded[selectedRoomId];
+        try {
+          dispatch(setLoadingMessages(true));
+          const response = await axios.get(`/api/chat/get_messages?roomId=${selectedRoomId}&limit=${MESSAGE_LIMIT}`);
 
-        if (!hasLoadedMessages) {
-          try {
-            dispatch(setLoadingMessages(true));
-            const response = await axios.get(`/api/chat/get_messages?roomId=${selectedRoomId}`);
+          // Get the raw messages from the server
+          const serverMessages = response.data;
 
-            // Merge with any existing messages we might have
-            const existingMessages = messages[selectedRoomId] || [];
-            const serverMessages = response.data;
+          setHasMoreMessages(serverMessages.length >= MESSAGE_LIMIT);
 
-            // Create a map of existing messages by ID for quick lookup
-            const existingMessageMap = new Map(
-              existingMessages.map(msg => [msg.id, msg])
-            );
+          // Rest of the code remains the same
+          const userIds = [...new Set(serverMessages.map((msg: any) =>
+            typeof msg.sender === 'string' ? msg.sender : msg.sender?.user_id
+          ))].filter(Boolean);
 
-            // Combine messages, avoiding duplicates
-            const combinedMessages = [
-              ...existingMessages,
-              ...serverMessages.filter((msg: IMessage) => !existingMessageMap.has(msg.id))
-            ];
+          // Fetch user details for all message senders
+          const usersResponse = await axios.post('/api/user/get_users', {
+            user_ids: userIds
+          });
 
-            // Sort by created_at
-            combinedMessages.sort((a, b) =>
-              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-            );
-
-            dispatch(setMessages({
-              roomId: selectedRoomId,
-              messages: combinedMessages
-            }));
-
-            dispatch(markRoomMessagesLoaded(selectedRoomId));
-          } catch (error) {
-            toaster.create({
-              title: t("error"),
-              description: t("error_fetching_messages"),
-              type: "error"
+          // Create a map of user_id to User object
+          const userMap = new Map();
+          if (usersResponse.data && usersResponse.data.users) {
+            usersResponse.data.users.forEach((user: User) => {
+              userMap.set(user.user_id, user);
             });
-          } finally {
-            dispatch(setLoadingMessages(false));
           }
+
+          // Transform messages to include proper User objects
+          const transformedMessages = serverMessages.map((msg: any) => {
+            // If sender is a string (user_id), replace with User object
+            if (typeof msg.sender === 'string') {
+              const user = userMap.get(msg.sender);
+              return {
+                ...msg,
+                sender: user || {
+                  user_id: msg.sender,
+                  username: 'Unknown User',
+                  email: '',
+                  role: 'user',
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  active_rooms: [],
+                  archived_rooms: []
+                }
+              };
+            }
+            return msg;
+          });
+
+          dispatch(setMessages({
+            roomId: selectedRoomId,
+            messages: transformedMessages
+          }));
+
+          dispatch(markRoomMessagesLoaded(selectedRoomId));
+        } catch (error) {
+          toaster.create({
+            title: t("error"),
+            description: t("error_fetching_messages"),
+            type: "error"
+          });
+        } finally {
+          dispatch(setLoadingMessages(false));
         }
       }
     };
 
-    fetchMessages();
-  }, [selectedRoomId, dispatch, messages, messagesLoaded]);
+    if (selectedRoomId) {
+      fetchMessages();
+    }
+  }, [selectedRoomId, dispatch, t]);
 
   // If there are no rooms but a room is selected, clear the selection
   useEffect(() => {
@@ -425,15 +455,16 @@ const ChatPageContent = () => {
     }
   }, [rooms, selectedRoomId, dispatch]);
 
-  const [isRoomDetailsOpen, setIsRoomDetailsOpen] = useState<boolean>(false);
-  const [isInvitingUsers, setIsInvitingUsers] = useState<boolean>(false);
-
   const handleSendMessage = useCallback((newMessage: IMessage) => {
+    console.log("Sending message:", newMessage);
+
     if (newMessage.content.trim() && selectedRoomId) {
       dispatch({
         type: 'chat/sendMessage',
         payload: { message: newMessage }
       });
+
+      console.log("Message dispatched to Redux");
 
       if (newMessage.mentions?.some(user => user.role === "agent")) {
         triggerAgentAPI(newMessage.content, selectedRoomId);
@@ -449,8 +480,25 @@ const ChatPageContent = () => {
       }
 
       setMessageInput("");
+
+      // Directly scroll to bottom with multiple attempts to ensure it works
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+
+        // Add multiple attempts with timeouts to ensure scrolling works
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 300);
+      }
+
+      // Also dispatch the event as a backup method
+      window.dispatchEvent(new CustomEvent('scrollToBottom'));
     }
-  }, [dispatch, selectedRoomId, setMessageInput, triggerAgentAPI]);
+  }, [dispatch, selectedRoomId, setMessageInput, triggerAgentAPI, messagesEndRef]);
 
   // Memoize the ChatInput props to prevent unnecessary re-renders
   const chatInputProps = useMemo(() => ({
@@ -463,6 +511,7 @@ const ChatPageContent = () => {
     currentUser,
     currentRoom,
     roomUsers,
+    isSocketConnected,
   }), [
     messageInput,
     setMessageInput,
@@ -472,9 +521,152 @@ const ChatPageContent = () => {
     agents,
     currentUser,
     currentRoom,
-    roomUsers
+    roomUsers,
+    isSocketConnected
   ]);
 
+  // Add a function to load more messages
+  const loadMoreMessages = async () => {
+    if (!selectedRoomId || isLoadingMore || !hasMoreMessages) return;
+
+    try {
+      setIsLoadingMore(true);
+
+      // Get the oldest message ID we currently have
+      const currentMessages = messages[selectedRoomId] || [];
+      if (currentMessages.length === 0) return;
+
+      // Find the oldest message by created_at timestamp
+      const oldestMessage = currentMessages.reduce((oldest, current) =>
+        new Date(oldest.created_at) < new Date(current.created_at) ? oldest : current
+      );
+
+      // Fetch older messages
+      const response = await axios.get(`/api/chat/get_messages?roomId=${selectedRoomId}&limit=${MESSAGE_LIMIT}&before=${oldestMessage.id}`);
+
+      // If we got fewer messages than requested, we've reached the end
+      setHasMoreMessages(response.data.length >= MESSAGE_LIMIT);
+
+      if (response.data.length === 0) {
+        setHasMoreMessages(false);
+        return;
+      }
+
+      // Process messages like before
+      const serverMessages = response.data;
+      const userIds = [...new Set(serverMessages.map((msg: any) =>
+        typeof msg.sender === 'string' ? msg.sender : msg.sender?.user_id
+      ))].filter(Boolean);
+
+      const usersResponse = await axios.post('/api/user/get_users', {
+        user_ids: userIds
+      });
+
+      const userMap = new Map();
+      if (usersResponse.data && usersResponse.data.users) {
+        usersResponse.data.users.forEach((user: User) => {
+          userMap.set(user.user_id, user);
+        });
+      }
+
+      const transformedMessages = serverMessages.map((msg: any) => {
+        if (typeof msg.sender === 'string') {
+          const user = userMap.get(msg.sender);
+          return {
+            ...msg,
+            sender: user || {
+              user_id: msg.sender,
+              username: 'Unknown User',
+              email: '',
+              role: 'user',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              active_rooms: [],
+              archived_rooms: []
+            }
+          };
+        }
+        return msg;
+      });
+
+      // Combine with existing messages
+      dispatch(setMessages({
+        roomId: selectedRoomId,
+        messages: [...transformedMessages, ...currentMessages]
+      }));
+
+      // Dispatch a custom event to notify that we've loaded more messages
+      // This helps with scroll position management
+      window.dispatchEvent(new CustomEvent('moreMessagesLoaded'));
+
+    } catch (error) {
+      toaster.create({
+        title: t("error"),
+        description: t("error_loading_more_messages"),
+        type: "error"
+      });
+      console.error("Error loading more messages:", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Add this function to your ChatPageContent component
+  const loadMessages = useCallback(async (roomId: string) => {
+    try {
+      console.log("Loading messages for room:", roomId);
+      dispatch(setLoadingMessages(true));
+
+      const response = await axios.get(`/api/chat/get_messages?roomId=${roomId}`);
+
+      if (response.data && Array.isArray(response.data)) {
+        dispatch(setMessages({ roomId, messages: response.data }));
+        dispatch(markRoomMessagesLoaded(roomId));
+      }
+    } catch (error) {
+      console.error("Error loading messages:", error);
+      toaster.create({
+        title: t("error"),
+        description: t("error_loading_messages"),
+        type: "error"
+      });
+    } finally {
+      dispatch(setLoadingMessages(false));
+    }
+  }, [dispatch, t]);
+
+  // Then update the handleRoomSelect function
+  const handleRoomSelect = useCallback((roomId: string) => {
+    console.log("Selecting room:", roomId);
+
+    // First join the room via socket
+    dispatch({ type: 'chat/joinRoom', payload: roomId });
+
+    // Then set it as selected in Redux
+    dispatch(setSelectedRoom(roomId));
+
+    // Reset unread count for this room
+    dispatch(setUnreadCount({ roomId, count: 0 }));
+
+    // Load messages if not already loaded
+    if (!messagesLoaded[roomId]) {
+      loadMessages(roomId);
+    }
+  }, [dispatch, messagesLoaded, loadMessages]);
+
+  // Add this useEffect to your ChatPageContent component
+  useEffect(() => {
+    // When socket connects, join all rooms the user is part of
+    if (isSocketConnected && rooms.length > 0) {
+      console.log("Socket connected, joining all rooms:", rooms.map(r => r.id));
+      rooms.forEach(room => {
+        dispatch({ type: 'chat/joinRoom', payload: room.id });
+      });
+    }
+  }, [isSocketConnected, rooms, dispatch]);
+
+  // IMPORTANT: Move this conditional rendering AFTER all hooks are defined
+  // This ensures all hooks are called in the same order on every render
   if (isLoadingRooms || isLoadingMessages || !session) {
     return <Loading />;
   }
@@ -724,6 +916,9 @@ const ChatPageContent = () => {
             <ChatMessageList
               messageGroups={groupedMessages}
               messagesEndRef={messagesEndRef}
+              onLoadMore={loadMoreMessages}
+              isLoadingMore={isLoadingMore}
+              hasMoreMessages={hasMoreMessages}
             />
 
             {/* Input area */}

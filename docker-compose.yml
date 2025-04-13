@@ -175,7 +175,6 @@ services:
       - CLIENT_URL=${CLIENT_URL}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_API_BASE_URL=${OPENAI_API_BASE_URL}
-      - BYPASSER_MODEL=gemma3:4b
       - EMBED_MODEL=nomic-embed-text:latest
       - TAVILY_API_KEY=${TAVILY_API_KEY}
     networks:
@@ -240,6 +239,8 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
     depends_on:
       - onlysaid-psqldb
     networks:
@@ -250,6 +251,7 @@ volumes:
   postgres_data:
   qdrant_data:
   ollama_data:
+  pgadmin_data:
   redis-cluster_data-0:
     driver: local
   redis-cluster_data-1:

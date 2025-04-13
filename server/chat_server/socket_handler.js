@@ -15,8 +15,9 @@ function setupSocketIO(io, client) {
       return;
     }
 
-    // Update the user's socket ID in Redis
-    client.set(`user:${userId}:socket`, socket.id);
+    // Store socket ID in a set for this user (supports multiple connections)
+    client.sadd(`user:${userId}:sockets`, socket.id);
+    console.log(`Added socket ${socket.id} for user ${userId}`);
 
     // Check if user has any rooms they belong to
     client
@@ -61,8 +62,18 @@ function setupSocketIO(io, client) {
 
       // Add user to room in Redis
       if (userId) {
-        client.sadd(`room:${roomId}:users`, userId);
-        client.sadd(`user:${userId}:rooms`, roomId);
+        // Make sure these Redis operations are working
+        client.sadd(`room:${roomId}:users`, userId)
+          .then(() => {
+            console.log(`Added user ${userId} to room ${roomId}`);
+            return client.sadd(`user:${userId}:rooms`, roomId);
+          })
+          .then(() => {
+            console.log(`Added room ${roomId} to user ${userId}'s rooms`);
+          })
+          .catch(err => {
+            console.error(`Error adding user ${userId} to room ${roomId}:`, err);
+          });
       }
     });
 
@@ -89,6 +100,7 @@ function setupSocketIO(io, client) {
 
     socket.on("message", async (data) => {
       // insert this message in the app db
+      console.log("message==============", data);
       insertionMessageInAppDb(data);
       const roomId = data.room_id;
 
@@ -96,15 +108,19 @@ function setupSocketIO(io, client) {
         // Get all users in this room
         const usersInRoom = await client.smembers(`room:${roomId}:users`);
         console.log("sending msg to usersInRoom", usersInRoom);
+        
         // For each user in the room
         for (const userId of usersInRoom) {
-          // Get the user's socket ID
-          const socketId = await client.get(`user:${userId}:socket`);
+          // Get all socket IDs for this user
+          const socketIds = await client.smembers(`user:${userId}:sockets`);
+          console.log(`User ${userId} has ${socketIds.length} active connections`);
 
-          if (socketId) {
-            // User is active, send message directly
-            io.to(socketId).emit("message", data);
-            console.log("message sent to", socketId);
+          if (socketIds.length > 0) {
+            // User is active, send message to all their sockets
+            socketIds.forEach(socketId => {
+              io.to(socketId).emit("message", data);
+              console.log(`Message sent to socket ${socketId} for user ${userId}`);
+            });
           } else {
             // User is not active, store message in Redis for later
             await client.lpush(
@@ -146,20 +162,18 @@ function setupSocketIO(io, client) {
       // For each receiver in the notification
       for (const receiverId of allReceivers) {
         try {
-          // Get the receiver's socket ID from Redis
-          const socketId = await client.get(`user:${receiverId}:socket`);
+          // Get all socket IDs for this user
+          const socketIds = await client.smembers(`user:${receiverId}:sockets`);
 
-          if (socketId) {
-            console.log("socketId", socketId);
-            // User is online, send notification directly
-            io.to(socketId).emit("notification", data);
-            // console.log(`Notification sent to user ${receiverId} via socket ${socketId}`);
+          if (socketIds.length > 0) {
+            // User is online, send notification to all their sockets
+            socketIds.forEach(socketId => {
+              io.to(socketId).emit("notification", data);
+              console.log(`Notification sent to socket ${socketId} for user ${receiverId}`);
+            });
           } else {
-            console.log("socketId not found for", receiverId);
-            // // User is offline, store notification for later delivery
-            // // You might want to implement a storage mechanism similar to unread messages
-            // await client.lpush(`user:${receiverId}:unread_notifications`, JSON.stringify(data));
-            // console.log(`Notification stored for offline user ${receiverId}`);
+            console.log("No active sockets found for user", receiverId);
+            // Handle offline users if needed
           }
         } catch (error) {
           console.error(
@@ -173,9 +187,10 @@ function setupSocketIO(io, client) {
     socket.on("disconnect", () => {
       console.log(`Client disconnected: ${socket.id}`);
 
-      // Remove socket ID from Redis, but keep room associations
+      // Remove this specific socket ID from the user's set of sockets
       if (userId) {
-        client.del(`user:${userId}:socket`);
+        client.srem(`user:${userId}:sockets`, socket.id);
+        console.log(`Removed socket ${socket.id} for user ${userId}`);
       }
     });
   });

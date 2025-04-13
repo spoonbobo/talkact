@@ -13,10 +13,21 @@ export default function SocketProvider({ children }: { children: React.ReactNode
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
 
   useEffect(() => {
-    // Initialize socket when session is available and socket is not already connected
-    if (session && !isSocketConnected) {
+    // Add debugging logs
+    // console.log("SocketProvider useEffect running with:", {
+    //   sessionExists: !!session,
+    //   isSocketConnected,
+    //   currentUserExists: !!currentUser,
+    //   currentUserId: currentUser?.user_id
+    // });
+
+    // Initialize socket when session is available
+    if (session && currentUser) {
+      // Always initialize on component mount, regardless of isSocketConnected state
+      console.log("Initializing socket connection from SocketProvider");
+
       const user = {
-        user_id: currentUser?.user_id,
+        user_id: currentUser.user_id,
         username: currentUser?.username || "",
         email: currentUser?.email || "",
         created_at: new Date().toISOString(),
@@ -26,6 +37,8 @@ export default function SocketProvider({ children }: { children: React.ReactNode
         avatar: currentUser?.avatar || "",
       };
 
+      // console.log("Dispatching initializeSocket with user:", user);
+
       // Dispatch action to initialize socket
       dispatch({ type: 'chat/initializeSocket', payload: user });
     }
@@ -34,10 +47,11 @@ export default function SocketProvider({ children }: { children: React.ReactNode
     return () => {
       // Only disconnect if the session is gone (user logged out)
       if (!session && isSocketConnected) {
+        console.log("Disconnecting socket due to session change");
         dispatch({ type: 'chat/disconnectSocket' });
       }
     };
-  }, [session, isSocketConnected, dispatch]);
+  }, [session, dispatch, currentUser]);
 
   return <>{children}</>;
 } 

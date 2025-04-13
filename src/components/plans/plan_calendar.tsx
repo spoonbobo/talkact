@@ -179,7 +179,7 @@ const PlanCalendar = ({ plans, currentPlanId, viewMode, onViewModeChange }: Plan
                 </Flex>
 
                 {/* Calendar body - make it fill available space */}
-                <Box p={2} flex="1" overflow="auto">
+                <Box p={2} flex="1" overflow="hidden" display="flex" flexDirection="column">
                     {/* Weekday headers */}
                     <Grid templateColumns="repeat(7, 1fr)" gap={1} mb={1} position="sticky" top="0" bg={colors.cardBg} zIndex={1}>
                         {weekDays.map((day) => (
@@ -191,12 +191,13 @@ const PlanCalendar = ({ plans, currentPlanId, viewMode, onViewModeChange }: Plan
                         ))}
                     </Grid>
 
-                    {/* Calendar days - use auto rows to fill available space */}
+                    {/* Calendar days - use auto-fill available space */}
                     <Grid
                         templateColumns="repeat(7, 1fr)"
                         templateRows={`repeat(${Math.ceil(calendarDays.length / 7)}, 1fr)`}
                         gap={1}
-                        height="calc(100% - 30px)"
+                        flex="1"
+                        overflow="hidden"
                     >
                         {calendarDays.map((day, index) => {
                             const dayPlans = getPlansForDay(day);
@@ -215,6 +216,8 @@ const PlanCalendar = ({ plans, currentPlanId, viewMode, onViewModeChange }: Plan
                                     position="relative"
                                     display="flex"
                                     flexDirection="column"
+                                    overflow="hidden"
+                                    maxHeight="100%"
                                     _hover={{
                                         borderColor: hasPlans ? colors.accentColor : colors.borderColor,
                                         boxShadow: hasPlans ? "0 0 0 1px " + colors.accentColor : "none"
@@ -229,6 +232,7 @@ const PlanCalendar = ({ plans, currentPlanId, viewMode, onViewModeChange }: Plan
                                         borderBottomWidth={hasPlans ? "1px" : "0"}
                                         borderColor={colors.borderColor}
                                         pb={1}
+                                        flexShrink={0}
                                     >
                                         <Text
                                             fontSize="sm"
@@ -251,13 +255,15 @@ const PlanCalendar = ({ plans, currentPlanId, viewMode, onViewModeChange }: Plan
                                         )}
                                     </Flex>
 
-                                    {/* Plans list - simplified layout */}
+                                    {/* Plans list with improved scrolling */}
                                     <Box
                                         flex="1"
                                         overflowY="auto"
+                                        overflowX="hidden"
+                                        minHeight="0"
                                         css={{
                                             '&::-webkit-scrollbar': {
-                                                width: '3px',
+                                                width: '4px',
                                             },
                                             '&::-webkit-scrollbar-track': {
                                                 background: 'transparent',
@@ -268,73 +274,79 @@ const PlanCalendar = ({ plans, currentPlanId, viewMode, onViewModeChange }: Plan
                                             },
                                             '&::-webkit-scrollbar-thumb:hover': {
                                                 background: colors.textColorMuted,
-                                            }
+                                            },
+                                            'scrollbarWidth': 'thin',
+                                            'scrollbarColor': `${colors.borderColor} transparent`
                                         }}
                                     >
-                                        {dayPlans.map((plan: any) => {
-                                            // Convert string dates to Date objects
-                                            const typedPlan: IPlan = {
-                                                ...plan,
-                                                created_at: plan.created_at ? new Date(plan.created_at) : new Date(),
-                                                updated_at: plan.updated_at ? new Date(plan.updated_at) : new Date(),
-                                                completed_at: plan.completed_at ? new Date(plan.completed_at) : null
-                                            };
+                                        {dayPlans.length > 0 ? (
+                                            dayPlans.map((plan: any) => {
+                                                // Convert string dates to Date objects
+                                                const typedPlan: IPlan = {
+                                                    ...plan,
+                                                    created_at: plan.created_at ? new Date(plan.created_at) : new Date(),
+                                                    updated_at: plan.updated_at ? new Date(plan.updated_at) : new Date(),
+                                                    completed_at: plan.completed_at ? new Date(plan.completed_at) : null
+                                                };
 
-                                            const isSelected = currentPlanId === typedPlan.id;
+                                                const isSelected = currentPlanId === typedPlan.id;
 
-                                            return (
-                                                <Tooltip
-                                                    key={typedPlan.id}
-                                                    content={`${typedPlan.plan_name} - ${formatTime(typedPlan.created_at)}`}
-                                                >
-                                                    <Link
-                                                        href={`/plans/${typedPlan.id}`}
-                                                        style={{ textDecoration: 'none' }}
+                                                return (
+                                                    <Tooltip
+                                                        key={typedPlan.id}
+                                                        content={`${typedPlan.plan_name} - ${formatTime(typedPlan.created_at)}`}
                                                     >
-                                                        <Box
-                                                            p={1}
-                                                            mb={1}
-                                                            borderRadius="sm"
-                                                            bg={isSelected ? colors.subtleSelectedItemBg : colors.planItemBg}
-                                                            _hover={{
-                                                                bg: colors.subtleSelectedItemBg,
-                                                            }}
-                                                            transition="background 0.2s"
+                                                        <Link
+                                                            href={`/plans/${typedPlan.id}`}
+                                                            style={{ textDecoration: 'none' }}
                                                         >
-                                                            {/* Simplified plan item layout */}
-                                                            <Flex align="center" mb={0.5}>
-                                                                <StatusBadge
-                                                                    status={typedPlan.status}
-                                                                    size="sm"
-                                                                    variant="subtle"
-                                                                    mr={1}
-                                                                />
-                                                                <Text fontSize="xs" fontWeight="medium" lineClamp={1} flex="1">
-                                                                    {typedPlan.plan_name}
-                                                                </Text>
-                                                            </Flex>
-
-                                                            {/* Progress bar */}
-                                                            {typedPlan.progress !== undefined && (
-                                                                <Box
-                                                                    height="2px"
-                                                                    width="100%"
-                                                                    bg={colors.borderColor}
-                                                                    borderRadius="full"
-                                                                    overflow="hidden"
-                                                                >
-                                                                    <Box
-                                                                        height="100%"
-                                                                        width={`${typedPlan.progress}%`}
-                                                                        bg={colors.accentColor}
+                                                            <Box
+                                                                p={1}
+                                                                mb={1}
+                                                                borderRadius="sm"
+                                                                bg={isSelected ? colors.subtleSelectedItemBg : colors.planItemBg}
+                                                                _hover={{
+                                                                    bg: colors.subtleSelectedItemBg,
+                                                                }}
+                                                                transition="background 0.2s"
+                                                            >
+                                                                {/* Simplified plan item layout */}
+                                                                <Flex align="center" mb={0.5}>
+                                                                    <StatusBadge
+                                                                        status={typedPlan.status}
+                                                                        size="sm"
+                                                                        variant="subtle"
+                                                                        mr={1}
                                                                     />
-                                                                </Box>
-                                                            )}
-                                                        </Box>
-                                                    </Link>
-                                                </Tooltip>
-                                            );
-                                        })}
+                                                                    <Text fontSize="xs" fontWeight="medium" lineClamp={1} flex="1">
+                                                                        {typedPlan.plan_name}
+                                                                    </Text>
+                                                                </Flex>
+
+                                                                {/* Progress bar */}
+                                                                {typedPlan.progress !== undefined && (
+                                                                    <Box
+                                                                        height="2px"
+                                                                        width="100%"
+                                                                        bg={colors.borderColor}
+                                                                        borderRadius="full"
+                                                                        overflow="hidden"
+                                                                    >
+                                                                        <Box
+                                                                            height="100%"
+                                                                            width={`${typedPlan.progress}%`}
+                                                                            bg={colors.accentColor}
+                                                                        />
+                                                                    </Box>
+                                                                )}
+                                                            </Box>
+                                                        </Link>
+                                                    </Tooltip>
+                                                );
+                                            })
+                                        ) : (
+                                            <Box height="100%" />
+                                        )}
                                     </Box>
                                 </GridItem>
                             );

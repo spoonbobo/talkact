@@ -17,11 +17,19 @@ class ChatSocketClient {
     }
 
     initialize(): void {
+        console.log("ChatSocketClient.initialize called", {
+            username: this.user.username,
+            socketUrl: window.location.origin
+        });
+
         if (this.user.username === "") {
+            console.warn("Cannot initialize socket: username is empty");
             return;
         }
 
         const socketUrl = window.location.origin;
+        console.log("Initializing socket with URL:", socketUrl);
+
         this.socket = io(socketUrl, {
             auth: {
                 user: this.user
@@ -32,8 +40,11 @@ class ChatSocketClient {
             timeout: 20000
         });
 
+        console.log("Socket created:", !!this.socket);
+
         // Add direct event listeners for debugging
         this.socket.on('connect', () => {
+            console.log("Socket connected successfully");
             // Set up message listener after connection is established
             if (this.messageCallback) {
                 this.setupMessageListener(this.messageCallback);
@@ -67,10 +78,16 @@ class ChatSocketClient {
     }
 
     joinRoom(roomId: string): void {
+        console.log("ChatSocketClient.joinRoom called with roomId:", roomId);
         if (this.socket && this.socket.connected) {
+            console.log("Socket is connected, emitting join_room event with roomId:", roomId);
             this.socket.emit('join_room', roomId);
+            console.log("join_room event emitted");
         } else {
-            // 
+            console.error("Cannot join room: Socket not connected", {
+                socketExists: !!this.socket,
+                socketConnected: this.socket?.connected
+            });
         }
     }
 
@@ -139,7 +156,7 @@ class ChatSocketClient {
                     //     description: "Valid message received",
                     //     type: "success"
                     // });
-                    console.log("Message received in socket client:", messageData);
+                    // console.log("Message received in socket client:", messageData);
                     callback(messageData);
                 } else {
                     toaster.create({
@@ -232,9 +249,16 @@ class ChatSocketClient {
     }
 
     sendMessage(message: IMessage): void {
+        console.log("ChatSocketClient.sendMessage called with:", message);
         if (this.socket && this.socket.connected) {
+            console.log("Socket is connected, emitting message event");
             this.socket.emit('message', message);
+            console.log("Message event emitted");
         } else {
+            console.error("Cannot send message: Socket not connected", {
+                socketExists: !!this.socket,
+                socketConnected: this.socket?.connected
+            });
             toaster.create({
                 title: "Cannot Send Message",
                 description: "Socket not connected",

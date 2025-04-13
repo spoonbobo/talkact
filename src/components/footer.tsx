@@ -7,6 +7,7 @@ import {
   Image,
   Link,
   Text,
+  Spinner,
   // Tooltip,
   VStack,
 } from "@chakra-ui/react";
@@ -20,10 +21,35 @@ const Footer: React.FC = () => {
   const t = useTranslations("Footer");
   const { colorMode } = useColorMode();
   const [timeRemaining, setTimeRemaining] = useState<string>("--:--");
+  const [githubStats, setGithubStats] = useState<{ stars: number } | null>(null);
 
   // Get the expiration timestamp from Redux state
   const expiresAt = useSelector((state: RootState) => state.user.expiresAt);
   const isAuthenticated = useSelector((state: RootState) => state.user.isAuthenticated);
+
+  useEffect(() => {
+    // Fetch GitHub stats from our API endpoint
+    const fetchGitHubStats = async () => {
+      try {
+        const response = await fetch('/api/github/stats');
+        if (response.ok) {
+          const data = await response.json();
+          setGithubStats(data);
+        } else {
+          console.error('Failed to fetch GitHub stats');
+        }
+      } catch (error) {
+        console.error('Error fetching GitHub stats:', error);
+      }
+    };
+
+    fetchGitHubStats();
+
+    // Refresh GitHub stats every hour
+    const statsInterval = setInterval(fetchGitHubStats, 3600000);
+
+    return () => clearInterval(statsInterval);
+  }, []);
 
   useEffect(() => {
     // Only run the timer if user is authenticated and expiration exists
@@ -66,7 +92,6 @@ const Footer: React.FC = () => {
       bottom="20px"
       right="20px"
       zIndex="10"
-      bg={colorMode === 'dark' ? 'transparent' : 'white'}
     >
       <HStack gap={4}>
         <Link href="https://github.com/spoonbobo/onlysaid" target="_blank">
@@ -77,7 +102,13 @@ const Footer: React.FC = () => {
               boxSize="20px"
               filter={colorMode === 'dark' ? 'invert(1)' : 'none'}
             />
-            <Text fontSize="sm" color="gray.500">31</Text>
+            {githubStats ? (
+              <Text fontSize="sm" color="gray.500">
+                {githubStats.stars}
+              </Text>
+            ) : (
+              <Spinner size="xs" color="gray.500" />
+            )}
           </HStack>
         </Link>
         <Text fontSize="sm" color="gray.500">
