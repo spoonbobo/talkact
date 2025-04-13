@@ -50,7 +50,7 @@
     "trusted_by": "用戶回饋",
     "plans_title": "計劃",
     "plans_description": "查看, 管理，並利用MCP工具完成計劃",
-    "ai_assistant_title": "AI助手",
+    "ai_assistant_title": "AI知識庫助手",
     "ai_assistant_description": "在應用任何一個地方都可以回答你的問題，並且會不斷學習新的知識。",
     "chatroom_title": "聊天室",
     "chatroom_description": "與你的團隊和AI代理聊天，以創建可執行的計劃",
@@ -125,7 +125,7 @@
     "clear_all": "全部清除"
   },
   "Assistant": {
-    "ai_assistant": "AI助手",
+    "ai_assistant": "AI知識庫助手",
     "clear_chat": "清除聊天",
     "how_can_i_help_you_today": "我可以怎麼幫你？"
   },
@@ -192,7 +192,9 @@
     "loading_more_messages": "加載更多訊息中...",
     "scroll_up_for_more": "向上滑動以加載更多訊息",
     "today": "今天",
-    "yesterday": "昨天"
+    "yesterday": "昨天",
+    "room_name": "聊天室名稱",
+    "edit": "編輯"
   },
   "Plans": {
     "plans": "計劃",
@@ -365,7 +367,12 @@
     "your_email": "你的電郵地址",
     "select_language": "選擇語言",
     "delete_all_users": "刪除所有用戶",
-    "delete_all_users_warning": "這個操作無法撤銷，請謹慎操作"
+    "delete_all_users_warning": "這個操作無法撤銷，請謹慎操作",
+    "reset_all_data": "重置所有數據",
+    "reset_all_data_warning": "這個操作無法撤銷，請謹慎操作",
+    "extremely_destructive": "極度破壞性",
+    "reset_all_data_confirm": "確定重置所有數據?",
+    "reset_all_data_confirm_final": "這個操作無法撤銷，請謹慎操作"
   },
   "Loading": {
     "loading": "加載中...",

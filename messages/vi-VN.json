@@ -188,7 +188,14 @@
     "success": "Thành công",
     "left_room_successfully": "Đã thoát phòng thành công",
     "users_invited_successfully": "Đã mời người dùng thành công",
-    "load_earlier_messages": "Tải thêm"
+    "load_earlier_messages": "加载更多",
+    "no_more_messages": "Không còn tin nhắn nào",
+    "loading_more_messages": "Đang tải thêm tin nhắn...",
+    "scroll_up_for_more": "Cuộn lên để tải thêm tin nhắn",
+    "today": "Hôm nay",
+    "yesterday": "Hôm qua",
+    "room_name": "Tên phòng chat",
+    "edit": "Chỉnh sửa"
   },
   "Plans": {
     "plans": "Kế hoạch",
@@ -257,7 +264,8 @@
     "close": "Đóng",
     "logs": "Nhật ký",
     "no_plans_in_status": "Không có kế hoạch trong trạng thái này",
-    "today": "Hôm nay"
+    "today": "Hôm nay",
+    "drop_plans_here": "Kéo và thả kế hoạch vào đây"
   },
   "Learn": {
     "learn": "Học tập",
@@ -285,7 +293,15 @@
       "data_sources": "Nguồn dữ liệu",
       "folder_structure": "Cấu trúc thư mục",
       "search_data_sources": "Tìm kiếm nguồn dữ liệu",
-      "search_folders": "Tìm kiếm thư mục"
+      "search_folders": "Tìm kiếm thư mục",
+      "preview": "Xem trước",
+      "tags": "Thẻ",
+      "source": "Nguồn",
+      "close": "Đóng",
+      "no_document_selected": "Chưa chọn tài liệu nào",
+      "open_document": "Mở tài liệu",
+      "download": "Tải xuống",
+      "document_details": "Chi tiết tài liệu"
     }
   },
   "Dashboard": {
@@ -353,7 +369,12 @@
     "your_email": "Email của bạn",
     "select_language": "Chọn ngôn ngữ",
     "delete_all_users": "Xóa tất cả người dùng",
-    "delete_all_users_warning": "Hành động này không thể hoàn tác, vui lòng cẩn thận"
+    "delete_all_users_warning": "Hành động này không thể hoàn tác, vui lòng cẩn thận",
+    "reset_all_data": "Đặt lại tất cả dữ liệu",
+    "reset_all_data_warning": "Hành động này không thể hoàn tác, vui lòng cẩn thận",
+    "extremely_destructive": "Cực kỳ nguy hiểm",
+    "reset_all_data_confirm": "Xác nhận đặt lại tất cả dữ liệu?",
+    "reset_all_data_confirm_final": "Hành động này không thể hoàn tác, vui lòng cẩn thận"
   },
   "Loading": {
     "loading": "Đang tải...",

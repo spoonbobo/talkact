@@ -184,7 +184,14 @@
       "user_not_found": "사용자를 찾을 수 없습니다",
       "success": "성공",
       "left_room_successfully": "채팅방에서 성공적으로 나갔습니다",
-      "users_invited_successfully": "사용자를 성공적으로 초대했습니다"
+      "users_invited_successfully": "사용자를 성공적으로 초대했습니다",
+      "no_more_messages": "더 이상 메시지가 없습니다",
+      "loading_more_messages": "메시지 더 불러오는 중...",
+      "scroll_up_for_more": "위로 스크롤하여 더 많은 메시지 불러오기",
+      "today": "오늘",
+      "yesterday": "어제",
+      "room_name": "채팅방 이름",
+      "edit": "편집"
     },
     "Tasks": {
       "tasks": "태스크",
@@ -268,7 +275,15 @@
         "data_sources": "데이터 소스",
         "folder_structure": "폴더 구조",
         "search_data_sources": "데이터 소스 검색",
-        "search_folders": "폴더 검색"
+        "search_folders": "폴더 검색",
+        "preview": "미리보기",
+        "tags": "태그",
+        "source": "출처",
+        "close": "닫기",
+        "no_document_selected": "선택된 문서가 없습니다",
+        "open_document": "문서 열기",
+        "download": "문서 다운로드",
+        "document_details": "문서 세부 정보"
       }
     },
     "Dashboard": {
@@ -336,7 +351,12 @@
       "your_email": "당신의 이메일",
       "select_language": "언어 선택",
       "delete_all_users": "모든 사용자 삭제",
-      "delete_all_users_warning": "이 작업은 취소할 수 없습니다. 신중하게 진행하세요"
+      "delete_all_users_warning": "이 작업은 취소할 수 없습니다. 신중하게 진행하세요",
+      "reset_all_data": "모든 데이터 초기화",
+      "reset_all_data_warning": "이 작업은 취소할 수 없습니다. 신중하게 진행하세요",
+      "extremely_destructive": "매우 파괴적인 작업",
+      "reset_all_data_confirm": "모든 데이터를 초기화하시겠습니까?",
+      "reset_all_data_confirm_final": "이 작업은 취소할 수 없습니다. 신중하게 진행하세요"
     },
     "Loading": {
       "loading": "로딩 중...",
@@ -430,7 +450,8 @@
       "close": "닫기",
       "logs": "로그",
       "no_plans_in_status": "이 상태의 플랜이 없습니다",
-      "today": "오늘"
+      "today": "오늘",
+      "drop_plans_here": "플랜을 여기에 드롭하세요"
     },
     "Notification": {
       "notifications": "알림",

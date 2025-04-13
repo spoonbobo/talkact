@@ -140,7 +140,7 @@ export default function CreateProfilePage() {
                 }
             )
             await signOut({ redirect: false });
-            router.push(`/${locale}`);
+            router.push(`/${locale}/signin`);
             // login again
         } catch (error) {
             toaster.create(

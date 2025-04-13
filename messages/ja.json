@@ -176,7 +176,14 @@
     "user_info": "ユーザー情報",
     "success": "成功",
     "left_room_successfully": "ルームから正常に退出しました",
-    "users_invited_successfully": "ユーザーを正常に招待しました"
+    "users_invited_successfully": "ユーザーを正常に招待しました",
+    "no_more_messages": "これ以上メッセージはありません",
+    "loading_more_messages": "メッセージを読み込み中...",
+    "scroll_up_for_more": "上にスクロールして更にメッセージを読み込む",
+    "today": "今日",
+    "yesterday": "昨日",
+    "room_name": "チャットルーム名",
+    "edit": "編集"
   },
   "Plans": {
     "plans": "プラン",
@@ -243,7 +250,8 @@
     "tools_readonly_message": "ツール設定は閲覧のみ可能で、編集できません",
     "type": "タイプ",
     "enter_array_as_json": "配列値をJSONとして入力: [\"item1\", \"item2\"]",
-    "request_mcp": "MCPリクエスト"
+    "request_mcp": "MCPリクエスト",
+    "drop_plans_here": "プランをここにドロップ"
   },
   "Learn": {
     "learn": "学ぶ",
@@ -271,7 +279,15 @@
       "data_sources": "データソース",
       "folder_structure": "フォルダ構造",
       "search_data_sources": "データソースを検索",
-      "search_folders": "フォルダを検索"
+      "search_folders": "フォルダを検索",
+      "preview": "プレビュー",
+      "tags": "タグ",
+      "source": "ソース",
+      "close": "閉じる",
+      "no_document_selected": "ドキュメントが選択されていません",
+      "open_document": "ドキュメントを開く",
+      "download": "ドキュメントをダウンロード",
+      "document_details": "ドキュメント詳細"
     }
   },
   "AdminPanel": {
@@ -334,7 +350,12 @@
     "your_email": "あなたのメールアドレス",
     "select_language": "言語を選択",
     "delete_all_users": "すべてのユーザーを削除",
-    "delete_all_users_warning": "この操作は元に戻すことができません、慎重に進めてください"
+    "delete_all_users_warning": "この操作は元に戻すことができません、慎重に進めてください",
+    "reset_all_data": "すべてのデータをリセット",
+    "reset_all_data_warning": "この操作は元に戻せません。慎重に行ってください",
+    "extremely_destructive": "非常に破壊的",
+    "reset_all_data_confirm": "すべてのデータをリセットしますか？",
+    "reset_all_data_confirm_final": "この操作は元に戻せません。慎重に行ってください"
   },
   "Loading": {
     "loading": "読み込み中...",

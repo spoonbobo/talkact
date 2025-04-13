@@ -188,7 +188,14 @@
     "success": "สำเร็จ",
     "left_room_successfully": "ออกจากห้องเรียบร้อยแล้ว",
     "users_invited_successfully": "เชิญผู้ใช้เรียบร้อยแล้ว",
-    "load_earlier_messages": "โหลดเพิ่มเติม"
+    "load_earlier_messages": "โหลดเพิ่มเติม",
+    "no_more_messages": "ไม่มีข้อความเพิ่มเติม",
+    "loading_more_messages": "กำลังโหลดข้อความเพิ่มเติม...",
+    "scroll_up_for_more": "เลื่อนขึ้นเพื่อโหลดข้อความเพิ่มเติม",
+    "today": "วันนี้",
+    "yesterday": "เมื่อวาน",
+    "room_name": "ชื่อห้องแชท",
+    "edit": "แก้ไข"
   },
   "Plans": {
     "plans": "แผน",
@@ -257,7 +264,8 @@
     "close": "ปิด",
     "logs": "บันทึก",
     "no_plans_in_status": "ไม่มีแผนในสถานะนี้",
-    "today": "วันนี้"
+    "today": "วันนี้",
+    "drop_plans_here": "วางแผนที่นี่"
   },
   "Learn": {
     "learn": "เรียนรู้",
@@ -285,7 +293,15 @@
       "data_sources": "แหล่งข้อมูล",
       "folder_structure": "โครงสร้างโฟลเดอร์",
       "search_data_sources": "ค้นหาแหล่งข้อมูล",
-      "search_folders": "ค้นหาโฟลเดอร์"
+      "search_folders": "ค้นหาโฟลเดอร์",
+      "preview": "ดูตัวอย่าง",
+      "tags": "แท็ก",
+      "source": "แหล่งที่มา",
+      "close": "ปิด",
+      "no_document_selected": "ไม่ได้เลือกเอกสาร",
+      "open_document": "เปิดเอกสาร",
+      "download": "ดาวน์โหลดเอกสาร",
+      "document_details": "รายละเอียดเอกสาร"
     }
   },
   "Dashboard": {
@@ -353,7 +369,12 @@
     "your_email": "อีเมลของคุณ",
     "select_language": "เลือกภาษา",
     "delete_all_users": "ลบผู้ใช้ทั้งหมด",
-    "delete_all_users_warning": "การกระทำนี้ไม่สามารถยกเลิกได้ กรุณาระมัดระวัง"
+    "delete_all_users_warning": "การกระทำนี้ไม่สามารถยกเลิกได้ กรุณาระมัดระวัง",
+    "reset_all_data": "รีเซ็ตข้อมูลทั้งหมด",
+    "reset_all_data_warning": "การกระทำนี้ไม่สามารถยกเลิกได้ กรุณาระมัดระวัง",
+    "extremely_destructive": "อันตรายอย่างยิ่ง",
+    "reset_all_data_confirm": "ยืนยันการรีเซ็ตข้อมูลทั้งหมด?",
+    "reset_all_data_confirm_final": "การกระทำนี้ไม่สามารถยกเลิกได้ กรุณาระมัดระวัง"
   },
   "Loading": {
     "loading": "กำลังโหลด...",

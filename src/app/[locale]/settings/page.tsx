@@ -49,6 +49,7 @@ export default function SettingsPage() {
   const [isDeletingAllRooms, setIsDeletingAllRooms] = useState(false);
   const [isDeletingAllUsers, setIsDeletingAllUsers] = useState(false);
   const [isDeletingAllTasks, setIsDeletingAllTasks] = useState(false);
+  const [isResettingAllData, setIsResettingAllData] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
   const accentColor = "blue.500";
@@ -230,6 +231,100 @@ export default function SettingsPage() {
       });
     } finally {
       setIsDeletingAllTasks(false);
+    }
+  };
+
+  const handleResetAllData = async () => {
+    if (!session) return;
+
+    // Add confirmation dialog with a more serious warning
+    if (!confirm(t("reset_all_data_confirm"))) {
+      return;
+    }
+
+    // Double confirmation for destructive action
+    if (!confirm(t("reset_all_data_confirm_final"))) {
+      return;
+    }
+
+    setIsResettingAllData(true);
+    try {
+      // Delete all messages
+      const messagesResponse = await fetch('/api/chat/delete_message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ all: true }),
+      });
+
+      if (!messagesResponse.ok) {
+        const messagesData = await messagesResponse.json();
+        throw new Error(messagesData.error || "Failed to delete messages");
+      }
+
+      // Delete all plans (which also deletes associated tasks)
+      const plansResponse = await fetch('/api/plan/delete_plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ all: true }),
+      });
+
+      if (!plansResponse.ok) {
+        const plansData = await plansResponse.json();
+        throw new Error(plansData.error || "Failed to delete plans");
+      }
+
+      // Delete all rooms
+      const roomsResponse = await fetch('/api/chat/delete_room', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ all: true }),
+      });
+
+      if (!roomsResponse.ok) {
+        const roomsData = await roomsResponse.json();
+        throw new Error(roomsData.error || "Failed to delete rooms");
+      }
+
+      // Delete all users (except current admin)
+      const usersResponse = await fetch('/api/user/delete_user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ all: true }),
+      });
+
+      if (!usersResponse.ok) {
+        const usersData = await usersResponse.json();
+        throw new Error(usersData.error || "Failed to delete users");
+      }
+
+      toaster.create({
+        title: t("database_reset"),
+        description: t("all_data_reset_success"),
+        duration: 5000,
+      });
+
+      // Redirect to sign-out page after successful reset with locale parameter
+      setTimeout(() => {
+        const locale = window.location.pathname.split('/')[1]; // Extract locale from current URL
+        window.location.href = `/${locale}/signout`;
+      }, 2000);
+    } catch (error) {
+      console.error("Error resetting database:", error);
+      toaster.create({
+        title: t("error"),
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        duration: 5000,
+      });
+    } finally {
+      setIsResettingAllData(false);
     }
   };
 
@@ -640,7 +735,49 @@ export default function SettingsPage() {
                     </HStack>
                   </Box>
 
-                  {/* Delete All Tasks section (commented out) */}
+                  {/* Add Reset All Data section */}
+                  <Box
+                    p={4}
+                    borderWidth="1px"
+                    borderColor={dangerZoneBorder}
+                    borderRadius="md"
+                    bg={dangerZoneBg}
+                    mb={6}
+                  >
+                    <HStack align="flex-start">
+                      <Icon as={FiInfo} color="red.500" boxSize={5} mt={0.5} />
+                      <Box>
+                        <Heading size="sm" color={dangerZoneHeading} mb={1}>
+                          {t("reset_all_data")}
+                        </Heading>
+                        <Text color={dangerZoneText} fontSize="sm">
+                          {t("reset_all_data_warning")}
+                        </Text>
+                        <Badge colorScheme="red" mt={2} mb={2}>
+                          {t("extremely_destructive")}
+                        </Badge>
+                        <Box
+                          as="button"
+                          mt={3}
+                          py={2}
+                          px={4}
+                          borderRadius="md"
+                          bg="red.600"
+                          color="white"
+                          fontWeight="medium"
+                          fontSize="sm"
+                          _hover={{ bg: "red.700" }}
+                          _active={{ bg: "red.800" }}
+                          _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+                          onClick={handleResetAllData}
+                          // @ts-ignore
+                          disabled={isResettingAllData}
+                        >
+                          {isResettingAllData ? t("resetting") : t("reset_all_data")}
+                        </Box>
+                      </Box>
+                    </HStack>
+                  </Box>
                 </Box>
               )}
             </Box>

@@ -49,12 +49,22 @@
     "powered_by": "搭载",
     "trusted_by": "用户反馈",
     "plans_title": "计划",
-    "plans_description": "查看并利用MCP工具完成计划",
-    "ai_assistant_title": "AI助手",
+    "plans_description": "查看, 管理，并利用MCP工具完成计划",
+    "ai_assistant_title": "AI知识库助手",
     "ai_assistant_description": "在应用任何一个地方都可以回答你的问题，并且会不断学习新的知识。",
     "chatroom_title": "聊天室",
     "chatroom_description": "与你的团队和AI代理聊天，以创建可执行的计划",
-    "learn_more": "了解更多"
+    "learn_more": "了解更多",
+    "suggest_feature": "建议功能",
+    "report_issue": "报告问题",
+    "latest_releases": "版本更新",
+    "open_issues": "问题解决中",
+    "resolved_issues": "已解决问题",
+    "in_progress": "实现中",
+    "completed": "已完成",
+    "view_all_issues": "查看所有问题",
+    "view_all_releases": "查看所有",
+    "view_all_features": "查看所有"
   },
   "Signup": {
     "signup": "注册",
@@ -115,7 +125,7 @@
     "clear_all": "全部清除"
   },
   "Assistant": {
-    "ai_assistant": "AI助手",
+    "ai_assistant": "AI知识库助手",
     "clear_chat": "清除聊天",
     "how_can_i_help_you_today": "我可以怎么帮你？"
   },
@@ -178,33 +188,39 @@
     "success": "成功",
     "left_room_successfully": "已成功离开聊天室",
     "users_invited_successfully": "已成功邀请用户",
-    "load_earlier_messages": "加载更多"
+    "no_more_messages": "没有更多讯息了",
+    "loading_more_messages": "加载更多讯息中...",
+    "scroll_up_for_more": "向上滑动以加载更多讯息",
+    "today": "今天",
+    "yesterday": "昨天",
+    "room_name": "聊天室名称",
+    "edit": "编辑"
   },
   "Plans": {
     "plans": "计划",
-    "available_plans": "可用计划",
+    "available_plans": "计划列表",
     "tasks": "任务",
     "refresh": "刷新",
-    "no_plans_found": "未找到计划",
-    "no_tasks_found": "未找到任务",
+    "no_plans_found": "没有计划",
+    "no_tasks_found": "没有任务",
     "loading_plans": "加载计划中...",
     "loading_tasks": "加载任务中...",
     "search_plans": "搜索计划...",
     "clear_filters": "清除筛选",
     "approve_plan": "批准计划",
     "deny_plan": "拒绝计划",
-    "plan_overview": "计划概览",
-    "assigner": "分配者",
-    "assignee": "受理人",
+    "plan_overview": "计划概述",
+    "assigner": "指派人",
+    "assignee": "指派对象",
     "created": "创建时间",
     "updated": "更新时间",
-    "completed": "已完成",
-    "pending": "待处理",
+    "completed": "完成时间",
+    "pending": "待定",
     "running": "进行中",
     "success": "成功",
     "failure": "失败",
-    "denied": "已拒绝",
-    "terminated": "已终止",
+    "denied": "拒绝",
+    "terminated": "终止",
     "all": "全部",
     "All": "全部",
     "status": "状态",
@@ -246,8 +262,9 @@
     "no_task_selected": "没有选择任务",
     "close": "关闭",
     "logs": "日志",
-    "no_plans_in_status": "没有此状态的计划",
-    "today": "今天"
+    "no_plans_in_status": "没有计划",
+    "today": "今天",
+    "drop_plans_here": "将计划拖放到这里"
   },
   "Learn": {
     "learn": "学习",
@@ -275,7 +292,15 @@
       "data_sources": "知识源",
       "folder_structure": "知识结构",
       "search_data_sources": "搜索数据源",
-      "search_folders": "搜索文件夹"
+      "search_folders": "搜索文件夹",
+      "preview": "预览",
+      "tags": "标签",
+      "source": "来源",
+      "close": "关闭",
+      "no_document_selected": "没有选择文档",
+      "open_document": "打开文档",
+      "download": "下载文档",
+      "document_details": "文档详情"
     }
   },
   "Dashboard": {
@@ -342,7 +367,12 @@
     "your_email": "你的电邮地址",
     "select_language": "选择语言",
     "delete_all_users": "删除所有用户",
-    "delete_all_users_warning": "这个操作无法撤销，请谨慎操作"
+    "delete_all_users_warning": "这个操作无法撤销，请谨慎操作",
+    "reset_all_data": "重置所有数据",
+    "reset_all_data_warning": "这个操作无法撤销，请谨慎操作",
+    "extremely_destructive": "极度破坏性",
+    "reset_all_data_confirm": "确定重置所有数据?",
+    "reset_all_data_confirm_final": "这个操作无法撤销，请谨慎操作"
   },
   "Loading": {
     "loading": "加载中...",
