@@ -54,7 +54,17 @@
     "ai_assistant_description": "สามารถตอบคำถามของคุณได้ทุกที่ในแอป และเรียนรู้ความรู้ใหม่ๆ อย่างต่อเนื่อง",
     "chatroom_title": "ห้องแชท",
     "chatroom_description": "แชทกับทีมของคุณและตัวแทน AI เพื่อสร้างแผนที่สามารถดำเนินการได้",
-    "learn_more": "เรียนรู้เพิ่มเติม"
+    "learn_more": "เรียนรู้เพิ่มเติม",
+    "suggest_feature": "แนะนำฟีเจอร์",
+    "report_issue": "รายงานปัญหา",
+    "latest_releases": "อัปเดตเวอร์ชัน",
+    "open_issues": "ปัญหาที่ยังไม่ได้แก้ไข",
+    "resolved_issues": "ปัญหาที่แก้ไขแล้ว",
+    "in_progress": "กำลังดำเนินการ",
+    "completed": "เสร็จสิ้น",
+    "view_all_issues": "ดูปัญหาทั้งหมด",
+    "view_all_releases": "ดูทั้งหมด",
+    "view_all_features": "ดูทั้งหมด"
   },
   "Signup": {
     "signup": "สมัครสมาชิก",
@@ -321,7 +331,8 @@
     "active_users": "สมาชิก",
     "last_updated": "อัปเดตล่าสุด",
     "refresh": "รีเฟรช",
-    "search_chatrooms": "ค้นหาห้องแชท"
+    "search_chatrooms": "ค้นหาห้องแชท",
+    "members": "สมาชิก"
   },
   "Settings": {
     "settings": "การตั้งค่า",

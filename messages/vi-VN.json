@@ -54,7 +54,17 @@
     "ai_assistant_description": "Có thể trả lời câu hỏi của bạn ở bất kỳ đâu trong ứng dụng và liên tục học hỏi kiến thức mới",
     "chatroom_title": "Phòng chat",
     "chatroom_description": "Trò chuyện với đội ngũ của bạn và đại diện AI để tạo ra kế hoạch có thể thực hiện",
-    "learn_more": "Tìm hiểu thêm"
+    "learn_more": "Tìm hiểu thêm",
+    "suggest_feature": "Đề xuất tính năng",
+    "report_issue": "Báo cáo vấn đề",
+    "latest_releases": "Phiên bản mới nhất",
+    "open_issues": "Vấn đề đang mở",
+    "resolved_issues": "Vấn đề đã giải quyết",
+    "in_progress": "Đang tiến hành",
+    "completed": "Hoàn thành",
+    "view_all_issues": "Xem tất cả vấn đề",
+    "view_all_releases": "Xem tất cả",
+    "view_all_features": "Xem tất cả"
   },
   "Signup": {
     "signup": "Đăng ký",

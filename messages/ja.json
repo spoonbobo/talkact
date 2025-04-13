@@ -99,7 +99,18 @@
     "ai_assistant_title": "AIアシスタント",
     "ai_assistant_description": "アプリのどこでも質問に答え、新しい知識を継続的に学習します。",
     "chatroom_title": "チャットルーム",
-    "chatroom_description": "チームやAIエージェントとチャットして実行可能なプランを作成する"
+    "chatroom_description": "チームやAIエージェントとチャットして実行可能なプランを作成する",
+    "learn_more": "詳細を見る",
+    "suggest_feature": "機能を提案する",
+    "report_issue": "問題を報告する",
+    "latest_releases": "最新リリース",
+    "open_issues": "未解決の問題",
+    "resolved_issues": "解決済みの問題",
+    "in_progress": "進行中",
+    "completed": "完了",
+    "view_all_issues": "すべての問題を表示",
+    "view_all_releases": "すべて表示",
+    "view_all_features": "すべて表示"
   },
   "Footer": {
     "privacy_policy": "プライバシーポリシー",
@@ -224,7 +235,15 @@
     "cancel": "キャンセル",
     "update_task": "タスクを更新",
     "task_details": "タスクの詳細",
-    "no_task_selected": "タスクが選択されていません"
+    "no_task_selected": "タスクが選択されていません",
+    "parameters": "パラメータ",
+    "parameter": "パラメータ",
+    "value": "値",
+    "tools": "ツール",
+    "tools_readonly_message": "ツール設定は閲覧のみ可能で、編集できません",
+    "type": "タイプ",
+    "enter_array_as_json": "配列値をJSONとして入力: [\"item1\", \"item2\"]",
+    "request_mcp": "MCPリクエスト"
   },
   "Learn": {
     "learn": "学ぶ",

@@ -107,12 +107,24 @@
       "ai_assistant_title": "AI 어시스턴트",
       "ai_assistant_description": "앱 어디에서나 질문에 답변하고 지속적으로 새로운 지식을 학습합니다.",
       "chatroom_title": "채팅방",
-      "chatroom_description": "팀 및 AI 에이전트와 채팅하여 실행 가능한 플랜 생성"
+      "chatroom_description": "팀 및 AI 에이전트와 채팅하여 실행 가능한 플랜 생성",
+      "learn_more": "더 알아보기",
+      "suggest_feature": "기능 제안",
+      "report_issue": "문제 보고",
+      "latest_releases": "최신 릴리스",
+      "open_issues": "미해결 문제",
+      "resolved_issues": "해결된 문제",
+      "in_progress": "진행 중",
+      "completed": "완료됨",
+      "view_all_issues": "모든 문제 보기",
+      "view_all_releases": "모두 보기",
+      "view_all_features": "모두 보기"
     },
     "Footer": {
       "privacy_policy": "개인정보 처리방침",
       "terms_of_service": "이용약관",
-      "contact_us": "문의하기"
+      "contact_us": "문의하기",
+      "version": "버전"
     },
     "Chat": {
       "chat": "채팅",

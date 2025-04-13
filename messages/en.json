@@ -108,12 +108,24 @@
     "ai_assistant_title": "AI Assistant",
     "ai_assistant_description": "Answers your questions anywhere in the app and continuously learns new knowledge.",
     "chatroom_title": "Chat Room",
-    "chatroom_description": "Chat with your team and AI agents to create actionable plans"
+    "chatroom_description": "Chat with your team and AI agents to create actionable plans",
+    "learn_more": "Learn More",
+    "suggest_feature": "Suggest Feature",
+    "report_issue": "Report Issue",
+    "latest_releases": "Latest Releases",
+    "open_issues": "Open Issues",
+    "resolved_issues": "Resolved Issues",
+    "in_progress": "In Progress",
+    "completed": "Completed",
+    "view_all_issues": "View All Issues",
+    "view_all_releases": "View All",
+    "view_all_features": "View All"
   },
   "Footer": {
     "privacy_policy": "Privacy Policy",
     "terms_of_service": "Terms of Service",
-    "contact_us": "Contact Us"
+    "contact_us": "Contact Us",
+    "version": "Version"
   },
   "Chat": {
     "chat": "Chat",
