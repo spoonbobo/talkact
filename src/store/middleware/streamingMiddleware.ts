@@ -196,7 +196,7 @@ const setupVisibilityChangeHandler = (storeRef: any) => {
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
             // Page is now hidden (tab switch, minimize, etc.)
-            debugLog('Page visibility changed to hidden');
+            // debugLog('Page visibility changed to hidden');
 
             // Get all active sessions
             const sessions = getAllSessions();
@@ -218,7 +218,7 @@ const setupVisibilityChangeHandler = (storeRef: any) => {
             });
         } else if (document.visibilityState === 'visible') {
             // Page is now visible again
-            debugLog('Page visibility changed to visible');
+            // debugLog('Page visibility changed to visible');
 
             // Get all sessions that were active when tab was switched
             const sessions = getAllSessions();
