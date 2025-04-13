@@ -21,6 +21,7 @@ import { setCurrentRoute } from '@/store/features/assistantSlice';
 import { useDispatch } from "react-redux";
 import { checkSessionExpiration } from "@/store/features/userSlice";
 import ActivityTracker from '@/components/ActivityTracker';
+import Announcement from "@/components/announcement";
 
 // Session expiration checker component
 function SessionExpirationChecker() {

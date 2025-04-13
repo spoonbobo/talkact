@@ -16,6 +16,7 @@ import { useTranslations } from "next-intl";
 import { useColorMode } from "@/components/ui/color-mode";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
+import Announcement from "@/components/announcement";
 
 const Footer: React.FC = () => {
   const t = useTranslations("Footer");
@@ -93,41 +94,46 @@ const Footer: React.FC = () => {
       right="20px"
       zIndex="10"
     >
-      <HStack gap={4}>
-        <Link href="https://github.com/spoonbobo/onlysaid" target="_blank">
-          <HStack gap={1}>
-            <Image
-              src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
-              alt="GitHub"
-              boxSize="20px"
-              filter={colorMode === 'dark' ? 'invert(1)' : 'none'}
-            />
-            {githubStats ? (
-              <Text fontSize="sm" color="gray.500">
-                {githubStats.stars}
-              </Text>
-            ) : (
-              <Spinner size="xs" color="gray.500" />
-            )}
-          </HStack>
-        </Link>
-        <Text fontSize="sm" color="gray.500">
-          {t("version")} {process.env.NEXT_PUBLIC_VERSION}
-        </Text>
-        <Tooltip
-          content={
-            <VStack align="start">
-              <Text>Auth: {isAuthenticated ? "Yes" : "No"}</Text>
-              <Text>Expires: {expiresAt ? new Date(expiresAt).toLocaleTimeString() : "Not set"}</Text>
-              <Text>Now: {new Date().toLocaleTimeString()}</Text>
-            </VStack>
-          }
-        >
-          <Text fontSize="sm" color={timeRemaining === "00:00" ? "red.500" : "gray.500"}>
-            TTL: {timeRemaining}
+      <VStack align="flex-end" gap={2}>
+        <Box maxWidth="300px">
+          <Announcement inFooter={true} />
+        </Box>
+        <HStack gap={4}>
+          <Link href="https://github.com/spoonbobo/onlysaid" target="_blank">
+            <HStack gap={1}>
+              <Image
+                src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+                alt="GitHub"
+                boxSize="20px"
+                filter={colorMode === 'dark' ? 'invert(1)' : 'none'}
+              />
+              {githubStats ? (
+                <Text fontSize="sm" color="gray.500">
+                  {githubStats.stars}
+                </Text>
+              ) : (
+                <Spinner size="xs" color="gray.500" />
+              )}
+            </HStack>
+          </Link>
+          <Text fontSize="sm" color="gray.500">
+            {t("version")} {process.env.NEXT_PUBLIC_VERSION}
           </Text>
-        </Tooltip>
-      </HStack>
+          <Tooltip
+            content={
+              <VStack align="start">
+                <Text>Auth: {isAuthenticated ? "Yes" : "No"}</Text>
+                <Text>Expires: {expiresAt ? new Date(expiresAt).toLocaleTimeString() : "Not set"}</Text>
+                <Text>Now: {new Date().toLocaleTimeString()}</Text>
+              </VStack>
+            }
+          >
+            <Text fontSize="sm" color={timeRemaining === "00:00" ? "red.500" : "gray.500"}>
+              TTL: {timeRemaining}
+            </Text>
+          </Tooltip>
+        </HStack>
+      </VStack>
     </Box>
   );
 };
