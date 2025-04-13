@@ -20,6 +20,7 @@ interface ChatMessageListProps {
     onLoadMore?: () => void;
     isLoadingMore?: boolean;
     hasMoreMessages?: boolean;
+    className?: string;
 }
 
 export const ChatMessageList = ({
@@ -27,7 +28,8 @@ export const ChatMessageList = ({
     messagesEndRef,
     onLoadMore,
     isLoadingMore = false,
-    hasMoreMessages = true
+    hasMoreMessages = true,
+    className = ''
 }: ChatMessageListProps) => {
     const colors = useChatPageColors();
     const t = useTranslations("Chat");
@@ -54,6 +56,9 @@ export const ChatMessageList = ({
     const scrollToBottomRAF = React.useRef<number | null>(null);
     const currentRoomChanged = React.useRef<boolean>(false);
 
+    // Add this state to track when we're loading older messages
+    const [isLoadingOlder, setIsLoadingOlder] = useState(false);
+
     // Move formatMessageDate inside the component to access the t function
     const formatMessageDate = (date: Date): string => {
         const today = new Date();
@@ -74,7 +79,7 @@ export const ChatMessageList = ({
         }
     };
 
-    // Function to handle scroll events
+    // Modify the handleScroll function to preserve scroll position
     const handleScroll = useCallback(() => {
         if (!scrollContainerRef.current) return;
 
@@ -85,63 +90,51 @@ export const ChatMessageList = ({
         shouldScrollToBottom.current = isNearBottom;
 
         // Check if user is near top for loading more messages
-        // Use a more generous threshold (10% of container height) to trigger loading earlier
         const loadMoreThreshold = clientHeight * 0.1;
         if (scrollTop < loadMoreThreshold && onLoadMore && !isLoadingMore && hasMoreMessages) {
-            // Save current scroll position and height
-            const currentScrollHeight = scrollContainerRef.current.scrollHeight;
-            const currentScrollPosition = scrollContainerRef.current.scrollTop;
+            // Store current scroll height and position
+            const prevScrollHeight = scrollHeight;
+            const prevScrollPosition = scrollTop;
+
+            // Set flag to indicate we're loading older messages
+            setIsLoadingOlder(true);
 
             // Load more messages
             onLoadMore();
 
-            // After loading, restore scroll position with a smoother approach
-            // Use multiple attempts with increasing delays for smoother experience
-            const restoreScrollPosition = () => {
+            // Use MutationObserver to detect DOM changes and maintain scroll position
+            const observer = new MutationObserver(() => {
                 if (scrollContainerRef.current) {
                     const newScrollHeight = scrollContainerRef.current.scrollHeight;
-                    const heightDifference = newScrollHeight - currentScrollHeight;
+                    const heightDifference = newScrollHeight - prevScrollHeight;
 
-                    // Use smooth scrolling for a better experience
-                    scrollContainerRef.current.scrollTo({
-                        top: currentScrollPosition + heightDifference,
-                        behavior: 'auto' // Use 'auto' instead of 'smooth' to prevent jank
-                    });
+                    // Adjust scroll position to maintain the same relative position
+                    scrollContainerRef.current.scrollTop = prevScrollPosition + heightDifference;
                 }
-            };
+            });
 
-            // Multiple attempts with increasing delays
-            setTimeout(restoreScrollPosition, 50);
-            setTimeout(restoreScrollPosition, 150);
-            setTimeout(restoreScrollPosition, 300);
+            // Start observing the container for changes
+            if (scrollContainerRef.current) {
+                observer.observe(scrollContainerRef.current, {
+                    childList: true,
+                    subtree: true
+                });
+
+                // Stop observing after a reasonable time
+                setTimeout(() => {
+                    observer.disconnect();
+                    setIsLoadingOlder(false);
+                }, 1000);
+            }
         }
     }, [onLoadMore, isLoadingMore, hasMoreMessages]);
 
-    // Improved function to scroll to bottom with less jank
+    // Simplify the scrollToBottom function
     const scrollToBottom = useCallback(() => {
-        if (scrollContainerRef.current) {
-            // Cancel any previous animation frame to prevent multiple scrolls
-            if (scrollToBottomRAF.current) {
-                cancelAnimationFrame(scrollToBottomRAF.current);
-            }
-
-            // Use requestAnimationFrame to ensure DOM is ready
-            scrollToBottomRAF.current = requestAnimationFrame(() => {
-                if (scrollContainerRef.current) {
-                    // Force scroll to bottom immediately
-                    scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-
-                    // Double-check with a small delay to ensure it worked
-                    setTimeout(() => {
-                        if (scrollContainerRef.current) {
-                            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-                        }
-                    }, 50);
-                }
-                scrollToBottomRAF.current = null;
-            });
+        if (scrollContainerRef.current && !isLoadingOlder) {
+            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
         }
-    }, []);
+    }, [isLoadingOlder]);
 
     // Listen for room changes
     useEffect(() => {
@@ -172,16 +165,13 @@ export const ChatMessageList = ({
         }
     }, [scrollToBottom]);
 
-    // Scroll to bottom when new messages arrive, but only if we're already at the bottom
-    // or if this is the initial load
+    // Also modify the useEffect that responds to messageGroups changes
     useEffect(() => {
-        if (shouldScrollToBottom.current || !hasMounted.current) {
+        // Only scroll to bottom for new messages at the bottom, not when loading older messages
+        if (shouldScrollToBottom.current && !isLoadingOlder) {
             scrollToBottom();
-            // Add a second attempt after a short delay
-            const timeoutId = setTimeout(scrollToBottom, 100);
-            return () => clearTimeout(timeoutId);
         }
-    }, [messageGroups, scrollToBottom]);
+    }, [messageGroups, scrollToBottom, isLoadingOlder]);
 
     // Add this effect to ensure the loading indicator is visible initially
     useEffect(() => {
@@ -317,6 +307,7 @@ export const ChatMessageList = ({
                 <Box
                     key={`${group.sender}-${groupIndex}`}
                     width="100%"
+                    className="message-group-item"
                 >
                     <Flex
                         gap={group.isCurrentUser ? 2 : 3}
@@ -368,6 +359,7 @@ export const ChatMessageList = ({
                                 (message: IMessage, msgIndex: number) => (
                                     <div
                                         key={message.id}
+                                        data-message-id={message.id}
                                         style={{
                                             width: "100%",
                                             display: "flex",
@@ -390,6 +382,7 @@ export const ChatMessageList = ({
                                                 isUser={group.isCurrentUser}
                                                 isFirstInGroup={msgIndex === 0}
                                                 isStreaming={!message.content}
+                                                isLoadingOlder={isLoadingOlder}
                                             />
                                         </motion.div>
 
@@ -447,6 +440,7 @@ export const ChatMessageList = ({
                 bg={colors.bgSubtle}
                 position="relative"
                 onScroll={handleScroll}
+                className={`message-list-container ${className}`}
                 css={{
                     "&::-webkit-scrollbar": {
                         width: "8px",

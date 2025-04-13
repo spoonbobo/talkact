@@ -143,6 +143,8 @@ services:
       - GITHUB_SECRET=${GITHUB_SECRET}
       - NEXT_PUBLIC_KB_URL=${KB_URL}
       - NEXT_PUBLIC_MCP_CLIENT_URL=${MCP_CLIENT_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_BASE_URL=${OPENAI_API_BASE_URL}
     # volumes:
     #   - .:/app
     restart: always

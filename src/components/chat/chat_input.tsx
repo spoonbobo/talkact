@@ -97,9 +97,9 @@ export const ChatInput = React.memo(({
 
     // Memoize all users to prevent array recreation on every render
     const allUsers = useMemo(() => {
-        const combined = [...currentRoomUsers, ...agents];
-        return Array.from(new Map(combined.map(user => [user.username, user])).values());
-    }, [currentRoomUsers, agents]);
+        // Just use room users instead of combining with agents
+        return currentRoomUsers;
+    }, [currentRoomUsers]);
 
     const getMentionSuggestions = useCallback(() => {
         if (!mentionState.isActive) return [];

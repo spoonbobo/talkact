@@ -27,6 +27,7 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserMo
     const [email, setEmail] = useState('');
     const [username, setUsername] = useState('');
     const [role, setRole] = useState('user');
+    const [avatar, setAvatar] = useState('https://play-lh.googleusercontent.com/d2zqBFBEymSZKaVg_dRo1gh3hBFn7_Kl9rO74xkDmnJeLgDW0MoJD3cUx0QzZN6jdsg=w240-h480-rw');
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<{ email?: string; username?: string }>({});
     const emailInputRef = useRef<HTMLInputElement>(null);
@@ -74,6 +75,7 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserMo
                 email,
                 username: username || email.split('@')[0],
                 role,
+                avatar: avatar,
             };
 
             const response = await fetch('/api/user/create_user', {
@@ -112,6 +114,7 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserMo
     const handleClose = () => {
         setEmail('');
         setUsername('');
+        setAvatar('');
         setErrors({});
         onClose();
     };
@@ -155,6 +158,18 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserMo
                                         _placeholder={{ color: 'gray.400' }}
                                     />
                                     {errors.username && <Field.ErrorText>{errors.username}</Field.ErrorText>}
+                                </Field.Root>
+
+                                <Field.Root>
+                                    <Field.Label color={textColorStrong}>Avatar URL</Field.Label>
+                                    <Input
+                                        color={textColor}
+                                        type="text"
+                                        value={avatar}
+                                        onChange={(e) => setAvatar(e.target.value)}
+                                        _placeholder={{ color: 'gray.400' }}
+                                        required
+                                    />
                                 </Field.Root>
 
                                 <Field.Root>

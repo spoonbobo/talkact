@@ -21,6 +21,7 @@ interface IChatBubbleProps {
   isFirstInGroup: boolean;
   isTaskMode?: boolean;
   isStreaming?: boolean;
+  isLoadingOlder?: boolean;
 }
 
 export const ChatBubble = React.memo(({
@@ -29,6 +30,7 @@ export const ChatBubble = React.memo(({
   isFirstInGroup,
   isTaskMode = true,
   isStreaming = false,
+  isLoadingOlder = false,
 }: IChatBubbleProps) => {
   const t = useTranslations("Chat");
   const colors = useChatPageColors();
@@ -81,8 +83,39 @@ export const ChatBubble = React.memo(({
     content = content.replace(/\|\s*\|/g, '|\n|');  // Add newlines between rows that got merged
     content = content.replace(/\|\|/g, '|\n|');     // Another pattern for merged rows
 
-    // Ensure header separator row has proper format
-    content = content.replace(/\|([-|]+)\|/g, '|$1|');
+    // Ensure header separator row has proper format with at least 3 dashes
+    content = content.replace(/\|(-+)\|/g, (match, dashes) => {
+      // Make sure each cell separator has at least 3 dashes
+      const cells = dashes.split('|');
+      const formattedCells = cells.map((cell: string) => {
+        const trimmed = cell.trim();
+        return trimmed.length >= 3 ? trimmed : '---';
+      });
+      return '|' + formattedCells.join('|') + '|';
+    });
+
+    // Improve table header separator detection and formatting
+    content = content.replace(/\|([\s-:]*)\|/g, (match, separators) => {
+      if (separators.includes('-')) {
+        // This is likely a table separator row, ensure it's properly formatted
+        const cells = separators.split('|');
+        const formattedCells = cells.map((cell: string) => {
+          const trimmed = cell.trim();
+          // Preserve alignment colons if present
+          if (trimmed.startsWith(':') && trimmed.endsWith(':')) {
+            return ':---:'; // Center align
+          } else if (trimmed.startsWith(':')) {
+            return ':---';  // Left align
+          } else if (trimmed.endsWith(':')) {
+            return '---:';  // Right align
+          } else {
+            return '---';   // Default align
+          }
+        });
+        return '|' + formattedCells.join('|') + '|';
+      }
+      return match; // Not a separator row, leave as is
+    });
 
     // Now convert remaining newlines to <br> tags for non-table content
     content = content.replace(/\n/g, '<br>');
@@ -185,17 +218,25 @@ export const ChatBubble = React.memo(({
 
   // Auto-scroll when the bubble appears or content changes
   useEffect(() => {
-    if (bubbleRef.current && (isStreaming || isFirstInGroup)) {
+    // Only auto-scroll for new messages (streaming or first in group at the bottom)
+    // Don't auto-scroll when loading older messages at the top
+    if (bubbleRef.current && isStreaming && !isLoadingOlder) {
+      // For streaming messages, we still want to scroll into view
       bubbleRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'end'
       });
+
+      // Dispatch an event to notify that we're scrolling to bottom
+      window.dispatchEvent(new CustomEvent('scrollToBottom'));
     }
-  }, [message.content, isStreaming, isFirstInGroup]);
+  }, [message.content, isStreaming, isLoadingOlder]);
 
   // Add a small delay to ensure content is fully rendered before scrolling
   useEffect(() => {
-    if (bubbleRef.current && isFirstInGroup) {
+    // Only auto-scroll for new messages at the bottom
+    // Don't auto-scroll when loading older messages at the top
+    if (bubbleRef.current && isFirstInGroup && isStreaming && !isLoadingOlder) {
       const timer = setTimeout(() => {
         bubbleRef.current?.scrollIntoView({
           behavior: 'smooth',
@@ -205,7 +246,7 @@ export const ChatBubble = React.memo(({
 
       return () => clearTimeout(timer);
     }
-  }, [isFirstInGroup]);
+  }, [isFirstInGroup, isStreaming, isLoadingOlder]);
 
   const handleCopy = () => {
     if (message.content) {
@@ -249,8 +290,8 @@ export const ChatBubble = React.memo(({
         <Box
           ref={bubbleRef}
           position="relative"
-          px={4}
-          py={isSingleLine ? 2 : 3}
+          px={3}
+          py={isSingleLine ? 1.5 : 2}
           width="fit-content"
           maxW="100%"
           borderRadius="xl"
@@ -293,12 +334,29 @@ export const ChatBubble = React.memo(({
                           style={codeColors.codeStyle}
                           language={match[1]}
                           PreTag="div"
+                          customStyle={{
+                            borderRadius: '6px',
+                            margin: '0.75em 0',
+                            padding: '1em',
+                            border: `1px solid ${isUser ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'}`,
+                            boxShadow: `0 2px 4px ${isUser ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'}`
+                          }}
                           {...props}
                         >
                           {String(children).replace(/\n$/, '')}
                         </SyntaxHighlighter>
                       ) : (
-                        <code className={className} {...props}>
+                        <code
+                          className={className}
+                          style={{
+                            backgroundColor: isUser ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.05)',
+                            padding: '0.2em 0.4em',
+                            borderRadius: '3px',
+                            fontSize: '0.9em',
+                            fontFamily: 'monospace'
+                          }}
+                          {...props}
+                        >
                           {children}
                         </code>
                       );
@@ -311,8 +369,13 @@ export const ChatBubble = React.memo(({
                         rel="noopener noreferrer"
                         style={{
                           color: isUser ? 'rgba(255,255,255,0.9)' : undefined,
-                          textDecoration: 'underline'
+                          textDecoration: 'underline',
+                          textUnderlineOffset: '2px',
+                          textDecorationThickness: '1px',
+                          transition: 'opacity 0.2s ease',
                         }}
+                        onMouseOver={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.opacity = '1'; }}
                       />
                     ),
                     // Style other elements as needed
@@ -333,9 +396,10 @@ export const ChatBubble = React.memo(({
 
                       return (
                         <p style={{
-                          margin: hasTableChild ? 0 : '0.25em 0',
+                          margin: hasTableChild ? 0 : '0.5em 0',
                           padding: 0,
-                          lineHeight: 1.5
+                          lineHeight: 1.5,
+                          letterSpacing: '0.01em'
                         }} {...props} />
                       );
                     },
@@ -343,7 +407,7 @@ export const ChatBubble = React.memo(({
                       <ul
                         style={{
                           paddingLeft: '1.5em',
-                          margin: '0.5em 0',
+                          margin: '0.6em 0',
                           listStyleType: 'disc',
                           listStylePosition: 'outside'
                         }}
@@ -354,7 +418,7 @@ export const ChatBubble = React.memo(({
                       <ol
                         style={{
                           paddingLeft: '1.5em',
-                          margin: '0.5em 0',
+                          margin: '0.6em 0',
                           listStyleType: 'decimal',
                           listStylePosition: 'outside'
                         }}
@@ -365,6 +429,7 @@ export const ChatBubble = React.memo(({
                       <li
                         style={{
                           margin: '0.25em 0',
+                          paddingLeft: '0.2em',
                           display: 'list-item'
                         }}
                         {...props}
@@ -374,9 +439,78 @@ export const ChatBubble = React.memo(({
                       <blockquote
                         style={{
                           borderLeft: `3px solid ${isUser ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.2)'}`,
-                          paddingLeft: '1em',
-                          margin: '0.5em 0',
+                          margin: '0.6em 0',
                           color: isUser ? 'rgba(255,255,255,0.9)' : undefined,
+                          fontStyle: 'italic',
+                          backgroundColor: isUser ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)',
+                          padding: '0.5em 0.75em',
+                          borderRadius: '0 6px 6px 0',
+                          boxShadow: `inset 0 1px 3px ${isUser ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.03)'}`
+                        }}
+                        {...props}
+                      />
+                    ),
+                    hr: ({ node, ...props }) => (
+                      <hr
+                        style={{
+                          border: 'none',
+                          height: '2px',
+                          backgroundImage: isUser
+                            ? 'linear-gradient(to right, rgba(255,255,255,0.1), rgba(255,255,255,0.3), rgba(255,255,255,0.1))'
+                            : 'linear-gradient(to right, rgba(0,0,0,0.03), rgba(0,0,0,0.1), rgba(0,0,0,0.03))',
+                          margin: '1.5em 0'
+                        }}
+                        {...props}
+                      />
+                    ),
+                    h1: ({ node, ...props }) => (
+                      <h1
+                        style={{
+                          borderBottom: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
+                          paddingBottom: '0.3em',
+                          marginTop: '1.5em',
+                          marginBottom: '0.75em',
+                          fontWeight: 600,
+                          fontSize: '1.6em',
+                          lineHeight: 1.3
+                        }}
+                        {...props}
+                      />
+                    ),
+                    h2: ({ node, ...props }) => (
+                      <h2
+                        style={{
+                          borderBottom: `1px solid ${isUser ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
+                          paddingBottom: '0.2em',
+                          marginTop: '1.4em',
+                          marginBottom: '0.7em',
+                          fontWeight: 600,
+                          fontSize: '1.4em',
+                          lineHeight: 1.3
+                        }}
+                        {...props}
+                      />
+                    ),
+                    h3: ({ node, ...props }) => (
+                      <h3
+                        style={{
+                          marginTop: '1.3em',
+                          marginBottom: '0.6em',
+                          fontWeight: 600,
+                          fontSize: '1.2em',
+                          lineHeight: 1.3
+                        }}
+                        {...props}
+                      />
+                    ),
+                    h4: ({ node, ...props }) => (
+                      <h4
+                        style={{
+                          marginTop: '1.2em',
+                          marginBottom: '0.5em',
+                          fontWeight: 600,
+                          fontSize: '1.1em',
+                          lineHeight: 1.3
                         }}
                         {...props}
                       />
@@ -386,8 +520,11 @@ export const ChatBubble = React.memo(({
                       <div style={{
                         overflowX: 'auto',
                         maxWidth: '100%',
-                        margin: '0',
-                        padding: '0'
+                        margin: '1em 0',
+                        padding: '0',
+                        borderRadius: '6px',
+                        border: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : colors.borderColor}`,
+                        boxShadow: `0 2px 4px ${isUser ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'}`
                       }}>
                         <table
                           style={{
@@ -405,10 +542,10 @@ export const ChatBubble = React.memo(({
                       <thead
                         style={{
                           backgroundColor: isUser
-                            ? 'rgba(255,255,255,0.1)'
-                            : colors.otherBgChat,
-                          margin: 0,     // Added to remove margin
-                          padding: 0     // Added to ensure no padding
+                            ? 'rgba(255,255,255,0.15)'
+                            : useColorModeValue('rgba(0,0,0,0.05)', 'rgba(255,255,255,0.05)'),
+                          margin: 0,
+                          padding: 0
                         }}
                         {...props}
                       />
@@ -427,11 +564,14 @@ export const ChatBubble = React.memo(({
                     th: ({ node, ...props }) => (
                       <th
                         style={{
-                          padding: '0.5em',
+                          padding: '0.5em 0.75em',
                           textAlign: 'left',
                           fontWeight: 'bold',
                           borderBottom: `2px solid ${isUser
                             ? 'rgba(255,255,255,0.3)'
+                            : colors.borderColor}`,
+                          borderRight: `1px solid ${isUser
+                            ? 'rgba(255,255,255,0.1)'
                             : colors.borderColor}`
                         }}
                         {...props}
@@ -440,12 +580,25 @@ export const ChatBubble = React.memo(({
                     td: ({ node, ...props }) => (
                       <td
                         style={{
-                          padding: '0.5em',
+                          padding: '0.5em 0.75em',
                           borderRight: `1px solid ${isUser
                             ? 'rgba(255,255,255,0.1)'
                             : colors.borderColor}`
                         }}
                         {...props}
+                      />
+                    ),
+                    img: ({ node, ...props }) => (
+                      <img
+                        style={{
+                          maxWidth: '100%',
+                          height: 'auto',
+                          borderRadius: '4px',
+                          margin: '0.5em 0',
+                          border: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
+                        }}
+                        {...props}
+                        loading="lazy"
                       />
                     ),
                   }}
@@ -543,6 +696,7 @@ export const ChatBubble = React.memo(({
     prevProps.isFirstInGroup === nextProps.isFirstInGroup &&
     prevProps.isTaskMode === nextProps.isTaskMode &&
     prevProps.isStreaming === nextProps.isStreaming &&
+    prevProps.isLoadingOlder === nextProps.isLoadingOlder &&
     prevProps.message.content === nextProps.message.content
   );
 });

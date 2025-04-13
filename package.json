@@ -44,6 +44,7 @@
     "oci-common": "^2.106.0",
     "oci-objectstorage": "^2.106.0",
     "oci-secrets": "^2.106.0",
+    "openai": "^4.93.0",
     "oracledb": "^6.8.0",
     "pg": "^8.14.1",
     "pg-native": "^3.3.0",

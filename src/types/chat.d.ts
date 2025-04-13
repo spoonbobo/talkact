@@ -9,6 +9,7 @@ export interface IMessage {
     avatar: string;
     room_id: string;
     mentions?: User[];  // Array of mentioned users
+    isStreaming?: boolean;
 }
 
 export interface IChatBubbleProps {

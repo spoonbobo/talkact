@@ -163,6 +163,21 @@ export const chatSlice = createSlice({
         clearSelectedRoom: (state) => {
             state.selectedRoomId = null;
         },
+        updateMessage: (state, action: PayloadAction<{ roomId: string, messageId: string, content: string, isStreaming?: boolean }>) => {
+            const { roomId, messageId, content, isStreaming } = action.payload;
+
+            if (state.messages[roomId]) {
+                const messageIndex = state.messages[roomId].findIndex(msg => msg.id === messageId);
+                if (messageIndex !== -1) {
+                    // Update the message content and streaming status
+                    state.messages[roomId][messageIndex] = {
+                        ...state.messages[roomId][messageIndex],
+                        content,
+                        isStreaming: isStreaming !== undefined ? isStreaming : state.messages[roomId][messageIndex].isStreaming
+                    };
+                }
+            }
+        },
     },
 });
 
@@ -182,6 +197,7 @@ export const {
     markRoomMessagesLoaded,
     initializeSocket,
     clearSelectedRoom,
+    updateMessage,
 } = chatSlice.actions;
 
 export const setLoadingRooms = createAction<boolean>('chat/setLoadingRooms');

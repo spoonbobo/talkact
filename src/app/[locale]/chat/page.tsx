@@ -42,7 +42,9 @@ import {
   quitRoom,
   updateRoom,
   removeUserFromRoom,
-  setUnreadCount
+  setUnreadCount,
+  addMessage,
+  updateMessage
 } from '@/store/features/chatSlice';
 import { updateActiveRooms } from '@/store/features/userSlice';
 import React from "react";
@@ -55,9 +57,17 @@ import { useChatPageColors } from "@/utils/colors";
 import { RoomMenu } from "@/components/chat/room_menu";
 import { RoomInvitation } from "@/components/chat/room_invitation";
 import { useRouter } from "next/navigation";
+import OpenAI from "openai";
+import { v4 as uuidv4 } from "uuid";
+import { saveSession } from "@/store/middleware/streamingMiddleware";
 
 const MotionBox = motion.create(Box);
 const MESSAGE_LIMIT = 30;
+const openai = new OpenAI({
+  baseURL: process.env.NEXT_PUBLIC_OPENAI_API_BASE_URL,
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true
+});
 
 export default function ChatPage() {
   const { currentUser, isAuthenticated } = useSelector((state: RootState) => state.user);
@@ -167,9 +177,7 @@ const ChatPageContent = () => {
         const usersResponse = await axios.get("/api/user/get_users");
         setUsers(usersResponse.data.users);
 
-        // Fetch agents specifically
-        const agentsResponse = await axios.get("/api/user/get_users?role=agent");
-        setAgents(agentsResponse.data.users);
+        // No longer fetching agents separately
       } catch (error) {
         toaster.create({
           title: t("error"),
@@ -201,41 +209,30 @@ const ChatPageContent = () => {
       if (mentionMatch && mentionMatch[1]) {
         const mentionedUsername = mentionMatch[1];
 
-        // Only look for specific agents if we have agents available
-        if (agents.length > 0) {
-          // If it's the default "agent" mention, use the first available agent
-          if (mentionedUsername === "agent") {
-            assigneeId = agents[0].user_id;
-          } else {
-            // Find the specific agent that was mentioned
-            const mentionedAgent = agents.find(agent => agent.username === mentionedUsername);
-            if (mentionedAgent) {
-              assigneeId = mentionedAgent.user_id;
-              assigneeObj = mentionedAgent;
-            }
-          }
+        // Look for the mentioned user in all users
+        const mentionedUser = users.find(user =>
+          user.username === mentionedUsername ||
+          (mentionedUsername === "agent" && user.role === "agent")
+        );
+
+        if (mentionedUser) {
+          assigneeId = mentionedUser.user_id;
+          assigneeObj = mentionedUser;
         }
       }
 
-      const url = `/api/mcp/create_plan`;
+      // Create payload with assignee field always included
       const payload = {
         summoner: currentUser?.email,
         query: message,
         room_id: roomId,
         assigner: currentUser?.user_id,
-        assignee: assigneeId,
         created_at: new Date().toISOString(),
-        assignee_obj: assigneeObj
+        assignee: assigneeId, // Always include this field, even if null
+        assignee_obj: assigneeObj // Include this too, can be null
       };
-      console.log("Payload:", payload);
 
-      // Only add assignee to the payload if we found a valid assignee
-      if (assigneeId) {
-        // @ts-ignore
-        payload.assignee = assigneeId;
-      }
-
-      await axios.post(url, payload);
+      const response = await axios.post(`/api/mcp/create_plan`, payload);
 
       dispatch(joinRoom(roomId));
 
@@ -249,9 +246,173 @@ const ChatPageContent = () => {
       dispatch(updateActiveRooms({ roomId, action: "add" }));
     }
     catch (error) {
+      console.error("Error calling agent API:", error);
+      // Log more detailed error information
+      if (axios.isAxiosError(error) && error.response) {
+        console.error("Response status:", error.response.status);
+        console.error("Response data:", error.response.data);
+      }
+
       toaster.create({
         title: t("error"),
         description: t("error_calling_agent_api"),
+        type: "error"
+      });
+    }
+  };
+
+  // Add this function to handle deepseek API calls with streaming
+  const triggerDeepseekAPI = async (message: string, roomId: string) => {
+    try {
+      // Create a temporary message ID for the streaming response
+      const tempMessageId = uuidv4();
+
+      // Create a deepseek user object that matches the User type
+      const deepseekUser: User = users.find(user => user.username === "deepseek") || {
+        user_id: "deepseek-" + uuidv4(),
+        username: "deepseek",
+        role: "agent", // Changed to "agent" to match your streaming middleware expectations
+        email: "deepseek@ai.com",
+        avatar: "",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        active_rooms: [],
+        archived_rooms: []
+      };
+
+      // Create an initial empty message to show the streaming effect
+      const initialMessage: IMessage = {
+        id: tempMessageId,
+        room_id: roomId,
+        sender: deepseekUser,
+        content: "", // Empty content that will be streamed
+        created_at: new Date().toISOString(),
+        mentions: [],
+        isStreaming: true, // Mark as streaming
+        avatar: deepseekUser.avatar || ""
+      };
+
+      // Dispatch the initial empty message to show the bubble
+      dispatch(addMessage({ roomId, message: initialMessage }));
+
+      // Extract the actual query (remove the @deepseek mention)
+      const query = message.replace(/@deepseek/gi, "").trim();
+
+      // Get the last 10 messages from the conversation for context
+      const currentMessages = messages[roomId] || [];
+      const lastMessages = currentMessages.slice(-10).map(msg => {
+        // Determine if the message is from the user or the AI
+        const role = msg.sender.role === "agent" ? "assistant" : "user";
+        return {
+          role: role as "user" | "assistant", // Type assertion to match OpenAI's expected types
+          content: msg.content
+        };
+      });
+
+      // Prepare the messages array for the API call
+      const apiMessages = [
+        { role: "system" as const, content: "You are a helpful assistant powered by Deepseek." },
+        ...lastMessages,
+        { role: "user" as const, content: query }
+      ];
+
+      // Use a throttled update approach to prevent too many renders
+      let fullContent = "";
+      let lastUpdateTime = Date.now();
+      let updateTimer: NodeJS.Timeout | null = null;
+
+      try {
+        // Start streaming with OpenAI
+        const stream = await openai.chat.completions.create({
+          model: "deepseek-chat",
+          messages: apiMessages,
+          stream: true
+        });
+
+        // Process the stream
+        for await (const chunk of stream) {
+          // Get the content delta
+          const content = chunk.choices[0]?.delta?.content || "";
+
+          // Append to the full content
+          fullContent += content;
+
+          // Throttle UI updates to prevent too many renders
+          const currentTime = Date.now();
+          if (currentTime - lastUpdateTime > 100) {
+            // Update the message with the accumulated content
+            dispatch(updateMessage({
+              roomId,
+              messageId: tempMessageId,
+              content: fullContent,
+              isStreaming: true
+            }));
+            lastUpdateTime = currentTime;
+          } else if (updateTimer === null) {
+            // Schedule an update if we haven't already
+            updateTimer = setTimeout(() => {
+              dispatch(updateMessage({
+                roomId,
+                messageId: tempMessageId,
+                content: fullContent,
+                isStreaming: true
+              }));
+              lastUpdateTime = Date.now();
+              updateTimer = null;
+            }, 100);
+          }
+        }
+
+        // Clear any pending updates
+        if (updateTimer) {
+          clearTimeout(updateTimer);
+          updateTimer = null;
+        }
+
+        // Final update with complete content
+        dispatch(updateMessage({
+          roomId,
+          messageId: tempMessageId,
+          content: fullContent,
+          isStreaming: false
+        }));
+
+        // Also dispatch the final message to ensure it's properly saved in chat history
+        // Use a different action type to avoid conflicts with the updateMessage
+        dispatch({
+          type: 'chat/sendMessage',
+          payload: {
+            message: {
+              id: tempMessageId,
+              room_id: roomId,
+              sender: deepseekUser,
+              content: fullContent,
+              created_at: new Date().toISOString(),
+              mentions: [],
+              isStreaming: false,
+              avatar: deepseekUser.avatar || ""
+            }
+          }
+        });
+
+      } catch (streamError) {
+        console.error("Streaming error:", streamError);
+
+        // Update the message to show the error
+        dispatch(updateMessage({
+          roomId,
+          messageId: tempMessageId,
+          content: "Sorry, I encountered an error while processing your request.",
+          isStreaming: false
+        }));
+      }
+    } catch (error) {
+      console.error("Error calling Deepseek API:", error);
+
+      // Use English fallback messages for errors to avoid translation issues
+      toaster.create({
+        title: "Error",
+        description: "Error processing your request with Deepseek",
         type: "error"
       });
     }
@@ -399,7 +560,7 @@ const ChatPageContent = () => {
 
           setHasMoreMessages(serverMessages.length >= MESSAGE_LIMIT);
 
-          // Rest of the code remains the same
+          // Extract all unique user IDs from the messages
           const userIds = [...new Set(serverMessages.map((msg: any) =>
             typeof msg.sender === 'string' ? msg.sender : msg.sender?.user_id
           ))].filter(Boolean);
@@ -473,6 +634,7 @@ const ChatPageContent = () => {
     console.log("Sending message:", newMessage);
 
     if (newMessage.content.trim() && selectedRoomId) {
+      // First dispatch the user's message to ensure it appears in the chat
       dispatch({
         type: 'chat/sendMessage',
         payload: { message: newMessage }
@@ -480,18 +642,33 @@ const ChatPageContent = () => {
 
       console.log("Message dispatched to Redux");
 
-      if (newMessage.mentions?.some(user => user.role === "agent")) {
-        triggerAgentAPI(newMessage.content, selectedRoomId);
-      }
+      // Use setTimeout to ensure the user's message is rendered first
+      setTimeout(() => {
+        // Check for @deepseek mentions
+        if (newMessage.content.toLowerCase().includes('@deepseek')) {
+          toaster.create({
+            title: t("deepseek_mentioned"),
+            description: t("deepseek_processing_your_request"),
+            type: "info"
+          });
 
-      if (newMessage.mentions?.some(user => user.role === "user")) {
-        dispatch({
-          type: 'chat/mentionUser',
-          payload: {
-            message: newMessage,
-          }
-        });
-      }
+          // Call the deepseek API with streaming
+          triggerDeepseekAPI(newMessage.content, selectedRoomId);
+        }
+        // Check for agent mentions
+        else if (newMessage.mentions?.some(user => user.role === "agent")) {
+          triggerAgentAPI(newMessage.content, selectedRoomId);
+        }
+
+        if (newMessage.mentions?.some(user => user.role === "user")) {
+          dispatch({
+            type: 'chat/mentionUser',
+            payload: {
+              message: newMessage,
+            }
+          });
+        }
+      }, 100); // Small delay to ensure user message renders first
 
       setMessageInput("");
 
@@ -512,7 +689,7 @@ const ChatPageContent = () => {
       // Also dispatch the event as a backup method
       window.dispatchEvent(new CustomEvent('scrollToBottom'));
     }
-  }, [dispatch, selectedRoomId, setMessageInput, triggerAgentAPI, messagesEndRef]);
+  }, [dispatch, selectedRoomId, setMessageInput, triggerAgentAPI, triggerDeepseekAPI, messagesEndRef]);
 
   // Memoize the ChatInput props to prevent unnecessary re-renders
   const chatInputProps = useMemo(() => ({
@@ -539,88 +716,92 @@ const ChatPageContent = () => {
     isSocketConnected
   ]);
 
-  // Add a function to load more messages
+  // Modify the loadMoreMessages function to also transform messages
   const loadMoreMessages = async () => {
     if (!selectedRoomId || isLoadingMore || !hasMoreMessages) return;
 
     try {
       setIsLoadingMore(true);
 
-      // Get the oldest message ID we currently have
-      const currentMessages = messages[selectedRoomId] || [];
-      if (currentMessages.length === 0) return;
-
-      // Find the oldest message by created_at timestamp
-      const oldestMessage = currentMessages.reduce((oldest, current) =>
-        new Date(oldest.created_at) < new Date(current.created_at) ? oldest : current
-      );
+      // Get the oldest message ID in the current messages
+      const oldestMessage = currentMessages[0];
+      const oldestMessageId = oldestMessage?.id;
 
       // Fetch older messages
-      const response = await axios.get(`/api/chat/get_messages?roomId=${selectedRoomId}&limit=${MESSAGE_LIMIT}&before=${oldestMessage.id}`);
-
-      // If we got fewer messages than requested, we've reached the end
-      setHasMoreMessages(response.data.length >= MESSAGE_LIMIT);
-
-      if (response.data.length === 0) {
-        setHasMoreMessages(false);
-        return;
-      }
-
-      // Process messages like before
-      const serverMessages = response.data;
-      const userIds = [...new Set(serverMessages.map((msg: any) =>
-        typeof msg.sender === 'string' ? msg.sender : msg.sender?.user_id
-      ))].filter(Boolean);
-
-      const usersResponse = await axios.post('/api/user/get_users', {
-        user_ids: userIds
-      });
-
-      const userMap = new Map();
-      if (usersResponse.data && usersResponse.data.users) {
-        usersResponse.data.users.forEach((user: User) => {
-          userMap.set(user.user_id, user);
-        });
-      }
-
-      const transformedMessages = serverMessages.map((msg: any) => {
-        if (typeof msg.sender === 'string') {
-          const user = userMap.get(msg.sender);
-          return {
-            ...msg,
-            sender: user || {
-              user_id: msg.sender,
-              username: 'Unknown User',
-              email: '',
-              role: 'user',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              active_rooms: [],
-              archived_rooms: []
-            }
-          };
+      const response = await axios.get(`/api/chat/get_messages`, {
+        params: {
+          roomId: selectedRoomId,
+          before: oldestMessageId,
+          limit: MESSAGE_LIMIT
         }
-        return msg;
       });
 
-      // Combine with existing messages
-      dispatch(setMessages({
-        roomId: selectedRoomId,
-        messages: [...transformedMessages, ...currentMessages]
-      }));
+      const serverMessages = response.data;
 
-      // Dispatch a custom event to notify that we've loaded more messages
-      // This helps with scroll position management
-      window.dispatchEvent(new CustomEvent('moreMessagesLoaded'));
+      // If we got fewer messages than the limit, there are no more to load
+      if (serverMessages.length < MESSAGE_LIMIT) {
+        setHasMoreMessages(false);
+      }
+
+      // Only proceed if we have messages to process
+      if (serverMessages.length > 0) {
+        // Extract all unique user IDs from the messages
+        const userIds = [...new Set(serverMessages.map((msg: any) =>
+          typeof msg.sender === 'string' ? msg.sender : msg.sender?.user_id
+        ))].filter(Boolean);
+
+        // Fetch user details for all message senders
+        const usersResponse = await axios.post('/api/user/get_users', {
+          user_ids: userIds
+        });
+
+        // Create a map of user_id to User object
+        const userMap = new Map();
+        if (usersResponse.data && usersResponse.data.users) {
+          usersResponse.data.users.forEach((user: User) => {
+            userMap.set(user.user_id, user);
+          });
+        }
+
+        // Transform messages to include proper User objects
+        const transformedMessages = serverMessages.map((msg: any) => {
+          // If sender is a string (user_id), replace with User object
+          if (typeof msg.sender === 'string') {
+            const user = userMap.get(msg.sender);
+            return {
+              ...msg,
+              sender: user || {
+                user_id: msg.sender,
+                username: 'Unknown User',
+                email: '',
+                role: 'user',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                active_rooms: [],
+                archived_rooms: []
+              }
+            };
+          }
+          return msg;
+        });
+
+        // Add the older messages to the Redux store
+        dispatch(setMessages({
+          roomId: selectedRoomId,
+          messages: [...transformedMessages, ...currentMessages]
+        }));
+      }
+
+      // Simply set loading to false without any scroll adjustment
+      setIsLoadingMore(false);
 
     } catch (error) {
+      console.error("Error loading more messages:", error);
       toaster.create({
         title: t("error"),
         description: t("error_loading_more_messages"),
         type: "error"
       });
-      console.error("Error loading more messages:", error);
-    } finally {
       setIsLoadingMore(false);
     }
   };
@@ -933,6 +1114,7 @@ const ChatPageContent = () => {
               onLoadMore={loadMoreMessages}
               isLoadingMore={isLoadingMore}
               hasMoreMessages={hasMoreMessages}
+              className="message-list-container"
             />
 
             {/* Input area */}
