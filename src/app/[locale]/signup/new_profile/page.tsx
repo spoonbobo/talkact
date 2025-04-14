@@ -126,7 +126,8 @@ export default function CreateProfilePage() {
                 updated_at: createAt.toISOString(),
                 active_rooms: [],
                 archived_rooms: [],
-                username: ""
+                username: "",
+                settings: {}
             }
 
             await axios.post("/api/user/create_user", newUser);
