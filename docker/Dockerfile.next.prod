@@ -2,7 +2,7 @@ FROM node:20.9-alpine
 WORKDIR /app
 
 # Install PostgreSQL client and build dependencies
-RUN apk add --no-cache python3 make g++ postgresql-dev
+RUN apk add --no-cache python3 make g++ postgresql-dev build-base
 
 # Set higher limit for EventEmitter listeners to prevent warnings
 ENV NODE_OPTIONS="--max-old-space-size=4096 --max-http-header-size=16384"

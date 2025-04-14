@@ -268,7 +268,7 @@ const ChatPageContent = () => {
       const tempMessageId = uuidv4();
 
       // Find the deepseek user or create a fallback if not found
-      const deepseekUser: User = users.find(user => user.username === "deepseek") || {
+      const deepseekUser: User = users.find((user: User) => user.username === "deepseek") || {
         user_id: "deepseek-" + uuidv4(),
         username: "deepseek",
         role: "agent", // Changed to "agent" to match your streaming middleware expectations
@@ -278,9 +278,7 @@ const ChatPageContent = () => {
         updated_at: new Date().toISOString(),
         active_rooms: [],
         archived_rooms: [],
-        // settings: {
-        //   theme: "light"
-        // }
+        settings: {} // Add the required settings property
       };
 
       // Create an initial empty message to show the streaming effect
