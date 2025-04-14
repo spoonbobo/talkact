@@ -1,5 +1,3 @@
-import { IChatRoom } from "./chat";
-
 // Define the UserSettings interface
 export interface GeneralSettings {
     theme: string;

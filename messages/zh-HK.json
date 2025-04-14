@@ -374,7 +374,7 @@
     "reset_all_data_confirm": "確定重置所有數據?",
     "reset_all_data_confirm_final": "這個操作無法撤銷，請謹慎操作",
     "knowledge_base": "知識庫",
-    "knowledge_base_description": "管理知識庫設定",
+    "knowledge_base_description": "知識庫設定",
     "enable_knowledge_base": "啟用知識庫",
     "enabled": "已啟用",
     "knowledge_bases": "知識庫列表",
@@ -407,7 +407,15 @@
     "enter_directory_path": "輸入目錄路徑",
     "disable": "停用",
     "reconnect": "重新連接",
-    "type": "類型"
+    "type": "類型",
+    "save": "保存",
+    "configure": "配置",
+    "configureServer": "配置伺服器",
+    "apiKeyLabel": "API密鑰",
+    "apiKeyPlaceholder": "輸入API密鑰",
+    "availableTools": "可用工具",
+    "needsConfiguration": "需要配置",
+    "serverConfigurationTitle": "伺服器配置"
   },
   "Loading": {
     "loading": "加載中...",

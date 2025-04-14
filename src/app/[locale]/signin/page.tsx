@@ -102,13 +102,14 @@ export default function SigninPage() {
             size="xl"
             variant="outline"
             borderRadius="full"
-            disabled={true}
+            // disabled={true}
             onClick={(e) => {
               e.preventDefault();
               try {
                 signIn("google", {
-                  callbackUrl: `${process.env.NEXT_PUBLIC_DOMAIN}/api/auth/callback/google`,
-                  redirect: true
+                  // callbackUrl: `${process.env.NEXT_PUBLIC_DOMAIN}/api/auth/callback/google`,
+                  redirect: true,
+                  callbackUrl: `${process.env.NEXT_PUBLIC_DOMAIN}/api/redirect/third_party_login?locale=${locale}`,
                 });
               } catch (error) {
                 console.error("Error signing in with Google:", error);

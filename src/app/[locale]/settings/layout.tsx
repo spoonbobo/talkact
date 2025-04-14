@@ -40,6 +40,8 @@ export default function SettingsLayout({
     const textColor = useColorModeValue("gray.800", "gray.100");
     const cardBg = useColorModeValue("white", "gray.800");
     const accentColor = "blue.500";
+    const activeHighlight = useColorModeValue("blue.50", "blue.900");
+    const activeBorderColor = "blue.500";
 
     // Animation variants
     const containerVariants = {
@@ -141,19 +143,21 @@ export default function SettingsLayout({
                                         py={3}
                                         px={4}
                                         borderRadius="md"
-                                        bg={pathname === item.path ? hoverBg : "transparent"}
-                                        color={item.color || textColor}
-                                        fontWeight="medium"
+                                        bg={pathname === item.path ? activeHighlight : "transparent"}
+                                        color={item.color || (pathname === item.path ? accentColor : textColor)}
+                                        fontWeight={pathname === item.path ? "semibold" : "medium"}
                                         fontSize="sm"
                                         width="100%"
                                         textAlign="left"
                                         _hover={{ bg: hoverBg }}
                                         display="block"
+                                        borderLeft={pathname === item.path ? "3px solid" : "none"}
+                                        borderLeftColor={activeBorderColor}
                                     >
                                         <Flex align="center">
                                             <Icon
                                                 as={item.icon}
-                                                color={item.color || textColor}
+                                                color={item.color || (pathname === item.path ? accentColor : textColor)}
                                                 mr={2}
                                             />
                                             {item.label}

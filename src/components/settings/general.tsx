@@ -14,7 +14,7 @@ import {
 import { FiLock } from "react-icons/fi";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
-import { useColorMode, useColorModeValue } from "@/components/ui/color-mode";
+import { useColorMode, useColorModeValue, ColorModeButton } from "@/components/ui/color-mode";
 import { createListCollection } from "@chakra-ui/react";
 
 interface GeneralSettingsProps {
@@ -64,12 +64,9 @@ export default function GeneralSettings({
         });
     };
 
-    // Handle theme change - fixed to properly use the toggleColorMode hook
+    // Handle theme change - updated to work with ColorModeButton
     const handleThemeChange = () => {
-        // Toggle the color mode using the hook
-        toggleColorMode();
-
-        // Get the new theme after toggling
+        // Get the current theme after toggling
         const newTheme = localStorage.getItem("chakra-ui-color-mode") || "light";
 
         // Update the settings in the parent component
@@ -137,9 +134,7 @@ export default function GeneralSettings({
                     <Text fontWeight="medium" mb={1} color={textColor}>
                         {t("theme")}
                     </Text>
-                    <Button variant="outline" onClick={handleThemeChange}>
-                        {t("toggle_theme")}
-                    </Button>
+                    <ColorModeButton onChange={handleThemeChange} />
                 </Box>
 
                 <Box>
