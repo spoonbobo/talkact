@@ -51,6 +51,9 @@ export default function ThirdPartyLoginRedirect() {
                     // Store user in Redux
                     dispatch(setUser(data.user));
 
+                    // Log user settings
+                    console.log('User settings:', data.user.user_settings);
+
                     // Show success toast
                     toaster.create({
                         title: t('signin_success'),
@@ -76,7 +79,7 @@ export default function ThirdPartyLoginRedirect() {
         }
 
         handleAuthRedirect();
-    }, [dispatch, router, searchParams, t, locale]);
+    }, [dispatch, router, searchParams, t, locale, email, avatarUrl]);
 
     // Loading state
     if (loading) {

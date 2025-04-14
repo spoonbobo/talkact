@@ -14,8 +14,21 @@ export async function POST(request: Request) {
 
         // Parse the request body
         const body = await request.json();
-        const { roomId, action, userId } = body;
+        const { roomId, action, userId, settings } = body;
 
+        // If settings is provided, update user settings
+        if (settings) {
+            await db('users')
+                .where('email', session.user.email)
+                .update({
+                    settings: JSON.stringify(settings),
+                    updated_at: new Date().toISOString()
+                });
+
+            return NextResponse.json({ success: true }, { status: 200 });
+        }
+
+        // Handle active rooms updates (existing functionality)
         if (!roomId || !action) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
@@ -50,7 +63,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ success: true }, { status: 200 });
     } catch (error) {
-        console.error('Error updating active rooms:', error);
-        return NextResponse.json({ error: 'Failed to update active rooms' }, { status: 500 });
+        console.error('Error updating user:', error);
+        return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
     }
 } 

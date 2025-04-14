@@ -141,7 +141,7 @@ export const RoomInvitation = ({ roomId, currentUsers, onClose }: RoomInvitation
 
                 // For each invited user, update their active_rooms
                 await Promise.all(userIdsToAdd.map(userId =>
-                    axios.post("/api/user/update_active_rooms", {
+                    axios.post("/api/user/update_user", {
                         roomId,
                         action: "add",
                         userId // Pass the specific user ID to update

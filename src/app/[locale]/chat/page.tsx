@@ -237,7 +237,7 @@ const ChatPageContent = () => {
       dispatch(joinRoom(roomId));
 
       // Add the room to the user's active_rooms
-      await axios.post("/api/user/update_active_rooms", {
+      await axios.post("/api/user/update_user", {
         roomId: roomId,
         action: "add"
       });
@@ -277,7 +277,10 @@ const ChatPageContent = () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         active_rooms: [],
-        archived_rooms: []
+        archived_rooms: [],
+        // settings: {
+        //   theme: "light"
+        // }
       };
 
       // Create an initial empty message to show the streaming effect
@@ -448,7 +451,7 @@ const ChatPageContent = () => {
         dispatch(joinRoom(roomId));
 
         // Add the room to the user's active_rooms
-        await axios.post("/api/user/update_active_rooms", {
+        await axios.post("/api/user/update_user", {
           roomId: roomId,
           action: "add"
         });
@@ -1061,7 +1064,7 @@ const ChatPageContent = () => {
                     onExitRoom={async () => {
                       try {
                         // Call API to remove room from active rooms
-                        const response = await fetch('/api/user/update_active_rooms', {
+                        const response = await fetch('/api/user/update_user', {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',

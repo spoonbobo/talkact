@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     avatar TEXT,
     active_rooms UUID[],
     archived_rooms UUID[],
-    user_settings JSONB
+    settings JSONB
 );
 
-INSERT INTO users (user_id, username, email, role, user_settings) VALUES ('00000000-0000-0000-0000-000000000000', 'agent', 'agent@agent.com', 'admin', '{"theme": "light"}');
+INSERT INTO users (user_id, username, email, role, settings) VALUES ('00000000-0000-0000-0000-000000000000', 'agent', 'agent@agent.com', 'admin', '{"theme": "light"}');

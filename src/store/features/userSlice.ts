@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
-import { User } from '@/types/user';
+import { User, UserSettings } from '@/types/user';
 
 interface UserState {
     currentUser: User | null;
@@ -100,20 +100,24 @@ export const userSlice = createSlice({
             if (!state.currentUser) return;
 
             // Initialize user_settings if it doesn't exist
-            if (!state.currentUser.user_settings) {
-                state.currentUser.user_settings = {};
+            if (!state.currentUser.settings) {
+                state.currentUser.settings = {
+                    general: {
+                        theme: 'light'
+                    }
+                };
             }
 
             // Update the specific setting
             const { key, value } = action.payload;
-            state.currentUser.user_settings[key] = value;
+            state.currentUser.settings[key] = value;
         },
 
         // New reducer to replace all user settings at once
-        setUserSettings: (state, action: PayloadAction<Record<string, any>>) => {
+        setUserSettings: (state, action: PayloadAction<UserSettings>) => {
             if (!state.currentUser) return;
 
-            state.currentUser.user_settings = action.payload;
+            state.currentUser.settings = action.payload;
         }
     }
 });
