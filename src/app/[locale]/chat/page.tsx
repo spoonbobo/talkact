@@ -267,7 +267,7 @@ const ChatPageContent = () => {
       // Create a temporary message ID for the streaming response
       const tempMessageId = uuidv4();
 
-      // Create a deepseek user object that matches the User type
+      // Find the deepseek user or create a fallback if not found
       const deepseekUser: User = users.find(user => user.username === "deepseek") || {
         user_id: "deepseek-" + uuidv4(),
         username: "deepseek",
@@ -300,12 +300,18 @@ const ChatPageContent = () => {
 
       // Get the last 10 messages from the conversation for context
       const currentMessages = messages[roomId] || [];
+
+      // Add null checks and default values for message properties
       const lastMessages = currentMessages.slice(-10).map(msg => {
-        // Determine if the message is from the user or the AI
-        const role = msg.sender.role === "agent" ? "assistant" : "user";
+        // Ensure sender exists and has a role property
+        const sender = msg.sender || { role: "user" };
+        const role = (sender && typeof sender === 'object' && sender.role) ?
+          (sender.role === "agent" ? "assistant" : "user") :
+          "user";
+
         return {
-          role: role as "user" | "assistant", // Type assertion to match OpenAI's expected types
-          content: msg.content
+          role: role as "user" | "assistant",
+          content: msg.content || ""
         };
       });
 
@@ -378,7 +384,6 @@ const ChatPageContent = () => {
         }));
 
         // Also dispatch the final message to ensure it's properly saved in chat history
-        // Use a different action type to avoid conflicts with the updateMessage
         dispatch({
           type: 'chat/sendMessage',
           payload: {
@@ -408,6 +413,13 @@ const ChatPageContent = () => {
       }
     } catch (error) {
       console.error("Error calling Deepseek API:", error);
+
+      // Log more detailed error information
+      if (error instanceof Error) {
+        console.error("Error name:", error.name);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
 
       // Use English fallback messages for errors to avoid translation issues
       toaster.create({

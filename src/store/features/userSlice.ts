@@ -94,6 +94,26 @@ export const userSlice = createSlice({
                     state.currentUser.active_rooms = state.currentUser.active_rooms.filter(id => id !== roomId);
                 }
             }
+        },
+        // New reducer to update user settings
+        updateUserSettings: (state, action: PayloadAction<{ key: string; value: any }>) => {
+            if (!state.currentUser) return;
+
+            // Initialize user_settings if it doesn't exist
+            if (!state.currentUser.user_settings) {
+                state.currentUser.user_settings = {};
+            }
+
+            // Update the specific setting
+            const { key, value } = action.payload;
+            state.currentUser.user_settings[key] = value;
+        },
+
+        // New reducer to replace all user settings at once
+        setUserSettings: (state, action: PayloadAction<Record<string, any>>) => {
+            if (!state.currentUser) return;
+
+            state.currentUser.user_settings = action.payload;
         }
     }
 });
@@ -106,7 +126,9 @@ export const {
     setError,
     checkSessionExpiration,
     refreshSessionTTL,
-    updateActiveRooms
+    updateActiveRooms,
+    updateUserSettings,
+    setUserSettings
 } = userSlice.actions;
 
 // Create a persisted reducer

@@ -1,6 +1,6 @@
 {
   "Navbar": {
-    "onlysaid": "光說不做",
+    "onlysaid": "onlysaid",
     "home": "主頁",
     "chat": "聊天室",
     "tasks": "任務",
@@ -18,7 +18,7 @@
     "plans": "計劃"
   },
   "Home": {
-    "welcome": "歡迎來到光說不做",
+    "welcome": "歡迎來到onlysaid",
     "learn_title": "學習",
     "learn_description": "探索知識庫，MCP工具，以及更多",
     "tasks_title": "任務",
@@ -27,7 +27,7 @@
     "mcp_description": "探索 onlysaid 的 MCP 功能",
     "welcome_message": "你好",
     "guest_welcome": "你好",
-    "guest_welcome_message": "onlysaid (光說不做）是一個整合MCP Server的程式，全面提升你和團隊的生產力。",
+    "guest_welcome_message": "onlysaid (onlysaid）是一個整合MCP Server的程式，全面提升你和團隊的生產力。",
     "guest_features_title": "功能",
     "guest_cta_title": "馬上開始",
     "guest_cta_description": "登入或註冊後，您將能夠使用 onlysaid 的各種功能",
@@ -91,7 +91,7 @@
     "password_must_be_at_least_8_characters": "密碼必須至少8個字符",
     "passwords_do_not_match": "密碼不匹配",
     "create_profile": "創建帳號",
-    "profile_creation_description": "創建帳號後，您可以登入並開始使用光說不做",
+    "profile_creation_description": "創建帳號後，您可以登入並開始使用onlysaid",
     "3rd_party_login_email": "您的電郵地址來自第三方登入，請使用該電郵地址創建帳號",
     "complete_your_profile": "完成您的個人資料"
   },
