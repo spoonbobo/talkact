@@ -367,6 +367,17 @@ const planSlice = createSlice({
 
                 // Update plan orders if status actually changed
                 if (oldStatus !== status) {
+                    // Initialize planOrders if it doesn't exist
+                    if (!state.planOrders) {
+                        state.planOrders = {
+                            pending: [],
+                            running: [],
+                            success: [],
+                            failure: [],
+                            terminated: []
+                        };
+                    }
+
                     // Ensure all status arrays exist
                     const validStatuses: PlanStatus[] = ['pending', 'running', 'success', 'failure', 'terminated'];
                     validStatuses.forEach(statusKey => {
