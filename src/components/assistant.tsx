@@ -52,6 +52,15 @@ const Assistant: React.FC = () => {
     const hoverBg = useColorModeValue("gray.100", "gray.700");
     const titleTextColor = useColorModeValue("gray.800", "white");
     const textColor = useColorModeValue("gray.800", "white");
+    const pinColor = useColorModeValue("gray.600", "gray.400");
+    const activePinColor = useColorModeValue("blue.500", "blue.300");
+
+    // Add these color values for the knowledge base badges
+    const activeBadgeBg = useColorModeValue("blue.50", "blue.900");
+    const inactiveBadgeBg = useColorModeValue("gray.50", "gray.800");
+    const activeBadgeColor = useColorModeValue("blue.600", "blue.200");
+    const activeBadgeHoverBg = useColorModeValue("blue.100", "blue.800");
+    const inactiveBadgeHoverBg = useColorModeValue("gray.100", "gray.700");
 
     const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
@@ -66,12 +75,13 @@ const Assistant: React.FC = () => {
     const [resizing, setResizing] = useState(false);
     const [resizeStartPosition, setResizeStartPosition] = useState({ x: 0, y: 0 });
     const [resizeStartSize, setResizeStartSize] = useState({ width: 0, height: 0 });
+    // Inside the component, add state for active knowledge bases
+    const [activeKnowledgeBases, setActiveKnowledgeBases] = useState<Record<string, boolean>>({});
+    // State for knowledge base statuses
+    const [kbStatuses, setKbStatuses] = useState<Record<string, string>>({});
 
     // Add constants for boundary margins
     const BOUNDARY_MARGIN = 20; // pixels from edge of screen
-    // Color for the pin button
-    const pinColor = useColorModeValue("gray.600", "gray.400");
-    const activePinColor = useColorModeValue("blue.500", "blue.300");
 
     // Get user settings including knowledge base settings - with more careful property access
 
@@ -114,9 +124,6 @@ const Assistant: React.FC = () => {
 
         return [];
     }, [currentUser]);
-
-    // State for knowledge base statuses
-    const [kbStatuses, setKbStatuses] = useState<Record<string, string>>({});
 
     // Fetch knowledge base statuses
     const fetchKnowledgeBaseStatuses = useCallback(async () => {
@@ -650,9 +657,6 @@ const Assistant: React.FC = () => {
         }
     };
 
-    // Inside the component, add state for active knowledge bases
-    const [activeKnowledgeBases, setActiveKnowledgeBases] = useState<Record<string, boolean>>({});
-
     // Initialize active state from user settings when component mounts or when knowledge bases change
     useEffect(() => {
         if (knowledgeBases && knowledgeBases.length > 0) {
@@ -771,19 +775,13 @@ const Assistant: React.FC = () => {
                                         fontSize="xs"
                                         cursor={isSelectable ? "pointer" : "not-allowed"}
                                         opacity={isSelectable ? 1 : 0.6}
-                                        bg={isActive && isSelectable
-                                            ? useColorModeValue("blue.50", "blue.900")
-                                            : useColorModeValue("gray.50", "gray.800")}
-                                        color={isActive && isSelectable
-                                            ? useColorModeValue("blue.600", "blue.200")
-                                            : textColor}
+                                        bg={isActive && isSelectable ? activeBadgeBg : inactiveBadgeBg}
+                                        color={isActive && isSelectable ? activeBadgeColor : textColor}
                                         borderWidth="1px"
                                         borderColor={isActive && isSelectable ? "blue.400" : borderColor}
                                         onClick={() => isSelectable && kb.id && toggleKnowledgeBase(kb.id)}
                                         _hover={isSelectable ? {
-                                            bg: isActive
-                                                ? useColorModeValue("blue.100", "blue.800")
-                                                : useColorModeValue("gray.100", "gray.700")
+                                            bg: isActive ? activeBadgeHoverBg : inactiveBadgeHoverBg
                                         } : {}}
                                         transition="all 0.2s"
                                         display="flex"

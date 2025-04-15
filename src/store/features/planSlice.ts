@@ -367,15 +367,20 @@ const planSlice = createSlice({
 
                 // Update plan orders if status actually changed
                 if (oldStatus !== status) {
-                    // Remove from old status order
-                    if (state.planOrders[oldStatus]) {
+                    // Ensure all status arrays exist
+                    const validStatuses: PlanStatus[] = ['pending', 'running', 'success', 'failure', 'terminated'];
+                    validStatuses.forEach(statusKey => {
+                        if (!state.planOrders[statusKey]) {
+                            state.planOrders[statusKey] = [];
+                        }
+                    });
+
+                    // Now safely remove from old status order
+                    if (oldStatus && state.planOrders[oldStatus]) {
                         state.planOrders[oldStatus] = state.planOrders[oldStatus].filter(id => id !== planId);
                     }
-                    // Add to new status order (ensure array exists)
-                    if (!state.planOrders[status]) {
-                        state.planOrders[status] = [];
-                    }
-                    // Avoid duplicates if already present
+
+                    // Add to new status order (we've already ensured the array exists)
                     if (!state.planOrders[status].includes(planId)) {
                         state.planOrders[status].push(planId);
                     }

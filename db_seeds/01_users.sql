@@ -18,4 +18,4 @@ CREATE TABLE IF NOT EXISTS users (
     settings JSONB
 );
 
-INSERT INTO users (user_id, username, email, role, settings) VALUES ('00000000-0000-0000-0000-000000000000', 'agent', 'agent@agent.com', 'admin', '{"theme": "light"}');
+INSERT INTO users (user_id, username, email, role, settings) VALUES ('00000000-0000-0000-0000-000000000000', 'agent', 'agent@agent.com', 'agent', '{"theme": "light"}');
