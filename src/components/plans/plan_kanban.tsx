@@ -333,7 +333,7 @@ const useDragAndDrop = (typedPlans: IPlan[], dispatch: AppDispatch) => {
         // console.log("Dragging over:", event.over?.id, event.over?.data.current?.type);
     }, []);
 
-    // Handle drag end - Updated to prioritize column drop target and add logging
+    // Handle drag end - Updated to be more robust with ID handling
     const handleDragEnd = useCallback((event: DragEndEvent) => {
         const { active, over } = event;
 
@@ -362,7 +362,7 @@ const useDragAndDrop = (typedPlans: IPlan[], dispatch: AppDispatch) => {
         // Check if dropped on another plan
         else {
             // Find the plan it was dropped on
-            const overPlan = typedPlans.find(p => p.id === overId);
+            const overPlan = typedPlans.find(p => p.id === overId || p.plan_id === overId);
             if (overPlan) {
                 targetStatus = overPlan.status;
                 console.log(`[PlanKanban/handleDragEnd] Dropped on plan with status: ${targetStatus}`);
@@ -376,8 +376,8 @@ const useDragAndDrop = (typedPlans: IPlan[], dispatch: AppDispatch) => {
             targetStatus = null; // Reset if invalid
         }
 
-        // Find the plan being dragged
-        const activePlan = typedPlans.find(p => p.id === activePlanId);
+        // Find the plan being dragged - check both id and plan_id
+        const activePlan = typedPlans.find(p => p.id === activePlanId || p.plan_id === activePlanId);
 
         if (!activePlan) {
             console.error(`[PlanKanban/handleDragEnd] Could not find active plan with ID: ${activePlanId}`);
@@ -395,7 +395,7 @@ const useDragAndDrop = (typedPlans: IPlan[], dispatch: AppDispatch) => {
         if (targetStatus && originalStatus !== targetStatus) {
             try {
                 // *** LOG: Confirming dispatch (using extracted status) ***
-                console.log(`[PlanKanban/handleDragEnd] Dispatching updatePlanStatus for planId: ${activePlan.id} to status: ${targetStatus}`);
+                console.log(`[PlanKanban/handleDragEnd] Dispatching updatePlanStatus for planId: ${activePlan.id || activePlan.plan_id} to status: ${targetStatus}`);
 
                 // Show optimistic UI update
                 // toaster.success({
@@ -406,10 +406,13 @@ const useDragAndDrop = (typedPlans: IPlan[], dispatch: AppDispatch) => {
                 //     })
                 // });
 
-                dispatch(updatePlanStatus({ planId: activePlan.id, status: targetStatus }))
+                // Use the ID that's most likely to be in the Redux store
+                const idToUse = activePlan.plan_id || activePlan.id;
+
+                dispatch(updatePlanStatus({ planId: idToUse, status: targetStatus }))
                     .unwrap()
                     .then(() => {
-                        console.log(`[PlanKanban/handleDragEnd] updatePlanStatus successful for planId: ${activePlan.id}`);
+                        console.log(`[PlanKanban/handleDragEnd] updatePlanStatus successful for planId: ${idToUse}`);
                         // toaster.success({
                         //     title: t("status_updated"),
                         //     description: t("plan_moved_to_status", {
@@ -419,15 +422,15 @@ const useDragAndDrop = (typedPlans: IPlan[], dispatch: AppDispatch) => {
                         // });
                     })
                     .catch(error => {
-                        console.error(`[PlanKanban/handleDragEnd] updatePlanStatus failed for planId: ${activePlan.id}`, error);
+                        console.error(`[PlanKanban/handleDragEnd] updatePlanStatus failed for planId: ${idToUse}`, error);
                         // Show error message to user
-                        toaster.error({
-                            title: t("status_update_failed"),
-                            description: t("could_not_move_plan", {
-                                plan: activePlan.plan_name,
-                                status: t(targetStatus as PlanStatus)
-                            })
-                        });
+                        // toaster.error({
+                        //     title: t("status_update_failed"),
+                        //     description: t("could_not_move_plan", {
+                        //         plan: activePlan.plan_name,
+                        //         status: t(targetStatus as PlanStatus)
+                        //     })
+                        // });
                     });
             } catch (error) {
                 console.error("[PlanKanban/handleDragEnd] Error in dispatch:", error);
@@ -447,7 +450,7 @@ const useDragAndDrop = (typedPlans: IPlan[], dispatch: AppDispatch) => {
         setActivePlan(null);
         document.body.classList.remove('dragging');
 
-    }, [typedPlans, dispatch, setActivePlan, t, toaster]); // Added toaster to dependencies
+    }, [typedPlans, dispatch, setActivePlan, t, toaster]);
 
     // Handle drag cancel - Simplified
     const handleDragCancel = useCallback(() => {
