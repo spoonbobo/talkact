@@ -980,8 +980,9 @@ export default function KnowledgeBasePage() {
                                                                     height="0"
                                                                     borderStyle="solid"
                                                                     borderWidth="0 24px 24px 0"
-                                                                    borderColor={`transparent blue.500 transparent transparent`}
-                                                                    _dark={{ borderColor: `transparent blue.500 transparent transparent` }}
+                                                                    borderColor={`transparent #3182CE transparent transparent`}
+                                                                    _dark={{ borderColor: `transparent #4299E1 transparent transparent` }}
+                                                                    opacity={1}
                                                                 />
                                                             )}
                                                             <Icon
