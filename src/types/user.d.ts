@@ -4,11 +4,27 @@ export interface GeneralSettings {
     language?: string;
 }
 
+// Define the structure for a single Knowledge Base item
+export interface KnowledgeBaseItem {
+    id: string;
+    name: string;
+    description?: string;
+    enabled: boolean;
+    sourceType?: string;
+    // Add any other relevant properties for a KB item here
+    url?: string;
+}
+
 export interface KnowledgeBaseSettings {
     source?: string;
     enableKnowledgeBase?: boolean;
     apiKey?: string;
     apiUrl?: string;
+    // Add the array of knowledge base items
+    knowledgeBases?: KnowledgeBaseItem[];
+    // Add missing properties
+    relevanceThreshold?: number;
+    maxResults?: number;
 }
 
 export interface MCPSettings {

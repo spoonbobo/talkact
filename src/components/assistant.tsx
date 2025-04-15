@@ -12,9 +12,12 @@ import {
     Icon,
     Button,
     Textarea,
-    Heading
+    Heading,
+    HStack,
+    Badge
 } from "@chakra-ui/react";
-import { FaComment, FaPaperPlane, FaTimes, FaStop, FaThumbtack } from "react-icons/fa";
+import { FaComment, FaPaperPlane, FaTimes, FaStop, FaThumbtack, FaDatabase } from "react-icons/fa";
+import { FiDatabase, FiCircle } from "react-icons/fi";
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { toaster } from "@/components/ui/toaster";
@@ -31,6 +34,7 @@ import AssistantInput from "@/components/assistant/assistant_input";
 import AssistantMessageList from "@/components/assistant/assistant_message_list";
 import { loadMessagesFromSessions, getActiveStreamingSession, getSession, saveSession } from '@/store/middleware/streamingMiddleware';
 import { debugLog } from "@/store/middleware/streamingMiddleware";
+import axios from "axios";
 
 const Assistant: React.FC = () => {
     const dispatch = useDispatch();
@@ -47,6 +51,7 @@ const Assistant: React.FC = () => {
     const borderColor = useColorModeValue("gray.200", "gray.700");
     const hoverBg = useColorModeValue("gray.100", "gray.700");
     const titleTextColor = useColorModeValue("gray.800", "white");
+    const textColor = useColorModeValue("gray.800", "white");
 
     const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
@@ -67,6 +72,99 @@ const Assistant: React.FC = () => {
     // Color for the pin button
     const pinColor = useColorModeValue("gray.600", "gray.400");
     const activePinColor = useColorModeValue("blue.500", "blue.300");
+
+    // Get user settings including knowledge base settings - with more careful property access
+
+    // Add debugging to see what's in the user settings
+    useEffect(() => {
+        if (currentUser) {
+            console.log("Current User:", currentUser);
+            console.log("User Settings:", currentUser.settings);
+            console.log("KB Settings:", currentUser.settings?.knowledgeBase);
+        }
+    }, [currentUser]);
+
+    // More careful property access with fallbacks
+    const knowledgeBases = useMemo(() => {
+        if (!currentUser || !currentUser.settings) return [];
+
+        // Try different possible paths to the knowledge bases array
+        const kbSettings = currentUser.settings.knowledgeBase;
+        if (!kbSettings) return [];
+
+        // Check if knowledgeBases is directly in the settings
+        if (Array.isArray(kbSettings.knowledgeBases)) {
+            return kbSettings.knowledgeBases;
+        }
+
+        // If it's not an array but an object with a knowledgeBases property
+        if (kbSettings.knowledgeBases && Array.isArray(kbSettings.knowledgeBases)) {
+            return kbSettings.knowledgeBases;
+        }
+
+        // If we can't find it in the expected location, check if it's directly in the settings
+        if (Array.isArray(currentUser.settings.knowledgeBases)) {
+            return currentUser.settings.knowledgeBases;
+        }
+
+        // Last resort - check if the entire knowledgeBase setting is an array
+        if (Array.isArray(kbSettings)) {
+            return kbSettings;
+        }
+
+        return [];
+    }, [currentUser]);
+
+    // State for knowledge base statuses
+    const [kbStatuses, setKbStatuses] = useState<Record<string, string>>({});
+
+    // Fetch knowledge base statuses
+    const fetchKnowledgeBaseStatuses = useCallback(async () => {
+        if (!knowledgeBases.length) return;
+
+        try {
+            const statuses: Record<string, string> = {};
+
+            // Fetch status for each knowledge base
+            await Promise.all(knowledgeBases.map(async (kb) => {
+                if (!kb.id) return;
+
+                try {
+                    // Update the API endpoint path to match the one used in settings
+                    const response = await axios.get(`/api/kb/kb_status/${kb.id}`);
+                    statuses[kb.id] = response.data.status;
+                } catch (error) {
+                    console.error(`Failed to fetch status for KB ${kb.id}:`, error);
+                    statuses[kb.id] = 'error';
+                }
+            }));
+
+            setKbStatuses(statuses);
+        } catch (error) {
+            console.error('Error fetching KB statuses:', error);
+        }
+    }, [knowledgeBases]);
+
+    // Fetch KB statuses on component mount and when knowledge bases change
+    useEffect(() => {
+        if (isOpen) {
+            fetchKnowledgeBaseStatuses();
+        }
+    }, [isOpen, knowledgeBases, fetchKnowledgeBaseStatuses]);
+
+    // Get status color based on status string
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'ready':
+                return 'green.500';
+            case 'loading':
+                return 'yellow.500';
+            case 'error':
+                return 'red.500';
+            default:
+                return 'gray.500';
+        }
+    };
 
     const scrollToBottom = () => {
         // Use requestAnimationFrame to avoid forced reflow
@@ -352,7 +450,8 @@ const Assistant: React.FC = () => {
                 updated_at: new Date().toISOString(),
                 active_rooms: [],
                 archived_rooms: [],
-                role: 'user'
+                role: 'user',
+                settings: {}
             },
             avatar: '',
             room_id: ''
@@ -378,7 +477,8 @@ const Assistant: React.FC = () => {
                 updated_at: new Date().toISOString(),
                 active_rooms: [],
                 archived_rooms: [],
-                role: 'assistant'
+                role: 'assistant',
+                settings: {}
             },
             avatar: '',
             room_id: ''
@@ -395,12 +495,26 @@ const Assistant: React.FC = () => {
 
         console.log("[Assistant] Dispatching startStreaming action");
 
-        // Dispatch the action to start streaming
+        // Get the list of active knowledge base IDs
+        const activeKbIds = Object.entries(activeKnowledgeBases)
+            .filter(([_, isActive]) => isActive)
+            .map(([kbId]) => kbId);
+
+        // Only include knowledge bases that are both active in the UI and enabled in settings
+        const enabledActiveKbIds = activeKbIds.filter(kbId => {
+            const kb = knowledgeBases.find(kb => kb.id === kbId);
+            return kb && kb.enabled !== false;
+        });
+
+        console.log("[Assistant] Active knowledge bases:", enabledActiveKbIds);
+
+        // Dispatch the action to start streaming with knowledge base IDs
         dispatch(startStreaming({
             messageId: newAiMessageId,
             query: userMessage.content,
             conversationHistory: conversationContext,
-            locale
+            locale,
+            knowledgeBases: enabledActiveKbIds.length > 0 ? enabledActiveKbIds : undefined
         }));
     };
 
@@ -536,6 +650,178 @@ const Assistant: React.FC = () => {
         }
     };
 
+    // Inside the component, add state for active knowledge bases
+    const [activeKnowledgeBases, setActiveKnowledgeBases] = useState<Record<string, boolean>>({});
+
+    // Initialize active state from user settings when component mounts or when knowledge bases change
+    useEffect(() => {
+        if (knowledgeBases && knowledgeBases.length > 0) {
+            const initialActiveState: Record<string, boolean> = {};
+            knowledgeBases.forEach(kb => {
+                if (kb.id) {
+                    // Default to enabled if not explicitly disabled
+                    initialActiveState[kb.id] = kb.enabled !== false;
+                }
+            });
+            setActiveKnowledgeBases(initialActiveState);
+
+            // Also refresh the status of all knowledge bases
+            fetchKnowledgeBaseStatuses();
+        }
+    }, [knowledgeBases, fetchKnowledgeBaseStatuses]);
+
+    // Add a periodic refresh for KB statuses when the assistant is open
+    useEffect(() => {
+        let intervalId: NodeJS.Timeout;
+
+        if (isOpen && knowledgeBases.length > 0) {
+            // Initial fetch
+            fetchKnowledgeBaseStatuses();
+
+            // Set up periodic refresh every 30 seconds
+            intervalId = setInterval(() => {
+                fetchKnowledgeBaseStatuses();
+            }, 30000);
+        }
+
+        return () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
+    }, [isOpen, knowledgeBases.length, fetchKnowledgeBaseStatuses]);
+
+    // Function to toggle knowledge base active state
+    const toggleKnowledgeBase = (kbId: string) => {
+        setActiveKnowledgeBases(prev => ({
+            ...prev,
+            [kbId]: !prev[kbId]
+        }));
+
+        // You might want to save this state to the user settings or use it when sending queries
+        // This could be implemented with a dispatch to update user settings
+        // dispatch(updateKnowledgeBaseState({ kbId, enabled: !activeKnowledgeBases[kbId] }));
+    };
+
+    // Update the knowledge base rendering to better handle status and enabled state
+    const renderKnowledgeBaseSection = () => {
+        // Get the list of enabled and active knowledge bases
+        const enabledActiveKbIds = Object.keys(activeKnowledgeBases).filter(
+            id => activeKnowledgeBases[id] &&
+                knowledgeBases.some(kb => kb.id === id && kb.enabled !== false)
+        );
+
+        // Get the list of running knowledge bases (those with status "ready" or "running")
+        const runningKbIds = enabledActiveKbIds.filter(
+            id => {
+                const status = kbStatuses[id];
+                return status === "ready" || status === "running";
+            }
+        );
+
+        // Debug logs
+        console.log("Active knowledge bases state:", activeKnowledgeBases);
+        console.log("Knowledge bases from props:", knowledgeBases);
+        console.log("Enabled active KB IDs:", enabledActiveKbIds);
+        console.log("Running KB IDs:", runningKbIds);
+
+        return (
+            <Box
+                p={2}
+                borderBottom="1px solid"
+                borderColor={borderColor}
+                maxHeight="120px"
+                overflowY="auto"
+                display={isOpen ? 'block' : 'none'}
+            >
+                <Heading size="xs" mb={2} color={titleTextColor}>
+                    <Flex align="center">
+                        <Icon as={FiDatabase} mr={1} />
+                        {t("knowledge_bases") || "Knowledge Bases"}
+                    </Flex>
+                </Heading>
+
+                {(!knowledgeBases || knowledgeBases.length === 0) ? (
+                    <Text fontSize="xs" color="gray.500" fontStyle="italic">
+                        {t("no_knowledge_bases") || "No knowledge bases available. Queries requiring specific knowledge may be less effective."}
+                    </Text>
+                ) : (
+                    <>
+                        <Flex wrap="wrap" gap={1} mb={2}>
+                            {knowledgeBases.map((kb) => {
+                                // Check if KB is enabled in user settings
+                                const isEnabled = kb.enabled !== false; // Default to true if not specified
+
+                                // Check if KB is actually running based on status
+                                const kbStatus = kbStatuses[kb.id || ''] || 'unknown';
+                                const isRunning = kbStatus === 'ready' || kbStatus === 'running';
+
+                                // KB is only selectable if both enabled in settings AND has "ready" or "running" status
+                                const isSelectable = isEnabled && isRunning;
+
+                                // Active state from user selection - default to true if enabled and running
+                                const isActive = activeKnowledgeBases[kb.id || ''] ?? isSelectable;
+
+                                return (
+                                    <Badge
+                                        key={kb.id || 'unknown'}
+                                        px={2}
+                                        py={1}
+                                        borderRadius="full"
+                                        fontSize="xs"
+                                        cursor={isSelectable ? "pointer" : "not-allowed"}
+                                        opacity={isSelectable ? 1 : 0.6}
+                                        bg={isActive && isSelectable
+                                            ? useColorModeValue("blue.50", "blue.900")
+                                            : useColorModeValue("gray.50", "gray.800")}
+                                        color={isActive && isSelectable
+                                            ? useColorModeValue("blue.600", "blue.200")
+                                            : textColor}
+                                        borderWidth="1px"
+                                        borderColor={isActive && isSelectable ? "blue.400" : borderColor}
+                                        onClick={() => isSelectable && kb.id && toggleKnowledgeBase(kb.id)}
+                                        _hover={isSelectable ? {
+                                            bg: isActive
+                                                ? useColorModeValue("blue.100", "blue.800")
+                                                : useColorModeValue("gray.100", "gray.700")
+                                        } : {}}
+                                        transition="all 0.2s"
+                                        display="flex"
+                                        alignItems="center"
+                                        title={!isRunning
+                                            ? `Knowledge base is ${kbStatus}`
+                                            : !isEnabled
+                                                ? "Knowledge base is disabled in settings"
+                                                : "Click to toggle"}
+                                    >
+                                        <Box
+                                            as="span"
+                                            w="6px"
+                                            h="6px"
+                                            borderRadius="full"
+                                            bg={getStatusColor(kbStatus)}
+                                            mr={1}
+                                        />
+                                        {kb.name || 'Unnamed KB'}
+                                    </Badge>
+                                );
+                            })}
+                        </Flex>
+
+                        {/* Show warning when no running KBs will be queried */}
+                        {runningKbIds.length === 0 && (
+                            <Box p={2} mt={2} bg="yellow.100" color="yellow.800" borderRadius="md">
+                                <Text fontSize="sm">
+                                    {t("no_kb_selected_warning") || "No running knowledge bases available. Your query will use general knowledge only."}
+                                </Text>
+                            </Box>
+                        )}
+                    </>
+                )}
+            </Box>
+        );
+    };
+
     if (!isAuthenticated) {
         return null;
     }
@@ -628,7 +914,10 @@ const Assistant: React.FC = () => {
                                 </Flex>
                             </Flex>
                             <Popover.Body p={0} height={`calc(${size?.height || 500}px - 80px)`} display="flex" flexDirection="column">
-                                {/* Use the extracted message list component */}
+                                {/* Knowledge Base Section */}
+                                {renderKnowledgeBaseSection()}
+
+                                {/* Message List */}
                                 <AssistantMessageList
                                     messages={messages}
                                     isStreaming={isStreaming}

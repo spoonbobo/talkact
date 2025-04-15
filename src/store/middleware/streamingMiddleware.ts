@@ -10,6 +10,28 @@ import {
 import { toaster } from "@/components/ui/toaster";
 import { v4 as uuidv4 } from 'uuid';
 import { IMessage } from '@/types/chat';
+import { User, UserSettings } from '@/types/user';
+
+// Define a default sender object for the assistant
+const defaultAssistantSettings: UserSettings = {
+    general: { theme: 'system' }, // Provide default general settings or leave empty
+    knowledgeBase: {},
+    mcp: {}
+};
+
+const assistantSender: User = {
+    id: 'assistant-id',
+    user_id: 'assistant-id',
+    username: 'AI Assistant',
+    email: '',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    active_rooms: [],
+    archived_rooms: [],
+    role: 'assistant',
+    settings: defaultAssistantSettings, // Add the settings property
+    avatar: '' // Add avatar if needed, or make it optional in User interface
+};
 
 // Add this interface near the top of the file
 interface StreamSession {
@@ -143,21 +165,11 @@ const checkAndReconnectStreams = (storeRef: any) => {
                 debugLog(`Found incomplete session: ${messageId}`);
 
                 // First, restore the content we have so far
-                const updatedMessage = {
+                const updatedMessage: IMessage = {
                     id: messageId,
                     content: session.content || '',
                     created_at: new Date().toISOString(),
-                    sender: {
-                        id: 'assistant-id',
-                        user_id: 'assistant-id',
-                        username: 'AI Assistant',
-                        email: '',
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                        active_rooms: [],
-                        archived_rooms: [],
-                        role: 'assistant'
-                    },
+                    sender: assistantSender,
                     avatar: '',
                     room_id: ''
                 };
@@ -232,21 +244,11 @@ const setupVisibilityChangeHandler = (storeRef: any) => {
 
                     // Restore the message content
                     if (session.lastContent) {
-                        const updatedMessage = {
+                        const updatedMessage: IMessage = {
                             id: messageId,
                             content: session.lastContent,
                             created_at: new Date().toISOString(),
-                            sender: {
-                                id: 'assistant-id',
-                                user_id: 'assistant-id',
-                                username: 'AI Assistant',
-                                email: '',
-                                created_at: new Date().toISOString(),
-                                updated_at: new Date().toISOString(),
-                                active_rooms: [],
-                                archived_rooms: [],
-                                role: 'assistant'
-                            },
+                            sender: assistantSender,
                             avatar: '',
                             room_id: ''
                         };
@@ -319,7 +321,7 @@ const streamingMiddleware: Middleware = storeAPI => {
             controller = new AbortController();
             const { signal } = controller;
 
-            const { messageId, query, conversationHistory, locale } = action.payload;
+            const { messageId, query, conversationHistory, locale, knowledgeBases } = action.payload;
 
             // Set streaming state
             storeRef.dispatch(setStreamingState({ isStreaming: true, messageId }));
@@ -327,6 +329,7 @@ const streamingMiddleware: Middleware = storeAPI => {
             // We'll store our own session ID, but we'll update it when we get the real one from the server
             const clientSessionId = `client_${uuidv4()}`;
             debugLog('Created client session ID:', clientSessionId);
+            debugLog('Knowledge bases:', knowledgeBases);
 
             // Store the session immediately using localStorage
             saveSession(messageId, {
@@ -352,10 +355,10 @@ const streamingMiddleware: Middleware = storeAPI => {
                 body: JSON.stringify({
                     query,
                     conversation_history: conversationHistory,
-                    source_id: "local_store",
                     streaming: true,
                     top_k: 5,
-                    preferred_language: locale
+                    preferred_language: locale,
+                    knowledge_bases: knowledgeBases
                 }),
                 signal
             })
@@ -550,17 +553,7 @@ const streamingMiddleware: Middleware = storeAPI => {
                             id: messageId,
                             content: content,
                             created_at: new Date().toISOString(),
-                            sender: {
-                                id: 'assistant-id',
-                                user_id: 'assistant-id',
-                                username: 'AI Assistant',
-                                email: '',
-                                created_at: new Date().toISOString(),
-                                updated_at: new Date().toISOString(),
-                                active_rooms: [],
-                                archived_rooms: [],
-                                role: 'assistant'
-                            },
+                            sender: assistantSender,
                             avatar: '',
                             room_id: ''
                         };
@@ -584,17 +577,7 @@ const streamingMiddleware: Middleware = storeAPI => {
                             id: uuidv4(),
                             content: "I'm sorry, I encountered an error processing your request.",
                             created_at: new Date().toISOString(),
-                            sender: {
-                                id: 'assistant-id',
-                                user_id: 'assistant-id',
-                                username: 'AI Assistant',
-                                email: '',
-                                created_at: new Date().toISOString(),
-                                updated_at: new Date().toISOString(),
-                                active_rooms: [],
-                                archived_rooms: [],
-                                role: 'assistant'
-                            },
+                            sender: assistantSender,
                             avatar: '',
                             room_id: ''
                         };
@@ -639,17 +622,7 @@ const streamingMiddleware: Middleware = storeAPI => {
                 id: messageId,
                 content: currentContent,
                 created_at: new Date().toISOString(),
-                sender: {
-                    id: 'assistant-id',
-                    user_id: 'assistant-id',
-                    username: 'AI Assistant',
-                    email: '',
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                    active_rooms: [],
-                    archived_rooms: [],
-                    role: 'assistant'
-                },
+                sender: assistantSender,
                 avatar: '',
                 room_id: ''
             };
@@ -755,17 +728,7 @@ const reconnectToStream = (messageId: string, sessionId: string, currentContent:
                             id: messageId,
                             content: data.content,
                             created_at: new Date().toISOString(),
-                            sender: {
-                                id: 'assistant-id',
-                                user_id: 'assistant-id',
-                                username: 'AI Assistant',
-                                email: '',
-                                created_at: new Date().toISOString(),
-                                updated_at: new Date().toISOString(),
-                                active_rooms: [],
-                                archived_rooms: [],
-                                role: 'assistant'
-                            },
+                            sender: assistantSender,
                             avatar: '',
                             room_id: ''
                         };
@@ -882,17 +845,7 @@ const reconnectToStream = (messageId: string, sessionId: string, currentContent:
                     id: messageId,
                     content: content,
                     created_at: new Date().toISOString(),
-                    sender: {
-                        id: 'assistant-id',
-                        user_id: 'assistant-id',
-                        username: 'AI Assistant',
-                        email: '',
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                        active_rooms: [],
-                        archived_rooms: [],
-                        role: 'assistant'
-                    },
+                    sender: assistantSender,
                     avatar: '',
                     room_id: ''
                 };
@@ -924,17 +877,7 @@ export const loadMessagesFromSessions = (): IMessage[] => {
         id: messageId,
         content: session.content || '',
         created_at: new Date(session.lastUpdated || Date.now()).toISOString(),
-        sender: {
-            id: 'assistant-id',
-            user_id: 'assistant-id',
-            username: 'AI Assistant',
-            email: '',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            active_rooms: [],
-            archived_rooms: [],
-            role: 'assistant'
-        },
+        sender: assistantSender,
         avatar: '',
         room_id: ''
     }));

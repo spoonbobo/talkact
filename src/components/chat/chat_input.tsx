@@ -106,9 +106,9 @@ export const ChatInput = React.memo(({
 
         return mentionState.searchText.trim() === ''
             ? allUsers
-            : allUsers.filter(user =>
+            : allUsers.filter((user: User) =>
                 user.username.toLowerCase().includes(mentionState.searchText.toLowerCase())
-            ).sort((a, b) => {
+            ).sort((a: User, b: User) => {
                 const aIsAgent = a.role === "agent";
                 const bIsAgent = b.role === "agent";
                 if (aIsAgent && !bIsAgent) return -1;
@@ -302,7 +302,8 @@ export const ChatInput = React.memo(({
                 archived_rooms: currentUser?.archived_rooms || [],
                 avatar: currentUser?.avatar || '',
                 role: currentUser?.role || 'user',
-                id: currentUser?.id
+                id: currentUser?.id,
+                settings: currentUser?.settings || {}
             },
             content,
             created_at: new Date().toISOString(),

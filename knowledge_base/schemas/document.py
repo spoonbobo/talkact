@@ -1,4 +1,4 @@
-from typing import List, Optional, Any, Union
+from typing import List, Optional, Any, Union, Dict
 from pydantic import BaseModel, Field
 from datetime import datetime
 import uuid
@@ -46,11 +46,27 @@ class DataSource(BaseModel):
 class QueryRequest(BaseModel):
     query: Union[str, List[str]]  # Can be a single string or list of strings
     conversation_history: Union[str, List[str]] = ""
-    source_id: str
     streaming: bool = False
     top_k: int = 5
     preferred_language: str = "en"
     message_id: Optional[str] = None
+    knowledge_bases: Optional[List[str]] = None
+
+class KnowledgeBaseRegistration(BaseModel):
+    """Schema for registering a new knowledge base"""
+    id: str
+    name: str
+    description: Optional[str] = ""
+    source_type: str
+    url: str
+    enabled: bool = True
+    
+
+class KnowledgeBaseStatus(BaseModel):
+    """Schema for knowledge base status response"""
+    id: str
+    status: str  # "disabled", "initializing", "running", "error", "not_found"
+    message: Optional[str] = None
 
 # Update forward references for nested models
 Folder.model_rebuild()

@@ -16,13 +16,8 @@ from api.route import router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting Knowledge Base")
-    # TODO: replace config.json with custom path
-    config = json.load(open("config.json"))
-    # TODO: replace with env variable
     qdrant_client = QdrantClient(host="onlysaid-qdrant", port=6333)
-    kb_manager = KBManager(config, qdrant_client)
-    kb_manager.load_documents()
-    kb_manager.create_indices()
+    kb_manager = KBManager(qdrant_client)
     app.state.kb_manager = kb_manager
 
     yield
@@ -48,5 +43,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=35430,
         workers=4,  # Use multiple worker processes
-        # reload=True,  # Disable reload in production
+        reload=True,  # Enable reload in development
     )

@@ -40,7 +40,7 @@ export default function SettingsLayout({
     const textColor = useColorModeValue("gray.800", "gray.100");
     const cardBg = useColorModeValue("white", "gray.800");
     const accentColor = "blue.500";
-    const activeHighlight = useColorModeValue("blue.50", "blue.900");
+    const activeHighlight = useColorModeValue("blue.200", "blue.700");
     const activeBorderColor = "blue.500";
 
     // Animation variants

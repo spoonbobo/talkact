@@ -9,6 +9,7 @@ export const startStreaming = createAction<{
     query: string;
     conversationHistory: string;
     locale: string;
+    knowledgeBases?: string[];
 }>('assistant/startStreaming');
 
 export const stopStreaming = createAction('assistant/stopStreaming');

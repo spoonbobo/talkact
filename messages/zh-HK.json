@@ -125,9 +125,12 @@
     "clear_all": "全部清除"
   },
   "Assistant": {
+    "no_kb_selected_warning": "沒有選擇知識庫，查詢可能會較不有效",
     "ai_assistant": "AI知識庫助手",
     "clear_chat": "清除聊天",
-    "how_can_i_help_you_today": "我可以怎麼幫你？"
+    "how_can_i_help_you_today": "我可以怎麼幫你？",
+    "knowledge_bases": "知識庫",
+    "no_knowledge_bases": "沒有知識庫配置, 查詢需要特定知識的問題可能會較不有效"
   },
   "Chat": {
     "chat": "聊天",
@@ -415,7 +418,36 @@
     "apiKeyPlaceholder": "輸入API密鑰",
     "availableTools": "可用工具",
     "needsConfiguration": "需要配置",
-    "serverConfigurationTitle": "伺服器配置"
+    "serverConfigurationTitle": "伺服器配置",
+    "knowledge_base_items": "知識庫項目",
+    "knowledge_base_items_description": "配置不同類型的知識庫",
+    "add_kb_item": "新增知識庫",
+    "edit_kb_item": "編輯知識庫項目",
+    "no_kb_items": "未配置知識庫項目",
+    "kb_name": "名稱",
+    "kb_name_placeholder": "例如：公司文件",
+    "kb_description": "描述",
+    "kb_description_placeholder": "此知識庫的簡要描述",
+    "kb_id": "ID",
+    "kb_id_placeholder": "唯一標識符（例如：company-docs）",
+    "kb_enabled": "啟用",
+    "update": "更新",
+    "kb_name_id_required": "名稱和ID為必填項",
+    "edit": "編輯",
+    "kb_not_found": "找不到知識庫/未初始化",
+    "kb_initializing": "初始化中",
+    "kb_error": "錯誤",
+    "kb_registered": "知識庫已註冊",
+    "kb_registered_description": "知識庫已成功註冊",
+    "please_select_source_type": "請選擇來源類型",
+    "kb_path": "路徑",
+    "kb_path_placeholder": "輸入文件或目錄路徑",
+    "kb_path_help": "指定知識庫文件或目錄的路徑",
+    "kb_disabled": "已停用",
+    "kb_running": "運行中",
+    "reinitialize": "重新初始化",
+    "confirm_reinitialize": "確定重新初始化知識庫?",
+    "confirm_reinitialize_description": "重置知識庫將會刪除現有知識庫並重新初始化，並需要等待一段時間才能使用。"
   },
   "Loading": {
     "loading": "加載中...",
