@@ -22,6 +22,7 @@ interface IChatBubbleProps {
   isTaskMode?: boolean;
   isStreaming?: boolean;
   isLoadingOlder?: boolean;
+  showThumbnails?: boolean;
 }
 
 export const ChatBubble = React.memo(({
@@ -31,6 +32,7 @@ export const ChatBubble = React.memo(({
   isTaskMode = true,
   isStreaming = false,
   isLoadingOlder = false,
+  showThumbnails = false,
 }: IChatBubbleProps) => {
   const t = useTranslations("Chat");
   const colors = useChatPageColors();
@@ -310,6 +312,8 @@ export const ChatBubble = React.memo(({
             opacity: isVisible ? 1 : 0,
             transition: "opacity 0.5s ease-in-out",
             userSelect: "text",
+            marginLeft: !isUser && showThumbnails ? '40px' : '0',
+            marginRight: isUser && showThumbnails ? '40px' : '0',
           }}
         >
           <Box position="relative" textAlign="left" width="100%" overflow="hidden">
@@ -339,12 +343,30 @@ export const ChatBubble = React.memo(({
                             maxWidth: '100%',
                             overflow: 'hidden'
                           }}>
-                            <div style={{
+                            {/* Add custom scrollbar styling */}
+                            <style jsx>{`
+                              .custom-scrollbar::-webkit-scrollbar {
+                                height: 6px;
+                                background-color: transparent;
+                              }
+                              
+                              .custom-scrollbar::-webkit-scrollbar-thumb {
+                                background-color: ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};
+                                border-radius: 3px;
+                              }
+                              
+                              .custom-scrollbar::-webkit-scrollbar-button {
+                                display: none;
+                              }
+                            `}</style>
+
+                            <div className="custom-scrollbar" style={{
                               overflowX: 'auto',
                               overflowY: 'auto',
                               maxHeight: '400px',
                               width: '100%',
-                              WebkitOverflowScrolling: 'touch'
+                              WebkitOverflowScrolling: 'touch',
+                              scrollbarWidth: 'thin',
                             }}>
                               <table style={{
                                 tableLayout: 'fixed',
@@ -720,6 +742,7 @@ export const ChatBubble = React.memo(({
     prevProps.isTaskMode === nextProps.isTaskMode &&
     prevProps.isStreaming === nextProps.isStreaming &&
     prevProps.isLoadingOlder === nextProps.isLoadingOlder &&
+    prevProps.showThumbnails === nextProps.showThumbnails &&
     prevProps.message.content === nextProps.message.content
   );
 });
