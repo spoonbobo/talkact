@@ -292,7 +292,7 @@ export const ChatBubble = React.memo(({
           position="relative"
           px={3}
           py={isSingleLine ? 1.5 : 2}
-          width="fit-content"
+          width="auto"
           maxW="100%"
           borderRadius="xl"
           bg={isUser
@@ -310,42 +310,81 @@ export const ChatBubble = React.memo(({
             opacity: isVisible ? 1 : 0,
             transition: "opacity 0.5s ease-in-out",
             userSelect: "text",
-            whiteSpace: "pre-wrap"
           }}
         >
-          <Box position="relative" textAlign="left">
+          <Box position="relative" textAlign="left" width="100%" overflow="hidden">
             {isStreaming || !message.content ? (
-              // Use dangerouslySetInnerHTML for streaming or generating state
               <div
                 dangerouslySetInnerHTML={{ __html: contentWithCursor }}
                 style={{ whiteSpace: "pre-wrap" }}
               />
             ) : (
-              // Use ReactMarkdown for regular content with proper table handling
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              <div style={{ maxWidth: '100%' }}>
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={[rehypeRaw, rehypeSanitize]}
                   components={{
                     code({ node, inline, className, children, ...props }: any) {
                       const match = /language-(\w+)/.exec(className || '');
-                      return !inline && match ? (
-                        <SyntaxHighlighter
-                          style={codeColors.codeStyle}
-                          language={match[1]}
-                          PreTag="div"
-                          customStyle={{
-                            borderRadius: '6px',
+
+                      if (!inline && match) {
+                        // Force horizontal scrolling with explicit inline styles
+                        return (
+                          <div style={{
+                            position: 'relative',
                             margin: '0.75em 0',
-                            padding: '1em',
+                            borderRadius: '6px',
                             border: `1px solid ${isUser ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'}`,
-                            boxShadow: `0 2px 4px ${isUser ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'}`
-                          }}
-                          {...props}
-                        >
-                          {String(children).replace(/\n$/, '')}
-                        </SyntaxHighlighter>
-                      ) : (
+                            backgroundColor: isUser ? 'rgba(0,0,0,0.2)' : useColorModeValue('rgba(0,0,0,0.03)', 'rgba(255,255,255,0.05)'),
+                            maxWidth: '100%',
+                            overflow: 'hidden'
+                          }}>
+                            <div style={{
+                              overflowX: 'auto',
+                              overflowY: 'auto',
+                              maxHeight: '400px',
+                              width: '100%',
+                              WebkitOverflowScrolling: 'touch'
+                            }}>
+                              <table style={{
+                                tableLayout: 'fixed',
+                                width: '1px', // This forces the table to be as narrow as possible
+                                margin: 0,
+                                padding: 0,
+                                border: 'none',
+                                borderCollapse: 'collapse'
+                              }}>
+                                <tbody>
+                                  <tr>
+                                    <td style={{
+                                      padding: 0,
+                                      border: 'none',
+                                      whiteSpace: 'pre'
+                                    }}>
+                                      <pre style={{
+                                        margin: 0,
+                                        padding: '1em',
+                                        fontSize: '0.875em',
+                                        lineHeight: 1.5,
+                                        fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
+                                        whiteSpace: 'pre',
+                                        display: 'block'
+                                      }}>
+                                        <code>
+                                          {String(children).replace(/\n$/, '')}
+                                        </code>
+                                      </pre>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // For inline code
+                      return (
                         <code
                           className={className}
                           style={{
@@ -353,7 +392,9 @@ export const ChatBubble = React.memo(({
                             padding: '0.2em 0.4em',
                             borderRadius: '3px',
                             fontSize: '0.9em',
-                            fontFamily: 'monospace'
+                            fontFamily: 'monospace',
+                            wordBreak: 'break-all',
+                            whiteSpace: 'pre-wrap',
                           }}
                           {...props}
                         >
@@ -361,7 +402,6 @@ export const ChatBubble = React.memo(({
                         </code>
                       );
                     },
-                    // Override link to open in new tab
                     a: ({ node, ...props }) => (
                       <a
                         {...props}
@@ -378,31 +418,18 @@ export const ChatBubble = React.memo(({
                         onMouseOut={(e) => { e.currentTarget.style.opacity = '1'; }}
                       />
                     ),
-                    // Style other elements as needed
-                    p: ({ node, ...props }) => {
-                      // Check if this paragraph contains a table or is adjacent to a table
-                      const hasTableChild = node?.children?.some(child =>
-                        child.type === 'element' && (child.tagName === 'table' || child.tagName === 'div')
-                      );
-
-                      // Check if paragraph is empty or just contains whitespace
-                      const isEmpty = node?.children?.length === 1 &&
-                        node?.children[0]?.type === 'text' &&
-                        node?.children[0]?.value?.trim() === '';
-
-                      if (isEmpty) {
-                        return null; // Don't render empty paragraphs
-                      }
-
-                      return (
-                        <p style={{
-                          margin: hasTableChild ? 0 : '0.5em 0',
+                    p: ({ node, ...props }) => (
+                      <p
+                        style={{
+                          margin: '0.5em 0',
                           padding: 0,
-                          lineHeight: 1.5,
-                          letterSpacing: '0.01em'
-                        }} {...props} />
-                      );
-                    },
+                          maxWidth: '100%',
+                          overflowWrap: 'break-word',
+                          wordBreak: 'break-word',
+                        }}
+                        {...props}
+                      />
+                    ),
                     ul: ({ node, ...props }) => (
                       <ul
                         style={{
@@ -515,24 +542,23 @@ export const ChatBubble = React.memo(({
                         {...props}
                       />
                     ),
-                    // Add table styling components
                     table: ({ node, ...props }) => (
                       <div style={{
-                        overflowX: 'auto',
+                        width: '100%',
                         maxWidth: '100%',
+                        overflowX: 'auto',
                         margin: '1em 0',
                         padding: '0',
                         borderRadius: '6px',
                         border: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : colors.borderColor}`,
-                        boxShadow: `0 2px 4px ${isUser ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'}`
                       }}>
                         <table
                           style={{
                             borderCollapse: 'collapse',
-                            width: '100%',
+                            width: 'auto',
                             fontSize: '0.9em',
                             margin: 0,
-                            padding: 0
+                            padding: 0,
                           }}
                           {...props}
                         />
@@ -601,6 +627,7 @@ export const ChatBubble = React.memo(({
                         loading="lazy"
                       />
                     ),
+                    pre: ({ children }: any) => <>{children}</>,
                   }}
                 >
                   {message.content}
@@ -627,10 +654,9 @@ export const ChatBubble = React.memo(({
             style={{
               position: "fixed",
               zIndex: 1000,
-              transform: "none" // Prevent automatic repositioning
+              transform: "none"
             }}
           >
-            {/* Horizontal menu items (emojis) */}
             <Group
               grow
               gap="0"
@@ -656,7 +682,6 @@ export const ChatBubble = React.memo(({
               ))}
             </Group>
 
-            {/* Vertical menu items (starting with copy) */}
             <Box py={1}>
               {verticalMenuItems.map((item) => (
                 <Menu.Item
@@ -682,13 +707,11 @@ export const ChatBubble = React.memo(({
     </Menu.Root>
   );
 }, (prevProps, nextProps) => {
-  // Custom comparison function to determine if re-render is needed
-  // Always re-render if the message contains an interruption notice
   if (
     prevProps.message.content?.includes('[Generation was interrupted') ||
     nextProps.message.content?.includes('[Generation was interrupted')
   ) {
-    return false; // Force re-render for interrupted messages
+    return false;
   }
 
   return (

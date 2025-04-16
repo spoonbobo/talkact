@@ -510,10 +510,10 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                 minHeight="0"
                             >
                                 <Flex justify="space-between" align="center" mb={4}>
-                                    <Text fontSize="lg" fontWeight="bold" color={colors.textColorHeading}>
-                                        {t("available_plans")} {filteredPlans.length > 0 && `(${filteredPlans.length})`}
-                                    </Text>
-                                    <Flex>
+                                    <Flex align="center">
+                                        <Text fontSize="lg" fontWeight="bold" color={colors.textColorHeading} mr={3}>
+                                            {t("available_plans")} {filteredPlans.length > 0 && `(${filteredPlans.length})`}
+                                        </Text>
                                         <IconButton
                                             aria-label="Kanban view"
                                             size="sm"
@@ -544,6 +544,8 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                             <Icon as={FaCalendarAlt} />
                                         </IconButton>
                                     </Flex>
+                                    <Box> {/* Empty box to maintain the space-between layout */}
+                                    </Box>
                                 </Flex>
 
                                 {/* Search bar with Chakra UI v3 syntax */}
