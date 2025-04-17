@@ -40,6 +40,7 @@ type KBStatus = 'not_found' | 'disabled' | 'initializing' | 'running' | 'error';
 export default function KnowledgeBasePage() {
     const t = useTranslations("Settings");
     const userSettings = useSelector((state: RootState) => state.user.currentUser?.settings);
+    const isOwner = useSelector((state: RootState) => state.user.isOwner);
     const dispatch = useDispatch();
     const textColor = useColorModeValue("gray.800", "gray.100");
     const cardBg = useColorModeValue("white", "gray.700");
@@ -176,6 +177,39 @@ export default function KnowledgeBasePage() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            // For non-owners, only allow changes to the enabled status of existing knowledge bases
+            if (!isOwner) {
+                // Get the initial knowledge bases for comparison
+                const initialKBs = JSON.parse(initialSettingsString).knowledgeBases || [];
+                const currentKBs = settings.knowledgeBases || [];
+
+                // Check for unauthorized changes
+                const hasNewKBs = currentKBs.length > initialKBs.length;
+                const hasDeletedKBs = currentKBs.length < initialKBs.length;
+
+                // Check if any knowledge base has been modified other than enable status
+                const hasModifiedKBs = currentKBs.some(kb => {
+                    const initialKB = initialKBs.find((item: KnowledgeBaseItem) => item.id === kb.id);
+                    if (!initialKB) return true; // New KB
+
+                    // Only allow changes to the enabled property
+                    return kb.name !== initialKB.name ||
+                        kb.description !== initialKB.description ||
+                        kb.sourceType !== initialKB.sourceType ||
+                        kb.url !== initialKB.url;
+                });
+
+                if (hasNewKBs || hasDeletedKBs || hasModifiedKBs) {
+                    toaster.create({
+                        title: t("error"),
+                        description: t("non_owner_limited_changes") || "As a non-owner, you can only enable or disable existing knowledge bases",
+                        duration: 3000,
+                    });
+                    setIsSaving(false);
+                    return;
+                }
+            }
+
             // Create a properly structured user settings object
             const updatedUserSettings = {
                 ...userSettings,
@@ -213,112 +247,148 @@ export default function KnowledgeBasePage() {
                 // Track KBs that need to be recreated due to significant changes
                 const kbsToRecreate = [];
 
-                // Check for deleted KBs and KBs with significant changes
-                for (const initialKB of initialKBs) {
-                    const currentKB = currentKBs.find(kb => kb.id === initialKB.id);
+                // For non-owners, only process enable/disable changes
+                if (!isOwner) {
+                    // Process each knowledge base - only update status
+                    for (const kb of currentKBs) {
+                        const initialKB = initialKBs.find((item: KnowledgeBaseItem) => item.id === kb.id);
+                        if (initialKB && initialKB.enabled !== kb.enabled) {
+                            // Only status changed - update it
+                            const statusResponse = await fetch(`/api/kb/update_kb_status`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    id: kb.id,
+                                    enabled: kb.enabled
+                                })
+                            });
 
-                    if (!currentKB) {
-                        // KB was deleted - remove it from the backend
+                            if (statusResponse.ok) {
+                                // Update the status in the UI based on the new enabled state
+                                setKbStatuses(prev => ({
+                                    ...prev,
+                                    [kb.id]: kb.enabled ? 'initializing' : 'disabled'
+                                }));
+
+                                // If enabled, start polling for status updates
+                                if (kb.enabled) {
+                                    pollKnowledgeBaseStatus(kb.id);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // For owners, process all changes as before
+
+                    // Check for deleted KBs and KBs with significant changes
+                    for (const initialKB of initialKBs) {
+                        const currentKB = currentKBs.find(kb => kb.id === initialKB.id);
+
+                        if (!currentKB) {
+                            // KB was deleted - remove it from the backend
+                            const deleteResponse = await fetch(`/api/kb/delete_kb`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ id: initialKB.id })
+                            });
+
+                            if (deleteResponse.ok) {
+                                // Also remove it from the status tracking
+                                setKbStatuses(prev => {
+                                    const newStatuses = { ...prev };
+                                    delete newStatuses[initialKB.id];
+                                    return newStatuses;
+                                });
+
+                                console.log(`Successfully deleted knowledge base ${initialKB.id}`);
+                            } else {
+                                console.error(`Failed to delete knowledge base ${initialKB.id}`);
+                            }
+                        } else {
+                            // Check if significant fields have changed (other than description or enabled status)
+                            const hasSignificantChanges =
+                                initialKB.name !== currentKB.name ||
+                                initialKB.sourceType !== currentKB.sourceType ||
+                                initialKB.url !== currentKB.url;
+
+                            if (hasSignificantChanges) {
+                                // Mark for recreation
+                                kbsToRecreate.push({
+                                    oldId: initialKB.id,
+                                    newKB: currentKB
+                                });
+                            }
+                        }
+                    }
+
+                    // Handle KBs that need to be recreated due to significant changes
+                    for (const { oldId, newKB } of kbsToRecreate) {
+                        // First delete the old KB
                         const deleteResponse = await fetch(`/api/kb/delete_kb`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify({ id: initialKB.id })
+                            body: JSON.stringify({ id: oldId })
                         });
 
                         if (deleteResponse.ok) {
-                            // Also remove it from the status tracking
+                            console.log(`Successfully deleted knowledge base ${oldId} for recreation`);
+
+                            // Remove old status
                             setKbStatuses(prev => {
                                 const newStatuses = { ...prev };
-                                delete newStatuses[initialKB.id];
+                                delete newStatuses[oldId];
                                 return newStatuses;
                             });
 
-                            console.log(`Successfully deleted knowledge base ${initialKB.id}`);
+                            // Then register as new
+                            await registerKnowledgeBase(newKB);
                         } else {
-                            console.error(`Failed to delete knowledge base ${initialKB.id}`);
+                            console.error(`Failed to delete knowledge base ${oldId} for recreation`);
                         }
-                    } else {
-                        // Check if significant fields have changed (other than description or enabled status)
-                        const hasSignificantChanges =
-                            initialKB.name !== currentKB.name ||
-                            initialKB.sourceType !== currentKB.sourceType ||
-                            initialKB.url !== currentKB.url;
+                    }
 
-                        if (hasSignificantChanges) {
-                            // Mark for recreation
-                            kbsToRecreate.push({
-                                oldId: initialKB.id,
-                                newKB: currentKB
+                    // Process each remaining knowledge base (new or status change only)
+                    for (const kb of currentKBs) {
+                        const initialKB = initialKBs.find((item: KnowledgeBaseItem) => item.id === kb.id);
+                        const isBeingRecreated = kbsToRecreate.some(item => item.newKB.id === kb.id);
+
+                        // Skip if this KB is being recreated (already handled above)
+                        if (isBeingRecreated) continue;
+
+                        // If this is a new KB
+                        if (!initialKB) {
+                            // New KB - register it
+                            await registerKnowledgeBase(kb);
+                        } else if (initialKB.enabled !== kb.enabled) {
+                            // Only status changed - update it
+                            const statusResponse = await fetch(`/api/kb/update_kb_status`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    id: kb.id,
+                                    enabled: kb.enabled
+                                })
                             });
-                        }
-                    }
-                }
 
-                // Handle KBs that need to be recreated due to significant changes
-                for (const { oldId, newKB } of kbsToRecreate) {
-                    // First delete the old KB
-                    const deleteResponse = await fetch(`/api/kb/delete_kb`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ id: oldId })
-                    });
+                            if (statusResponse.ok) {
+                                // Update the status in the UI based on the new enabled state
+                                setKbStatuses(prev => ({
+                                    ...prev,
+                                    [kb.id]: kb.enabled ? 'initializing' : 'disabled'
+                                }));
 
-                    if (deleteResponse.ok) {
-                        console.log(`Successfully deleted knowledge base ${oldId} for recreation`);
-
-                        // Remove old status
-                        setKbStatuses(prev => {
-                            const newStatuses = { ...prev };
-                            delete newStatuses[oldId];
-                            return newStatuses;
-                        });
-
-                        // Then register as new
-                        await registerKnowledgeBase(newKB);
-                    } else {
-                        console.error(`Failed to delete knowledge base ${oldId} for recreation`);
-                    }
-                }
-
-                // Process each remaining knowledge base (new or status change only)
-                for (const kb of currentKBs) {
-                    const initialKB = initialKBs.find((item: KnowledgeBaseItem) => item.id === kb.id);
-                    const isBeingRecreated = kbsToRecreate.some(item => item.newKB.id === kb.id);
-
-                    // Skip if this KB is being recreated (already handled above)
-                    if (isBeingRecreated) continue;
-
-                    // If this is a new KB
-                    if (!initialKB) {
-                        // New KB - register it
-                        await registerKnowledgeBase(kb);
-                    } else if (initialKB.enabled !== kb.enabled) {
-                        // Only status changed - update it
-                        const statusResponse = await fetch(`/api/kb/update_kb_status`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                id: kb.id,
-                                enabled: kb.enabled
-                            })
-                        });
-
-                        if (statusResponse.ok) {
-                            // Update the status in the UI based on the new enabled state
-                            setKbStatuses(prev => ({
-                                ...prev,
-                                [kb.id]: kb.enabled ? 'initializing' : 'disabled'
-                            }));
-
-                            // If enabled, start polling for status updates
-                            if (kb.enabled) {
-                                pollKnowledgeBaseStatus(kb.id);
+                                // If enabled, start polling for status updates
+                                if (kb.enabled) {
+                                    pollKnowledgeBaseStatus(kb.id);
+                                }
                             }
                         }
                     }
@@ -561,6 +631,16 @@ export default function KnowledgeBasePage() {
 
     // Modify the handleAddKnowledgeBase function to only update local state
     const handleAddKnowledgeBase = () => {
+        // Prevent non-owners from adding knowledge base items
+        if (!isOwner) {
+            toaster.create({
+                title: t("error"),
+                description: t("owner_only_feature") || "This feature is only available to owners",
+                duration: 3000,
+            });
+            return;
+        }
+
         if (!newKBItem.name) {
             toaster.create({
                 title: t("error"),
@@ -746,6 +826,8 @@ export default function KnowledgeBasePage() {
                     colorScheme="blue"
                     variant="solid"
                     onClick={() => setIsAddingKB(true)}
+                    disabled={!isOwner}
+                    title={!isOwner ? t("owner_only_feature") || "This feature is only available to owners" : ""}
                 >
                     {t("add_kb_item") || "Add Item"}
                 </Button>
@@ -797,6 +879,8 @@ export default function KnowledgeBasePage() {
                                         setNewKBItem({ ...kb });
                                         setIsAddingKB(true);
                                     }}
+                                    disabled={!isOwner}
+                                    title={!isOwner ? t("owner_only_feature") || "This feature is only available to owners" : ""}
                                 >
                                     {t("edit") || "Edit"}
                                 </Button>
@@ -827,6 +911,8 @@ export default function KnowledgeBasePage() {
                                     size="xs"
                                     variant="ghost"
                                     onClick={() => handleDeleteKb(kb.id)}
+                                    disabled={!isOwner}
+                                    title={!isOwner ? t("owner_only_feature") || "This feature is only available to owners" : ""}
                                 >
                                     <Icon as={FaTrash} />
                                 </IconButton>

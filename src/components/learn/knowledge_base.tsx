@@ -8,7 +8,7 @@ import {
 } from "@chakra-ui/react";
 
 import { motion, HTMLMotionProps, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import {
     FiSearch, FiFolder, FiFile, FiFileText,
@@ -21,6 +21,9 @@ import { toaster } from "@/components/ui/toaster";
 import { DataSource, Folder, Document } from "@/types/kb";
 import { KnowledgeModal } from "./knowledge_modal";
 import { useKnowledgeBaseColors } from "@/utils/colors";
+import { useSelector } from "react-redux";
+import { RootState } from '../../store/store'; // Adjust the import path as needed
+import { KnowledgeBaseItem } from "@/types/user";
 const MotionBox = motion.create(Box) as React.FC<Omit<React.ComponentProps<typeof Box>, "transition"> & HTMLMotionProps<"div">>;
 const MotionFlex = motion.create(Flex);
 
@@ -84,6 +87,43 @@ export const KnowledgeBase = () => {
     const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
     const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
 
+    // Add this inside the component (before the useState declarations)
+    // Use Redux selector to get the current user
+    const { currentUser, isOwner } = useSelector((state: RootState) => state.user);
+
+    // Add this after the useState declarations
+    // Get user's authorized knowledge bases from settings
+    const authorizedKnowledgeBases = useMemo(() => {
+        if (!currentUser || !currentUser.settings) return [];
+
+        // Try different possible paths to the knowledge bases array
+        const kbSettings = currentUser.settings.knowledgeBase;
+        if (!kbSettings) return [];
+
+        // Check if knowledgeBases is directly in the settings
+        if (Array.isArray(kbSettings.knowledgeBases)) {
+            return kbSettings.knowledgeBases.map(kb => kb.id);
+        }
+
+        // If it's not an array but an object with a knowledgeBases property
+        if (kbSettings.knowledgeBases && Array.isArray(kbSettings.knowledgeBases)) {
+            // @ts-ignore
+            return kbSettings.knowledgeBases.map((kb: KnowledgeBaseItem) => kb.id);
+        }
+
+        // If we can't find it in the expected location, check if it's directly in the settings
+        if (Array.isArray(currentUser.settings.knowledgeBases)) {
+            return currentUser.settings.knowledgeBases.map(kb => kb.id);
+        }
+
+        // Last resort - check if the entire knowledgeBase setting is an array
+        if (Array.isArray(kbSettings)) {
+            return kbSettings.map(kb => kb.id);
+        }
+
+        return [];
+    }, [currentUser]);
+
     // Fetch knowledge base data
     const fetchKnowledgeBase = async () => {
         try {
@@ -93,21 +133,44 @@ export const KnowledgeBase = () => {
             const response = await axios.get(url);
             const data = response.data;
 
-            setDataSources(data.dataSources || []);
-            setFolderStructures(data.folderStructures || {});
-            setDocuments(data.documents || {});
+            // Filter data sources to only include those in user's settings
+            // Owner (seasonluke@gmail.com) or users with isOwner flag can see all knowledge bases
+            const filteredDataSources = data.dataSources ? data.dataSources.filter((ds: DataSource) =>
+                // If user is owner, show all knowledge bases
+                isOwner ||
+                // Otherwise, only show knowledge bases in user's settings
+                authorizedKnowledgeBases.includes(ds.id)
+            ) : [];
+
+            setDataSources(filteredDataSources);
+
+            // Only include folder structures and documents for authorized knowledge bases
+            const filteredFolderStructures = {};
+            const filteredDocuments = {};
+
+            filteredDataSources.forEach((ds: DataSource) => {
+                if (data.folderStructures && data.folderStructures[ds.id]) {
+                    // @ts-ignore
+                    filteredFolderStructures[ds.id] = data.folderStructures[ds.id];
+                }
+
+                if (data.documents && data.documents[ds.id]) {
+                    // @ts-ignore
+                    filteredDocuments[ds.id] = data.documents[ds.id];
+                }
+            });
+
+            setFolderStructures(filteredFolderStructures);
+            setDocuments(filteredDocuments);
 
             // Select the first data source by default if available and none is selected
-            if (data.dataSources && data.dataSources.length > 0 && !selectedSource) {
-                setSelectedSource(data.dataSources[0].id);
+            if (filteredDataSources.length > 0 && !selectedSource) {
+                setSelectedSource(filteredDataSources[0].id);
             }
+
+            setIsLoading(false);
         } catch (error) {
-            toaster.create({
-                title: "Error loading knowledge base",
-                description: "Could not load documents. Please try again later.",
-                type: "error"
-            });
-        } finally {
+            console.error('Error fetching knowledge base:', error);
             setIsLoading(false);
         }
     };

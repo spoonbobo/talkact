@@ -919,6 +919,7 @@ const Assistant: React.FC = () => {
                                 <AssistantMessageList
                                     messages={messages}
                                     isStreaming={isStreaming}
+                                    messagesEndRef={messagesEndRef}
                                     aiMessageId={streamingMessageId}
                                     currentStreamingMessage={currentStreamingMessage}
                                 />
