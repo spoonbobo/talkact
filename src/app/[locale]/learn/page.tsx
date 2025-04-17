@@ -19,6 +19,23 @@ import { useEffect } from "react";
 const MotionBox = motion.create(Box);
 
 export default function LearnPage() {
+  const { isAuthenticated } = useSelector((state: RootState) => state.user);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/signin");
+    }
+  }, [isAuthenticated, router]);
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return <LearnPageContent />;
+}
+
+function LearnPageContent() {
   const t = useTranslations("Learn");
 
   // Dark mode adaptive colors
@@ -27,21 +44,6 @@ export default function LearnPage() {
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const scrollbarColor = useColorModeValue("rgba(0,0,0,0.1)", "rgba(255,255,255,0.1)");
   const tabContentBg = useColorModeValue("white", "gray.800");
-
-  const { currentUser, isAuthenticated, isOwner } = useSelector((state: RootState) => state.user);
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/signin");
-    } else if (currentUser && !isOwner) {
-      router.push('/redirect/no_access?reason=Access denied');
-    }
-  }, [isAuthenticated, currentUser, isOwner, router]);
-
-  if (!isAuthenticated || (currentUser && !isOwner)) {
-    return null;
-  }
 
   // Define tabs with placeholder components
   const tabsToRender = [

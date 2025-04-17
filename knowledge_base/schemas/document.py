@@ -68,5 +68,8 @@ class KnowledgeBaseStatus(BaseModel):
     status: str  # "disabled", "initializing", "running", "error", "not_found"
     message: Optional[str] = None
 
+class ListDocumentRequest(BaseModel):
+    knowledge_base_ids: Optional[List[str]] = None
+
 # Update forward references for nested models
 Folder.model_rebuild()
