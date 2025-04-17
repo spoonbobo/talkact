@@ -131,7 +131,8 @@ function setupSocketIO(io, client) {
           }
         }
       } catch (error) {
-        console.error("Error processing message:", error);
+        console.log("error", error.message);
+        // console.error("Error processing message:", error);
       }
     });
 
@@ -215,7 +216,14 @@ async function sendRecentMessages(socket, client) {
 
 async function insertionMessageInAppDb(message) {
   const url = process.env.CLIENT_URL + "/api/chat/insert_message";
-  const resp = await axios.post(url, message);
+  const update_room_url = process.env.CLIENT_URL + "/api/chat/update_room";
+
+  await axios.put(update_room_url, {
+    roomId: message.room_id,
+    active_users: message.active_users,
+  });
+   await axios.post(url, message);
+
 }
 
 async function checkUnreadMessages(userId) {

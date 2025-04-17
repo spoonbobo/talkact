@@ -1,6 +1,6 @@
 # onlysaid
 
-onlysaid (光說不做) is a go-to chatroom application for you to collaborate with your team and AI agents, integrated with human-in-the-loop planning system, knowledge base, and MCP protocols.
+onlysaid is a go-to chatroom application for you to collaborate with your team and AI agents, integrated with human-in-the-loop planning system, knowledge base, and MCP protocols.
 onlysaid is under rapid development, welcome to contribute.
 
 ![alt text](./public/demo_plan.png)
