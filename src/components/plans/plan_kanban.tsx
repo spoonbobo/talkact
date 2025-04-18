@@ -175,7 +175,7 @@ const StatusColumn = ({ status, plans, currentPlanId, colors }: {
                 p={3}
                 borderBottomWidth="1px"
                 borderColor={colors.borderColor}
-                bg={`${getStatusColorScheme(status)}.50`}
+                bg={colors.bgSubtle}
                 borderTopRadius="md"
                 align="center"
                 justify="space-between"
@@ -203,8 +203,8 @@ const StatusColumn = ({ status, plans, currentPlanId, colors }: {
                     py={0.5}
                     fontSize="xs"
                     colorScheme={getStatusColorScheme(status)}
-                    bg={`${getStatusColorScheme(status)}.100`}
-                    color={`${getStatusColorScheme(status)}.800`}
+                    bg={colors.cardBg}
+                    color={colors.textColorHeading}
                 >
                     {plans.length}
                 </Badge>

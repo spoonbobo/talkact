@@ -1,12 +1,13 @@
-from typing import List, Dict, Any
+from typing import Dict, Any
 import os
 from starlette.background import BackgroundTask
-from fastapi import Request, Depends, Response, HTTPException
+
+from fastapi import Request, HTTPException
 from fastapi.routing import APIRouter
 from fastapi.responses import PlainTextResponse, StreamingResponse
+
 from schemas.document import QueryRequest, KnowledgeBaseRegistration, KnowledgeBaseStatus
 from loguru import logger
-from pydantic import BaseModel
 import json
 import asyncio
 import traceback

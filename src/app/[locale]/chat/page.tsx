@@ -1280,8 +1280,10 @@ const ChatPageContent = () => {
                             ml={2}
                             onClick={async () => {
                               try {
-                                // Fetch the latest room data
-                                const response = await axios.get(`/api/chat/get_room?roomId=${currentRoom.id}`);
+                                // Changed from GET with query param to POST with request body
+                                const response = await axios.post('/api/chat/get_room', {
+                                  roomId: currentRoom.id
+                                });
                                 if (response.data) {
                                   // Update the room in Redux
                                   dispatch(updateRoom(response.data));

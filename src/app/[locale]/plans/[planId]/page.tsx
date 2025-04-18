@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from "@/store/store";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, Heading, Flex, Spinner, Badge, Text, VStack, Center, Button } from "@chakra-ui/react";
+import { Box, Heading, Flex, Spinner, Badge, Text, VStack, Center, Button, IconButton, Icon } from "@chakra-ui/react";
 import { fetchTasks, selectPlan, updatePlanStatus, forceResetTasksLoading } from "@/store/features/planSlice";
 import { usePlansColors } from "@/utils/colors";
 import { IPlan, ITask } from "@/types/plan";
@@ -52,6 +52,7 @@ export default function PlanDetailsPage() {
     const planId = params?.planId as string;
     const dispatch = useAppDispatch();
     const [isLoading, setIsLoading] = useState(false);
+    const [roomName, setRoomName] = useState<string>("");
 
     const { plans, tasks, loading, error, currentTaskId } = useSelector(
         (state: RootState) => state.plan
@@ -80,6 +81,28 @@ export default function PlanDetailsPage() {
     // Add these state variables for task info modal
     const [isTaskInfoModalOpen, setIsTaskInfoModalOpen] = useState(false);
     const [taskInfoToShow, setTaskInfoToShow] = useState<ITask | null>(null);
+
+    // Fetch room name when plan is loaded
+    useEffect(() => {
+        if (currentPlan?.room_id) {
+            const fetchRoomName = async () => {
+                try {
+                    // Changed from GET to POST and sending roomId in the request body
+                    const response = await axios.post('/api/chat/get_room', {
+                        roomId: currentPlan.room_id
+                    });
+                    if (response.data && response.data.name) {
+                        setRoomName(response.data.name);
+                    }
+                } catch (error) {
+                    console.error('Error fetching room name:', error);
+                    setRoomName("Unknown Room");
+                }
+            };
+
+            fetchRoomName();
+        }
+    }, [currentPlan]);
 
     const handlePlanApproval = async (plan: IPlan | undefined, task: ITask | null) => {
     };
@@ -317,7 +340,7 @@ export default function PlanDetailsPage() {
 
     return (
         <Box p={6} height="100%" position="relative">
-            {/* Task Edit Modal */}
+            {/* Modals */}
             <TaskEditModal
                 isOpen={isTaskEditModalOpen}
                 onClose={() => setIsTaskEditModalOpen(false)}
@@ -325,7 +348,6 @@ export default function PlanDetailsPage() {
                 onTaskUpdated={handleTaskUpdated}
             />
 
-            {/* Task Info Modal */}
             <TaskInfoModal
                 isOpen={isTaskInfoModalOpen}
                 onClose={() => setIsTaskInfoModalOpen(false)}
@@ -333,57 +355,73 @@ export default function PlanDetailsPage() {
                 colors={colors}
             />
 
-            <Flex justify="space-between" mb={6} align="center">
+            {/* Header Section */}
+            <Flex
+                justify="space-between"
+                mb={6}
+                align="center"
+                borderBottom={`1px solid ${colors.borderColor}`}
+                pb={4}
+            >
                 <PlanHeader plan={currentPlan} colors={colors} />
-
-                {/* Reset Plan Button */}
-                <Button
-                    colorScheme="blue"
-                    variant="outline"
-                    onClick={handleResetPlan}
-                    loading={isLoading}
-                    loadingText="Resetting..."
-                    size="sm"
-                >
-                    Reset Plan
-                </Button>
             </Flex>
 
+            {/* Plan Status Section */}
+            {(currentPlan.status === 'success' || currentPlan.status === 'terminated') && (
+                <Box
+                    mb={4}
+                    p={3}
+                    borderRadius="md"
+                    bg={currentPlan.status === 'success' ? 'green.50' : 'red.50'}
+                    color={currentPlan.status === 'success' ? 'green.700' : 'red.700'}
+                    borderLeft={`4px solid ${currentPlan.status === 'success' ? 'green.500' : 'red.500'}`}
+                >
+                    <Text fontWeight="medium">
+                        {currentPlan.status === 'success'
+                            ? (t("plan_completed_successfully") as string) || "This plan has been completed successfully."
+                            : (t("plan_terminated") as string) || "This plan has been terminated."}
+                    </Text>
+                </Box>
+            )}
+
+            {/* Tasks Section */}
             <Box
                 borderWidth="1px"
-                borderRadius="md"
+                borderRadius="lg"
                 borderColor={colors.borderColor}
-                p={4}
+                p={5}
                 flex="1"
                 overflowY="auto"
                 height="calc(100% - 180px)"
                 bg={colors.cardBg}
+                boxShadow="sm"
             >
-                <Flex justify="space-between" align="center" mb={4}>
-                    <Heading size="sm" color={colors.textColorHeading}>{(t("tasks") as string) || "Tasks"}</Heading>
-                    {currentTaskId !== null && (
-                        <Badge colorScheme="blue">
-                            {(t("current_task") as string) || "Current Task"}: {currentTaskId + 1} / {tasks.length}
-                        </Badge>
-                    )}
-                </Flex>
+                <Flex
+                    justify="space-between"
+                    align="center"
+                    mb={4}
+                    pb={3}
+                    borderBottom={`1px solid ${colors.borderColor}`}
+                >
+                    <Heading size="md" color={colors.textColorHeading}>
+                        {(t("tasks") as string) || "Tasks"}
+                    </Heading>
 
-                {/* Plan status message */}
-                {(currentPlan.status === 'success' || currentPlan.status === 'terminated') && (
-                    <Box
-                        mb={4}
-                        p={3}
-                        borderRadius="md"
-                        bg={currentPlan.status === 'success' ? 'green.50' : 'red.50'}
-                        color={currentPlan.status === 'success' ? 'green.700' : 'red.700'}
-                    >
-                        <Text fontWeight="medium">
-                            {currentPlan.status === 'success'
-                                ? (t("plan_completed_successfully") as string) || "This plan has been completed successfully."
-                                : (t("plan_terminated") as string) || "This plan has been terminated."}
-                        </Text>
-                    </Box>
-                )}
+                    <Flex align="center" gap={3}>
+                        {currentTaskId !== null && (
+                            <Badge
+                                colorScheme="blue"
+                                fontSize="sm"
+                                py={1}
+                                px={2}
+                                borderRadius="md"
+                            >
+                                {(t("current_task") as string) || "Current Task"}: {currentTaskId + 1} / {tasks.length}
+                            </Badge>
+                        )}
+
+                    </Flex>
+                </Flex>
 
                 {/* Log loading state outside of JSX */}
                 {(() => {
@@ -412,7 +450,7 @@ export default function PlanDetailsPage() {
                             console.log(`[PlanDetailsPage/Render] Rendering task list with ${tasks.length} tasks.`);
                             return null;
                         })()}
-                        <VStack align="stretch" gap={3}>
+                        <VStack align="stretch" gap={4}>
                             {tasks.map((task: any, index: number) => {
                                 // Convert string dates to Date objects
                                 const typedTask: ITask = {

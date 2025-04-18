@@ -19,18 +19,29 @@ export const useChatRoomColors = () => {
 
 // Settings page colors
 export const useSettingsColors = () => {
+    const { colorMode } = useColorMode();
+    const isDarkMode = colorMode === "dark";
+
     return {
         accentColor: "blue.500",
         bgColor: useColorModeValue("bg.subtle", "gray.800"),
         borderColor: useColorModeValue("gray.200", "gray.700"),
         hoverBg: useColorModeValue("gray.50", "gray.700"),
         textColor: useColorModeValue("gray.800", "gray.100"),
+        textColorMuted: useColorModeValue("gray.600", "gray.400"),
         cardBg: useColorModeValue("white", "gray.800"),
         dangerZoneBg: useColorModeValue("red.50", "red.900"),
         dangerZoneBorder: useColorModeValue("red.200", "red.700"),
         dangerZoneText: useColorModeValue("red.700", "red.200"),
         dangerZoneHeading: useColorModeValue("red.600", "red.300"),
         textColorHeading: useColorModeValue("gray.800", "gray.100"),
+        statusSuccess: isDarkMode ? "green.500" : "green.500",
+        statusRunning: isDarkMode ? "blue.500" : "blue.500",
+        statusPending: isDarkMode ? "yellow.500" : "yellow.500",
+        statusFailure: isDarkMode ? "red.500" : "red.500",
+        selectedBorder: useColorModeValue("blue.300", "blue.600"),
+        subtleSelectedItemBg: useColorModeValue("blue.50", "blue.900"),
+        selectedBorderColor: useColorModeValue("blue.400", "blue.500"),
     };
 };
 

@@ -33,6 +33,7 @@ import { RootState } from "@/store/store";
 import { setUserSettings } from '@/store/features/userSlice';
 import { toaster } from "@/components/ui/toaster";
 import { useColorModeValue } from "@/components/ui/color-mode";
+import { useSettingsColors } from "@/utils/colors";
 
 // Define the Server and Tool types (can be moved to a types file)
 interface InputSchemaProperty {
@@ -86,10 +87,7 @@ const ServerCard = ({
     isLoading: boolean;
 }) => {
     const t = useTranslations("Settings");
-    const cardBg = useColorModeValue("white", "gray.700");
-    const cardBorderColor = useColorModeValue("gray.200", "gray.600");
-    const headingColor = useColorModeValue("gray.700", "gray.200");
-    const textColor = useColorModeValue("gray.600", "gray.400");
+    const colors = useSettingsColors();
     const [configureOpen, setConfigureOpen] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<'disabled' | 'connecting' | 'connected' | 'unconfigured'>(
         !config.enabled ? 'disabled' :
@@ -148,13 +146,13 @@ const ServerCard = ({
     const getStatusColor = (status: 'disabled' | 'connecting' | 'connected' | 'unconfigured') => {
         switch (status) {
             case 'disabled':
-                return "red.500";
+                return colors.statusFailure;
             case 'connecting':
-                return "yellow.500";
+                return colors.statusPending;
             case 'connected':
-                return "green.500";
+                return colors.statusSuccess;
             case 'unconfigured':
-                return "orange.500";
+                return colors.statusRunning;
             default:
                 return "gray.500";
         }
@@ -181,8 +179,8 @@ const ServerCard = ({
             borderWidth="1px"
             borderRadius="lg"
             p={4}
-            bg={cardBg}
-            borderColor={cardBorderColor}
+            bg={colors.cardBg}
+            borderColor={colors.borderColor}
             boxShadow="sm"
             opacity={isLoading ? 0.5 : 1}
             pointerEvents={isLoading ? 'none' : 'auto'}
@@ -191,7 +189,7 @@ const ServerCard = ({
                 <VStack align="start" gap={0}>
                     <Flex alignItems="center">
                         <Icon as={FiServer} mr={2} />
-                        <Heading size="sm" color={headingColor}>{serverData.server_name}</Heading>
+                        <Heading size="sm" color={colors.textColorHeading}>{serverData.server_name}</Heading>
                         {/* Status indicator light */}
                         <Box
                             w="6px"
@@ -206,7 +204,7 @@ const ServerCard = ({
                             {getStatusLabel(connectionStatus)}
                         </Text>
                     </Flex>
-                    <Text fontSize="xs" color={textColor}>{serverData.server_description}</Text>
+                    <Text fontSize="xs" color={colors.textColorMuted}>{serverData.server_description}</Text>
                 </VStack>
                 <HStack gap={2}>
                     <Button
@@ -238,9 +236,9 @@ const ServerCard = ({
                 <Portal>
                     <Dialog.Backdrop />
                     <Dialog.Positioner>
-                        <Dialog.Content maxWidth="500px">
+                        <Dialog.Content maxWidth="500px" bg={colors.cardBg} borderColor={colors.borderColor}>
                             <Dialog.Header>
-                                <Dialog.Title>
+                                <Dialog.Title color={colors.textColorHeading}>
                                     {t("configureServer")} {serverData.server_name}
                                 </Dialog.Title>
                                 <Dialog.CloseTrigger asChild>
@@ -251,7 +249,7 @@ const ServerCard = ({
                             <Dialog.Body>
                                 <VStack gap={4} align="stretch">
                                     <FormControl isRequired>
-                                        <FormLabel htmlFor={`${serverKey}-apiKey`} fontSize="sm">
+                                        <FormLabel htmlFor={`${serverKey}-apiKey`} fontSize="sm" color={colors.textColorHeading}>
                                             {t("apiKeyLabel")}
                                         </FormLabel>
                                         <Input
@@ -262,17 +260,20 @@ const ServerCard = ({
                                             onChange={handleApiKeyChange}
                                             size="sm"
                                             disabled={isLoading || connectionStatus === 'connecting'}
+                                            bg={colors.cardBg}
+                                            borderColor={colors.borderColor}
+                                            _hover={{ borderColor: colors.borderColor }}
                                         />
                                     </FormControl>
 
                                     {/* Tools section */}
                                     <Box>
-                                        <Heading size="xs" mb={2}>{t("availableTools")}</Heading>
+                                        <Heading size="xs" mb={2} color={colors.textColorHeading}>{t("availableTools")}</Heading>
                                         <VStack align="stretch" gap={1} pl={2}>
                                             {serverData.server_tools.map(tool => (
-                                                <Flex key={tool.name} align="center" fontSize="xs" color={textColor}>
+                                                <Flex key={tool.name} align="center" fontSize="xs" color={colors.textColorMuted}>
                                                     <Icon as={FiTool} mr={2} /> {tool.name}
-                                                    <Text fontSize="xs" ml={2} color="gray.500">
+                                                    <Text fontSize="xs" ml={2} color={colors.textColorMuted}>
                                                         {tool.description}
                                                     </Text>
                                                 </Flex>
@@ -308,9 +309,7 @@ export default function MCPSettingsPage() {
     const t_mcp = useTranslations("Settings"); // Namespace for MCP specific terms
     const userSettings = useSelector((state: RootState) => state.user.currentUser?.settings);
     const dispatch = useDispatch();
-    const textColor = useColorModeValue("gray.800", "gray.100");
-    const sectionBg = useColorModeValue("gray.50", "gray.800");
-    const sectionBorderColor = useColorModeValue("gray.200", "gray.700");
+    const colors = useSettingsColors();
 
     const [isSaving, setIsSaving] = useState(false);
     const [loadingServers, setLoadingServers] = useState(true);
@@ -458,7 +457,7 @@ export default function MCPSettingsPage() {
     return (
         <>
             <Flex justifyContent="space-between" alignItems="center" mb={4}>
-                <Heading size="md" color={textColor}>
+                <Heading size="md" color={colors.textColorHeading}>
                     {t("mcp")}
                 </Heading>
                 <Button
@@ -476,16 +475,16 @@ export default function MCPSettingsPage() {
             <VStack gap={6} align="stretch">
                 {/* Server Configurations */}
                 <Box>
-                    <Heading size="sm" mb={4}>{t_mcp("serverConfigurationTitle")}</Heading>
+                    <Heading size="sm" mb={4} color={colors.textColorHeading}>{t_mcp("serverConfigurationTitle")}</Heading>
                     {loadingServers ? (
-                        <Flex justify="center" align="center" p={10}>
-                            <Spinner size="lg" />
-                            <Text ml={4}>{t_mcp("loadingServers")}</Text>
+                        <Flex justify="center" align="center" p={10} bg={colors.subtleSelectedItemBg} borderRadius="md">
+                            <Spinner size="lg" color={colors.accentColor} />
+                            <Text ml={4} color={colors.textColor}>{t_mcp("loadingServers")}</Text>
                         </Flex>
                     ) : serverError ? (
-                        <Text color="red.500">{t_mcp("fetchServerError")}: {serverError}</Text>
+                        <Text color={colors.statusFailure}>{t_mcp("fetchServerError")}: {serverError}</Text>
                     ) : Object.keys(mcpServers).length === 0 ? (
-                        <Text>{t_mcp("noServersFound")}</Text>
+                        <Text color={colors.textColor}>{t_mcp("noServersFound")}</Text>
                     ) : (
                         <VStack gap={4} align="stretch">
                             {Object.entries(mcpServers).map(([serverKey, serverData]) => (

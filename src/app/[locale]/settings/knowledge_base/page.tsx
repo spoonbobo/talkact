@@ -33,6 +33,7 @@ import { setUserSettings } from '@/store/features/userSlice';
 import { toaster } from "@/components/ui/toaster";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { KnowledgeBaseSettings as KnowledgeBaseSettingsType, KnowledgeBaseItem } from "@/types/user";
+import { useSettingsColors } from "@/utils/colors";
 
 // Add a new type for KB status
 type KBStatus = 'not_found' | 'disabled' | 'initializing' | 'running' | 'error';
@@ -47,6 +48,9 @@ export default function KnowledgeBasePage() {
     const cardBorderColor = useColorModeValue("gray.200", "gray.600");
     const headingColor = useColorModeValue("gray.700", "gray.200");
     const textDescColor = useColorModeValue("gray.600", "gray.400");
+    const colors = useSettingsColors();
+    const formLabelColor = useColorModeValue("black", "white");
+    const helpTextColor = useColorModeValue("gray.700", "gray.200");
 
     const [isSaving, setIsSaving] = useState(false);
     const [configureOpen, setConfigureOpen] = useState(false);
@@ -422,15 +426,15 @@ export default function KnowledgeBasePage() {
     const getStatusColor = (status: 'disabled' | 'connecting' | 'connected' | 'unconfigured') => {
         switch (status) {
             case 'disabled':
-                return "red.500";
+                return colors.statusFailure;
             case 'connecting':
-                return "yellow.500";
+                return colors.statusPending;
             case 'connected':
-                return "green.500";
+                return colors.statusSuccess;
             case 'unconfigured':
-                return "orange.500";
+                return colors.statusRunning;
             default:
-                return "gray.500";
+                return colors.textColorMuted;
         }
     };
 
@@ -598,16 +602,16 @@ export default function KnowledgeBasePage() {
         const status = kbStatuses[kbId] || 'not_found';
         switch (status) {
             case 'running':
-                return "green.500";
+                return colors.statusSuccess;
             case 'initializing':
-                return "yellow.500";
+                return colors.statusPending;
             case 'error':
-                return "red.500";
+                return colors.statusFailure;
             case 'disabled':
-                return "gray.500";
+                return colors.textColorMuted;
             case 'not_found':
             default:
-                return "gray.400";
+                return colors.textColorMuted;
         }
     };
 
@@ -849,7 +853,7 @@ export default function KnowledgeBasePage() {
                         <Flex justifyContent="space-between" alignItems="center">
                             <VStack align="start" gap={0}>
                                 <Flex alignItems="center">
-                                    <Text fontWeight="medium">{kb.name}</Text>
+                                    <Text fontWeight="medium" color={colors.textColorHeading}>{kb.name}</Text>
                                     <Box
                                         w="6px"
                                         h="6px"
@@ -863,8 +867,8 @@ export default function KnowledgeBasePage() {
                                         {getKbStatusLabel(kb.id)}
                                     </Text>
                                 </Flex>
-                                <Text fontSize="xs" color={textDescColor}>{kb.description}</Text>
-                                <Text fontSize="xs" color="gray.500">
+                                <Text fontSize="xs" color={colors.textColorMuted}>{kb.description}</Text>
+                                <Text fontSize="xs" color={colors.textColorMuted}>
                                     {kb.sourceType ?
                                         `Type: ${allSourceOptions.find(opt => opt.value === kb.sourceType)?.label || kb.sourceType}` :
                                         "Type: Not specified"}
@@ -926,52 +930,156 @@ export default function KnowledgeBasePage() {
                 </Text>
             )}
 
-            {/* Add/Edit KB Item Dialog */}
-            <Dialog.Root open={isAddingKB} onOpenChange={(e) => {
-                if (!e.open) {
-                    setIsAddingKB(false);
-                    // Reset the form when closing
-                    setNewKBItem({
-                        name: "",
-                        description: "",
-                        id: "",
-                        enabled: true,
-                        sourceType: "",
-                    });
-                }
-            }}>
+            {/* Configuration Dialog */}
+            <Dialog.Root open={configureOpen} onOpenChange={(e) => setConfigureOpen(e.open)}>
                 <Portal>
                     <Dialog.Backdrop />
                     <Dialog.Positioner>
-                        <Dialog.Content maxWidth="500px">
-                            <Dialog.Header>
-                                <Dialog.Title>
-                                    {newKBItem.id ?
-                                        (t("edit_kb_item") || "Edit Knowledge Base Item") :
-                                        (t("add_kb_item") || "Add Knowledge Base Item")}
+                        <Dialog.Content
+                            maxWidth="500px"
+                            bg={colors.cardBg}
+                            borderColor={colors.borderColor}
+                        >
+                            <Dialog.Header
+                                borderBottomWidth="1px"
+                                borderBottomColor={colors.borderColor}
+                                bg={colors.bgColor}
+                            >
+                                <Dialog.Title color={colors.textColorHeading}>
+                                    {t("configure_knowledge_base") || "Configure Knowledge Base"}
                                 </Dialog.Title>
                                 <Dialog.CloseTrigger asChild>
-                                    <CloseButton size="sm" />
+                                    <CloseButton size="sm" color={colors.textColor} />
                                 </Dialog.CloseTrigger>
                             </Dialog.Header>
 
                             <Dialog.Body>
                                 <VStack gap={4} align="stretch">
                                     <FormControl isRequired>
-                                        <FormLabel htmlFor="kbName" fontSize="sm">
-                                            {t("kb_name") || "Name"}
+                                        <FormLabel htmlFor="source" color={formLabelColor} fontWeight="bold">
+                                            {t("source") || "Source"}
                                         </FormLabel>
                                         <Input
-                                            id="kbName"
-                                            placeholder={t("kb_name_placeholder") || "e.g., Company Documentation"}
-                                            value={newKBItem.name}
-                                            onChange={(e) => setNewKBItem({ ...newKBItem, name: e.target.value })}
-                                            size="sm"
+                                            id="source"
+                                            value={settings.source}
+                                            onChange={(e) => handleSettingsChange({ source: e.target.value })}
+                                            placeholder={t("source_placeholder") || "e.g., qdrant, pinecone, etc."}
+                                            bg={colors.cardBg}
+                                            borderColor={colors.borderColor}
+                                            color={colors.textColor}
+                                            _placeholder={{ color: colors.textColorMuted }}
+                                        />
+                                    </FormControl>
+
+                                    <FormControl isRequired>
+                                        <FormLabel htmlFor="apiKey" color={formLabelColor} fontWeight="bold">
+                                            {t("api_key") || "API Key"}
+                                        </FormLabel>
+                                        <Input
+                                            id="apiKey"
+                                            value={settings.apiKey}
+                                            onChange={(e) => handleSettingsChange({ apiKey: e.target.value })}
+                                            placeholder={t("api_key_placeholder") || "Your API key"}
+                                            type="password"
+                                            bg={colors.cardBg}
+                                            borderColor={colors.borderColor}
+                                            color={colors.textColor}
+                                            _placeholder={{ color: colors.textColorMuted }}
                                         />
                                     </FormControl>
 
                                     <FormControl>
-                                        <FormLabel htmlFor="kbDescription" fontSize="sm">
+                                        <FormLabel htmlFor="apiUrl" color={formLabelColor} fontWeight="bold">
+                                            {t("api_url") || "API URL"} ({t("optional") || "Optional"})
+                                        </FormLabel>
+                                        <Input
+                                            id="apiUrl"
+                                            value={settings.apiUrl}
+                                            onChange={(e) => handleSettingsChange({ apiUrl: e.target.value })}
+                                            placeholder={t("api_url_placeholder") || "Custom API endpoint URL"}
+                                            bg={colors.cardBg}
+                                            borderColor={colors.borderColor}
+                                            color={colors.textColor}
+                                            _placeholder={{ color: colors.textColorMuted }}
+                                        />
+                                    </FormControl>
+                                </VStack>
+                            </Dialog.Body>
+
+                            <Dialog.Footer
+                                borderTopWidth="1px"
+                                borderTopColor={colors.borderColor}
+                                bg={colors.bgColor}
+                            >
+                                <Button
+                                    variant="ghost"
+                                    mr={3}
+                                    onClick={() => setConfigureOpen(false)}
+                                    color={colors.textColor}
+                                    _hover={{ bg: colors.hoverBg }}
+                                >
+                                    {t("cancel")}
+                                </Button>
+                                <Button
+                                    bg={colors.accentColor}
+                                    onClick={handleSaveConfig}
+                                >
+                                    {t("save")}
+                                </Button>
+                            </Dialog.Footer>
+                        </Dialog.Content>
+                    </Dialog.Positioner>
+                </Portal>
+            </Dialog.Root>
+
+            {/* Add/Edit Knowledge Base Dialog */}
+            <Dialog.Root open={isAddingKB} onOpenChange={(e) => setIsAddingKB(e.open)}>
+                <Portal>
+                    <Dialog.Backdrop />
+                    <Dialog.Positioner>
+                        <Dialog.Content maxWidth="600px" bg={colors.cardBg} borderColor={colors.borderColor}>
+                            <Dialog.Header borderBottomColor={colors.borderColor}>
+                                <Dialog.Title color={colors.textColorHeading}>
+                                    {newKBItem.id && (settings.knowledgeBases ?? []).some(kb => kb.id === newKBItem.id) ?
+                                        (t("edit_knowledge_base") || "Edit Knowledge Base") :
+                                        (t("add_knowledge_base") || "Add Knowledge Base")}
+                                </Dialog.Title>
+                                <Dialog.CloseTrigger asChild>
+                                    <CloseButton size="sm" color={colors.textColor} />
+                                </Dialog.CloseTrigger>
+                            </Dialog.Header>
+
+                            <Dialog.Body>
+                                <VStack gap={4} align="stretch">
+                                    <FormControl isRequired>
+                                        <FormLabel
+                                            htmlFor="kbName"
+                                            fontSize="sm"
+                                            color={formLabelColor}
+                                            fontWeight="bold"
+                                        >
+                                            {t("kb_name") || "Name"}
+                                        </FormLabel>
+                                        <Input
+                                            id="kbName"
+                                            placeholder={t("kb_name_placeholder") || "e.g., Project Documentation"}
+                                            value={newKBItem.name}
+                                            onChange={(e) => setNewKBItem({ ...newKBItem, name: e.target.value })}
+                                            size="sm"
+                                            bg={colors.cardBg}
+                                            borderColor={colors.borderColor}
+                                            color={colors.textColor}
+                                            _placeholder={{ color: colors.textColorMuted }}
+                                        />
+                                    </FormControl>
+
+                                    <FormControl>
+                                        <FormLabel
+                                            htmlFor="kbDescription"
+                                            fontSize="sm"
+                                            color={formLabelColor}
+                                            fontWeight="bold"
+                                        >
                                             {t("kb_description") || "Description"}
                                         </FormLabel>
                                         <Input
@@ -980,12 +1088,21 @@ export default function KnowledgeBasePage() {
                                             value={newKBItem.description}
                                             onChange={(e) => setNewKBItem({ ...newKBItem, description: e.target.value })}
                                             size="sm"
+                                            bg={colors.cardBg}
+                                            borderColor={colors.borderColor}
+                                            color={colors.textColor}
+                                            _placeholder={{ color: colors.textColorMuted }}
                                         />
                                     </FormControl>
 
                                     <FormControl>
-                                        <FormLabel htmlFor="kbSourceType" fontSize="sm">
-                                            Source Type
+                                        <FormLabel
+                                            htmlFor="kbSourceType"
+                                            fontSize="sm"
+                                            color={formLabelColor}
+                                            fontWeight="bold"
+                                        >
+                                            {t("source_type") || "Source Type"}
                                         </FormLabel>
 
                                         {/* Search bar - full width and aligned */}
@@ -995,7 +1112,7 @@ export default function KnowledgeBasePage() {
                                                 position="relative"
                                                 alignItems="center"
                                                 border="1px solid"
-                                                borderColor={cardBorderColor}
+                                                borderColor={colors.borderColor}
                                                 borderRadius="md"
                                                 overflow="hidden"
                                             >
@@ -1010,12 +1127,15 @@ export default function KnowledgeBasePage() {
                                                     border="none"
                                                     _focus={{ boxShadow: "none" }}
                                                     paddingRight="40px"
+                                                    bg={colors.cardBg}
+                                                    color={colors.textColor}
+                                                    _placeholder={{ color: colors.textColorMuted }}
                                                 />
                                                 <Icon
                                                     as={FiSearch}
                                                     position="absolute"
                                                     right="12px"
-                                                    color="gray.400"
+                                                    color={colors.textColorMuted}
                                                     fontSize="16px"
                                                 />
                                             </Flex>
@@ -1035,19 +1155,15 @@ export default function KnowledgeBasePage() {
                                                             p={3}
                                                             borderWidth="1px"
                                                             borderRadius="md"
-                                                            borderColor={newKBItem.sourceType === option.value ? "blue.500" : cardBorderColor}
-                                                            bg={newKBItem.sourceType === option.value ? "blue.50" : cardBg}
-                                                            _dark={{
-                                                                bg: newKBItem.sourceType === option.value ? "blue.900" : cardBg,
-                                                                borderColor: newKBItem.sourceType === option.value ? "blue.500" : cardBorderColor
-                                                            }}
+                                                            borderColor={newKBItem.sourceType === option.value ? colors.selectedBorder : colors.borderColor}
+                                                            bg={newKBItem.sourceType === option.value ? colors.subtleSelectedItemBg : colors.cardBg}
                                                             cursor={option.disabled ? "not-allowed" : "pointer"}
                                                             onClick={() => !option.disabled && setNewKBItem({ ...newKBItem, sourceType: option.value })}
                                                             textAlign="center"
                                                             transition="all 0.2s"
                                                             _hover={{
-                                                                borderColor: option.disabled ? cardBorderColor : "blue.300",
-                                                                boxShadow: option.disabled ? "none" : "0 0 0 1px var(--chakra-colors-blue-300)"
+                                                                borderColor: option.disabled ? colors.borderColor : colors.selectedBorderColor,
+                                                                boxShadow: option.disabled ? "none" : `0 0 0 1px ${colors.selectedBorderColor}`
                                                             }}
                                                             display="flex"
                                                             flexDirection="column"
@@ -1066,8 +1182,7 @@ export default function KnowledgeBasePage() {
                                                                     height="0"
                                                                     borderStyle="solid"
                                                                     borderWidth="0 24px 24px 0"
-                                                                    borderColor={`transparent #3182CE transparent transparent`}
-                                                                    _dark={{ borderColor: `transparent #4299E1 transparent transparent` }}
+                                                                    borderColor={`transparent ${colors.accentColor} transparent transparent`}
                                                                     opacity={1}
                                                                 />
                                                             )}
@@ -1075,17 +1190,18 @@ export default function KnowledgeBasePage() {
                                                                 as={option.icon}
                                                                 fontSize="24px"
                                                                 mb={2}
-                                                                color={newKBItem.sourceType === option.value ? "blue.500" : textColor}
+                                                                color={newKBItem.sourceType === option.value ? colors.accentColor : colors.textColor}
                                                             />
                                                             <Text
                                                                 fontSize="xs"
                                                                 fontWeight={newKBItem.sourceType === option.value ? "semibold" : "medium"}
                                                                 lineHeight="1.2"
+                                                                color={colors.textColor}
                                                             >
                                                                 {option.label}
                                                             </Text>
                                                             {option.disabled && (
-                                                                <Text fontSize="9px" color="gray.500" mt={1}>
+                                                                <Text fontSize="9px" color={colors.textColorMuted} mt={1}>
                                                                     Coming soon
                                                                 </Text>
                                                             )}
@@ -1125,8 +1241,8 @@ export default function KnowledgeBasePage() {
                                                             w="24px"
                                                             h="24px"
                                                             borderRadius="full"
-                                                            bg={currentPage === page ? "blue.500" : "transparent"}
-                                                            color={currentPage === page ? "white" : textColor}
+                                                            bg={currentPage === page ? colors.accentColor : "transparent"}
+                                                            color={currentPage === page ? "white" : colors.textColor}
                                                             display="flex"
                                                             alignItems="center"
                                                             justifyContent="center"
@@ -1167,10 +1283,10 @@ export default function KnowledgeBasePage() {
                                             borderWidth="1px"
                                             borderRadius="md"
                                             borderStyle="dashed"
-                                            borderColor={cardBorderColor}
+                                            borderColor={colors.borderColor}
                                             textAlign="center"
                                         >
-                                            <Text fontSize="sm" color={textDescColor}>
+                                            <Text fontSize="sm" color={colors.textColorMuted}>
                                                 {t("please_select_source_type") || "Please select a source type first"}
                                             </Text>
                                         </Box>
@@ -1179,7 +1295,12 @@ export default function KnowledgeBasePage() {
                                             {/* Source-specific fields */}
                                             {newKBItem.sourceType === "local_store" && (
                                                 <FormControl isRequired>
-                                                    <FormLabel htmlFor="kbPath" fontSize="sm">
+                                                    <FormLabel
+                                                        htmlFor="kbPath"
+                                                        fontSize="sm"
+                                                        color={formLabelColor}
+                                                        fontWeight="bold"
+                                                    >
                                                         {t("kb_path") || "Local Path"}
                                                     </FormLabel>
                                                     <Input
@@ -1188,8 +1309,12 @@ export default function KnowledgeBasePage() {
                                                         value={newKBItem.url || ""}
                                                         onChange={(e) => setNewKBItem({ ...newKBItem, url: e.target.value })}
                                                         size="sm"
+                                                        bg={colors.cardBg}
+                                                        borderColor={colors.borderColor}
+                                                        color={colors.textColor}
+                                                        _placeholder={{ color: colors.textColorMuted }}
                                                     />
-                                                    <Text fontSize="xs" color={textDescColor} mt={1}>
+                                                    <Text fontSize="xs" color={helpTextColor} mt={1}>
                                                         {t("kb_path_help") || "Specify the absolute path to your document folder"}
                                                     </Text>
                                                 </FormControl>
@@ -1200,7 +1325,12 @@ export default function KnowledgeBasePage() {
                                     )}
 
                                     <FormControl>
-                                        <FormLabel htmlFor="kbEnabled" fontSize="sm">
+                                        <FormLabel
+                                            htmlFor="kbEnabled"
+                                            fontSize="sm"
+                                            color={formLabelColor}
+                                            fontWeight="bold"
+                                        >
                                             {t("kb_enabled") || "Enabled"}
                                         </FormLabel>
                                         <Switch.Root
@@ -1218,8 +1348,8 @@ export default function KnowledgeBasePage() {
                                 </VStack>
                             </Dialog.Body>
 
-                            <Dialog.Footer>
-                                <Button variant="ghost" mr={3} onClick={() => setIsAddingKB(false)}>
+                            <Dialog.Footer borderTopColor={colors.borderColor}>
+                                <Button variant="ghost" mr={3} onClick={() => setIsAddingKB(false)} color={colors.textColor}>
                                     {t("cancel")}
                                 </Button>
                                 <Button
@@ -1248,28 +1378,29 @@ export default function KnowledgeBasePage() {
                 <Portal>
                     <Dialog.Backdrop />
                     <Dialog.Positioner>
-                        <Dialog.Content maxWidth="400px">
-                            <Dialog.Header>
-                                <Dialog.Title>
+                        <Dialog.Content maxWidth="400px" bg={colors.cardBg} borderColor={colors.borderColor}>
+                            <Dialog.Header borderBottomColor={colors.borderColor}>
+                                <Dialog.Title color={colors.textColorHeading}>
                                     {t("confirm_reinitialize") || "Confirm Reinitialization"}
                                 </Dialog.Title>
                                 <Dialog.CloseTrigger asChild>
-                                    <CloseButton size="sm" />
+                                    <CloseButton size="sm" color={colors.textColor} />
                                 </Dialog.CloseTrigger>
                             </Dialog.Header>
 
                             <Dialog.Body>
-                                <Text>
+                                <Text color={colors.textColor}>
                                     {t("confirm_reinitialize_description") ||
                                         "Are you sure you want to reinitialize this knowledge base? This will rebuild the index from scratch."}
                                 </Text>
                             </Dialog.Body>
 
-                            <Dialog.Footer>
+                            <Dialog.Footer borderTopColor={colors.borderColor}>
                                 <Button
                                     variant="ghost"
                                     mr={3}
                                     onClick={() => setConfirmReinitKbId(null)}
+                                    color={colors.textColor}
                                 >
                                     {t("cancel")}
                                 </Button>

@@ -318,7 +318,7 @@ const PlanCalendar = ({ plans, currentPlanId, viewMode, onViewModeChange }: Plan
                                                                         variant="subtle"
                                                                         mr={1}
                                                                     />
-                                                                    <Text fontSize="xs" fontWeight="medium" lineClamp={1} flex="1">
+                                                                    <Text fontSize="xs" fontWeight="medium" lineClamp={1} flex="1" color={colors.textColor}>
                                                                         {typedPlan.plan_name}
                                                                     </Text>
                                                                 </Flex>
