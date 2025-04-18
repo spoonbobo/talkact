@@ -1,3 +1,5 @@
+// TODO: message delete schema
+
 import { Avatar, Box, Flex, Text, VStack, Drawer, Portal, CloseButton, Button, HStack, Separator, Icon, IconButton, Spinner } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { IMessage } from "@/types/chat";
@@ -211,6 +213,23 @@ export const ChatMessageList = ({
             window.removeEventListener('scrollToBottom', handleMessageSent);
         };
     }, [scrollToBottom]);
+
+    // Add effect to listen for message deletion events
+    useEffect(() => {
+        const handleMessageDeleted = (event: CustomEvent) => {
+            // You might want to refresh the messages or update the UI
+            // This depends on how your app manages state
+            console.log("Message deleted:", event.detail.messageId);
+
+            // If you're using a state management library or context,
+            // you could dispatch an action here to remove the message
+        };
+
+        window.addEventListener('messageDeleted', handleMessageDeleted as EventListener);
+        return () => {
+            window.removeEventListener('messageDeleted', handleMessageDeleted as EventListener);
+        };
+    }, []);
 
     // Function to handle avatar click
     const handleUserProfileClick = (username: string, userId?: string, avatar?: string) => {

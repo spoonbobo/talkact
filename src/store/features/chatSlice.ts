@@ -178,8 +178,35 @@ export const chatSlice = createSlice({
                 }
             }
         },
+        deleteMessage: (state, action: PayloadAction<{ roomId: string, messageId: string }>) => {
+            const { roomId, messageId } = action.payload;
+            deleteMessageFromState(state, roomId, messageId);
+        },
+        localDeleteMessage: (state, action: PayloadAction<{ roomId: string, messageId: string }>) => {
+            const { roomId, messageId } = action.payload;
+            deleteMessageFromState(state, roomId, messageId);
+        },
     },
 });
+
+// Helper function to avoid code duplication
+function deleteMessageFromState(state: ChatState, roomId: string, messageId: string) {
+    // Check if the room exists in our messages state
+    if (state.messages[roomId]) {
+        // Filter out the message with the specified ID
+        state.messages[roomId] = state.messages[roomId].filter(
+            message => message.id !== messageId
+        );
+
+        // Update the room's last_updated timestamp if there are remaining messages
+        const roomIndex = state.rooms.findIndex(room => room.id === roomId);
+        if (roomIndex !== -1 && state.messages[roomId].length > 0) {
+            // Use the timestamp of the latest message
+            const latestMessage = state.messages[roomId][state.messages[roomId].length - 1];
+            state.rooms[roomIndex].last_updated = latestMessage.created_at || new Date().toISOString();
+        }
+    }
+}
 
 export const {
     setSocketConnected,
@@ -198,6 +225,8 @@ export const {
     initializeSocket,
     clearSelectedRoom,
     updateMessage,
+    deleteMessage,
+    localDeleteMessage,
 } = chatSlice.actions;
 
 export const setLoadingRooms = createAction<boolean>('chat/setLoadingRooms');

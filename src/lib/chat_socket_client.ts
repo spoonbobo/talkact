@@ -11,6 +11,8 @@ class ChatSocketClient {
     private user: User;
     private messageCallback: ((message: IMessage) => void) | null = null;
     private notificationCallback: ((notification: INotification) => void) | null = null;
+    private messageDeletedCallback: ((data: { roomId: string, messageId: string }) => void) | null = null;
+    private deletedMessageTracker: Set<string> = new Set(); // Track deleted messages to prevent loops
 
     constructor(user: User) {
         this.user = user;
@@ -51,6 +53,9 @@ class ChatSocketClient {
             }
             if (this.notificationCallback) {
                 this.setupNotificationListener(this.notificationCallback);
+            }
+            if (this.messageDeletedCallback) {
+                this.setupMessageDeletedListener(this.messageDeletedCallback);
             }
         });
 
@@ -137,6 +142,31 @@ class ChatSocketClient {
         } else {
             // Add error handling or connection waiting logic here
             console.log("Socket not connected yet, notification listener will be set up after connection");
+        }
+    }
+
+    deleteMessage(roomId: string, messageId: string): void {
+        if (this.socket && this.socket.connected) {
+            // Add to tracker to prevent loops
+            const messageKey = `${roomId}:${messageId}`;
+            this.deletedMessageTracker.add(messageKey);
+
+            // Set a timeout to clean up the tracker after a reasonable time
+            setTimeout(() => {
+                this.deletedMessageTracker.delete(messageKey);
+            }, 10000); // 10 seconds should be enough
+
+            this.socket.emit('delete_message', { roomId, messageId });
+        } else {
+            //
+        }
+    }
+
+    onMessageDeleted(callback: (data: { roomId: string, messageId: string }) => void): void {
+        this.messageDeletedCallback = callback;
+
+        if (this.socket && this.socket.connected) {
+            this.setupMessageDeletedListener(callback);
         }
     }
 
@@ -236,6 +266,40 @@ class ChatSocketClient {
                 toaster.create({
                     title: "Notification Error",
                     description: "Error processing received notification",
+                    type: "error"
+                });
+            }
+        });
+    }
+
+    private setupMessageDeletedListener(callback: (data: { roomId: string, messageId: string }) => void): void {
+        // Remove any existing listeners to prevent duplicates
+        this.socket.off('message_deleted');
+
+        this.socket.on('message_deleted', (data: any) => {
+            try {
+                // Handle both string and object formats
+                const deletedData = typeof data === 'string' ? JSON.parse(data) : data;
+
+                if (deletedData && deletedData.roomId && deletedData.messageId) {
+                    // Check if we've already processed this deletion
+                    const messageKey = `${deletedData.roomId}:${deletedData.messageId}`;
+                    if (!this.deletedMessageTracker.has(messageKey)) {
+                        callback(deletedData);
+                    } else {
+                        console.log("Skipping already processed message deletion:", messageKey);
+                    }
+                } else {
+                    toaster.create({
+                        title: "Invalid Delete Data",
+                        description: "Received malformed message deletion data",
+                        type: "error"
+                    });
+                }
+            } catch (error) {
+                toaster.create({
+                    title: "Message Deletion Error",
+                    description: "Error processing message deletion",
                     type: "error"
                 });
             }

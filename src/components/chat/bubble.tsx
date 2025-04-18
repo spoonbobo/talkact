@@ -13,6 +13,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { DeleteMessageModal } from "@/components/chat/delete_message.modal";
 
 // Extend the props interface directly in the file
 interface IChatBubbleProps {
@@ -23,6 +24,16 @@ interface IChatBubbleProps {
   isStreaming?: boolean;
   isLoadingOlder?: boolean;
   showThumbnails?: boolean;
+}
+
+// Define a type for menu items
+interface MenuItemType {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  tooltip?: string;
 }
 
 export const ChatBubble = React.memo(({
@@ -37,6 +48,15 @@ export const ChatBubble = React.memo(({
   const t = useTranslations("Chat");
   const colors = useChatPageColors();
   const codeColors = useCodeSyntaxHighlightColors();
+
+  // Pre-define all color mode values at the top
+  const menuBgColor = useColorModeValue("white", "gray.800");
+  const menuBorderColor = useColorModeValue("gray.100", "gray.700");
+  const menuItemHoverBg = useColorModeValue("gray.50", "gray.700");
+  const menuIconColor = useColorModeValue("gray.600", "gray.400");
+  const menuTextColor = useColorModeValue("gray.800", "gray.200");
+  const codeBlockBg = useColorModeValue('rgba(0,0,0,0.03)', 'rgba(255,255,255,0.05)');
+  const tableHeadBg = useColorModeValue('rgba(0,0,0,0.05)', 'rgba(255,255,255,0.05)');
 
   // Add blinking cursor for streaming messages
   const [showCursor, setShowCursor] = useState(true);
@@ -70,6 +90,9 @@ export const ChatBubble = React.memo(({
   // Even lighter bubble colors
   const userBgTask = useColorModeValue("rgba(66, 153, 225, 0.85)", "rgba(56, 161, 105, 0.85)"); // Blue for light, Green for dark
   const userBgChat = useColorModeValue("rgba(72, 187, 120, 0.85)", "rgba(49, 130, 206, 0.85)"); // Green for light, Blue for dark
+
+  // Add state for delete modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // Pre-process the message content to handle tables better
   const processedContent = useMemo(() => {
@@ -251,14 +274,40 @@ export const ChatBubble = React.memo(({
   }, [isFirstInGroup, isStreaming, isLoadingOlder]);
 
   const handleCopy = () => {
-    if (message.content) {
-      navigator.clipboard.writeText(message.content)
-        .then(() => {
-          console.log("Content copied to clipboard");
-        })
-        .catch(err => {
-          console.error("Failed to copy content: ", err);
-        });
+    if (!message.content) return;
+
+    // Use the fallback method directly without trying the Clipboard API first
+    fallbackCopy(message.content);
+
+    // Optionally, you could add a visual feedback that the content was copied
+    // For example, you could use a toast notification or a temporary state change
+  };
+
+  // Fallback copy method using textarea
+  const fallbackCopy = (text: string) => {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+
+      // Make the textarea out of viewport
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+
+      textArea.focus();
+      textArea.select();
+
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+
+      if (successful) {
+        console.log('Fallback: Copying text command was successful');
+      } else {
+        console.error('Fallback: Could not copy text');
+      }
+    } catch (err) {
+      console.error('Fallback: Oops, unable to copy', err);
     }
   };
 
@@ -270,463 +319,512 @@ export const ChatBubble = React.memo(({
     { label: "😂", value: "laugh", icon: null },
   ];
 
+  // Add this function inside the ChatBubble component
+  const isMessageDeletable = useMemo(() => {
+    if (!message.created_at) return false;
+
+    const messageTime = new Date(message.created_at).getTime();
+    const currentTime = new Date().getTime();
+    const thirtyMinutesInMs = 30 * 60 * 1000;
+
+    return (currentTime - messageTime) <= thirtyMinutesInMs;
+  }, [message.created_at]);
+
   // Define vertical menu items - starting with copy
-  const verticalMenuItems = [
+  const verticalMenuItems: MenuItemType[] = [
     { label: t("Copy"), value: "copy", icon: <LuCopy />, onClick: handleCopy },
-    { label: t("Quote"), value: "quote", icon: <LuQuote /> },
-    { label: t("Share"), value: "share", icon: <LuShare /> },
-    { label: t("Translate"), value: "translate", icon: <LuMessageSquare /> },
   ];
 
-  // Add edit and delete options only for user messages
+  // Add edit and delete options only for user messages that are recent enough
   if (isUser) {
     verticalMenuItems.push(
-      { label: t("Edit"), value: "edit", icon: <LuPencil /> },
-      { label: t("Delete"), value: "delete", icon: <LuTrash /> }
+      { label: t("Edit"), value: "edit", icon: <LuPencil /> }
     );
+
+    // Only add delete option if message is less than 30 minutes old
+    if (isMessageDeletable) {
+      verticalMenuItems.push({
+        label: t("Delete"),
+        value: "delete",
+        icon: <LuTrash />,
+        onClick: () => setIsDeleteModalOpen(true)
+      });
+    } else {
+      // Optionally add a disabled delete option that shows why it's disabled
+      verticalMenuItems.push({
+        label: t("Delete"),
+        value: "delete_disabled",
+        icon: <LuTrash />,
+        disabled: true,
+        tooltip: t("message_too_old_to_delete") || "Messages older than 30 minutes cannot be deleted"
+      });
+    }
   }
 
+  // Add function to handle message deletion success
+  const handleDeleteSuccess = () => {
+    // You might want to emit an event that the parent components can listen to
+    window.dispatchEvent(new CustomEvent('messageDeleted', {
+      detail: { messageId: message.id }
+    }));
+  };
+
   return (
-    <Menu.Root>
-      <Menu.ContextTrigger>
-        <Box
-          ref={bubbleRef}
-          position="relative"
-          px={3}
-          py={isSingleLine ? 1.5 : 2}
-          width="auto"
-          maxW="100%"
-          borderRadius="xl"
-          bg={isUser
-            ? (isTaskMode ? userBgTask : userBgChat)
-            : (isTaskMode ? colors.otherBgTask : colors.otherBgChat)}
-          color={isUser
-            ? "white"
-            : (isTaskMode ? colors.otherTextTask : colors.otherTextChat)}
-          mb={1}
-          boxShadow="0 2px 4px rgba(0,0,0,0.08)"
-          alignSelf={isUser ? "flex-end" : "flex-start"}
-          wordBreak="break-word"
-          textAlign="left"
-          style={{
-            opacity: isVisible ? 1 : 0,
-            transition: "opacity 0.5s ease-in-out",
-            userSelect: "text",
-            marginLeft: !isUser && showThumbnails ? '40px' : '0',
-            marginRight: isUser && showThumbnails ? '40px' : '0',
-          }}
-        >
-          <Box position="relative" textAlign="left" width="100%" overflow="hidden">
-            {isStreaming || !message.content ? (
-              <div
-                dangerouslySetInnerHTML={{ __html: contentWithCursor }}
-                style={{ whiteSpace: "pre-wrap" }}
-              />
-            ) : (
-              <div style={{ maxWidth: '100%' }}>
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  rehypePlugins={[rehypeRaw, rehypeSanitize]}
-                  components={{
-                    code({ node, inline, className, children, ...props }: any) {
-                      const match = /language-(\w+)/.exec(className || '');
+    <>
+      <Menu.Root>
+        <Menu.ContextTrigger>
+          <Box
+            ref={bubbleRef}
+            position="relative"
+            px={3}
+            py={isSingleLine ? 1.5 : 2}
+            width="auto"
+            maxW="100%"
+            borderRadius="xl"
+            bg={isUser
+              ? (isTaskMode ? userBgTask : userBgChat)
+              : (isTaskMode ? colors.otherBgTask : colors.otherBgChat)}
+            color={isUser
+              ? "white"
+              : (isTaskMode ? colors.otherTextTask : colors.otherTextChat)}
+            mb={1}
+            boxShadow="0 2px 4px rgba(0,0,0,0.08)"
+            alignSelf={isUser ? "flex-end" : "flex-start"}
+            wordBreak="break-word"
+            textAlign="left"
+            style={{
+              opacity: isVisible ? 1 : 0,
+              transition: "opacity 0.5s ease-in-out",
+              userSelect: "text",
+              marginLeft: !isUser && showThumbnails ? '40px' : '0',
+              marginRight: isUser && showThumbnails ? '40px' : '0',
+            }}
+          >
+            <Box position="relative" textAlign="left" width="100%" overflow="hidden">
+              {isStreaming || !message.content ? (
+                <div
+                  dangerouslySetInnerHTML={{ __html: contentWithCursor }}
+                  style={{ whiteSpace: "pre-wrap" }}
+                />
+              ) : (
+                <div style={{ maxWidth: '100%' }}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                    components={{
+                      code({ node, inline, className, children, ...props }: any) {
+                        const match = /language-(\w+)/.exec(className || '');
 
-                      if (!inline && match) {
-                        // Force horizontal scrolling with explicit inline styles
-                        return (
-                          <div style={{
-                            position: 'relative',
-                            margin: '0.75em 0',
-                            borderRadius: '6px',
-                            border: `1px solid ${isUser ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'}`,
-                            backgroundColor: isUser ? 'rgba(0,0,0,0.2)' : useColorModeValue('rgba(0,0,0,0.03)', 'rgba(255,255,255,0.05)'),
-                            maxWidth: '100%',
-                            overflow: 'hidden'
-                          }}>
-                            {/* Add custom scrollbar styling */}
-                            <style jsx>{`
-                              .custom-scrollbar::-webkit-scrollbar {
-                                height: 6px;
-                                background-color: transparent;
-                              }
-                              
-                              .custom-scrollbar::-webkit-scrollbar-thumb {
-                                background-color: ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};
-                                border-radius: 3px;
-                              }
-                              
-                              .custom-scrollbar::-webkit-scrollbar-button {
-                                display: none;
-                              }
-                            `}</style>
-
-                            <div className="custom-scrollbar" style={{
-                              overflowX: 'auto',
-                              overflowY: 'auto',
-                              maxHeight: '400px',
-                              width: '100%',
-                              WebkitOverflowScrolling: 'touch',
-                              scrollbarWidth: 'thin',
+                        if (!inline && match) {
+                          // Force horizontal scrolling with explicit inline styles
+                          return (
+                            <div style={{
+                              position: 'relative',
+                              margin: '0.75em 0',
+                              borderRadius: '6px',
+                              border: `1px solid ${isUser ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'}`,
+                              backgroundColor: isUser ? 'rgba(0,0,0,0.2)' : useColorModeValue('rgba(0,0,0,0.03)', 'rgba(255,255,255,0.05)'),
+                              maxWidth: '100%',
+                              overflow: 'hidden'
                             }}>
-                              <table style={{
-                                tableLayout: 'fixed',
-                                width: '1px', // This forces the table to be as narrow as possible
-                                margin: 0,
-                                padding: 0,
-                                border: 'none',
-                                borderCollapse: 'collapse'
-                              }}>
-                                <tbody>
-                                  <tr>
-                                    <td style={{
-                                      padding: 0,
-                                      border: 'none',
-                                      whiteSpace: 'pre'
-                                    }}>
-                                      <pre style={{
-                                        margin: 0,
-                                        padding: '1em',
-                                        fontSize: '0.875em',
-                                        lineHeight: 1.5,
-                                        fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
-                                        whiteSpace: 'pre',
-                                        display: 'block'
-                                      }}>
-                                        <code>
-                                          {String(children).replace(/\n$/, '')}
-                                        </code>
-                                      </pre>
-                                    </td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        );
-                      }
+                              {/* Add custom scrollbar styling */}
+                              <style jsx>{`
+                                .custom-scrollbar::-webkit-scrollbar {
+                                  height: 6px;
+                                  background-color: transparent;
+                                }
+                                
+                                .custom-scrollbar::-webkit-scrollbar-thumb {
+                                  background-color: ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};
+                                  border-radius: 3px;
+                                }
+                                
+                                .custom-scrollbar::-webkit-scrollbar-button {
+                                  display: none;
+                                }
+                              `}</style>
 
-                      // For inline code
-                      return (
-                        <code
-                          className={className}
-                          style={{
-                            backgroundColor: isUser ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.05)',
-                            padding: '0.2em 0.4em',
-                            borderRadius: '3px',
-                            fontSize: '0.9em',
-                            fontFamily: 'monospace',
-                            wordBreak: 'break-all',
-                            whiteSpace: 'pre-wrap',
-                          }}
+                              <div className="custom-scrollbar" style={{
+                                overflowX: 'auto',
+                                overflowY: 'auto',
+                                maxHeight: '400px',
+                                width: '100%',
+                                WebkitOverflowScrolling: 'touch',
+                                scrollbarWidth: 'thin',
+                              }}>
+                                <table style={{
+                                  tableLayout: 'fixed',
+                                  width: '1px', // This forces the table to be as narrow as possible
+                                  margin: 0,
+                                  padding: 0,
+                                  border: 'none',
+                                  borderCollapse: 'collapse'
+                                }}>
+                                  <tbody>
+                                    <tr>
+                                      <td style={{
+                                        padding: 0,
+                                        border: 'none',
+                                        whiteSpace: 'pre'
+                                      }}>
+                                        <pre style={{
+                                          margin: 0,
+                                          padding: '1em',
+                                          fontSize: '0.875em',
+                                          lineHeight: 1.5,
+                                          fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
+                                          whiteSpace: 'pre',
+                                          display: 'block'
+                                        }}>
+                                          <code>
+                                            {String(children).replace(/\n$/, '')}
+                                          </code>
+                                        </pre>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // For inline code
+                        return (
+                          <code
+                            className={className}
+                            style={{
+                              backgroundColor: isUser ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.05)',
+                              padding: '0.2em 0.4em',
+                              borderRadius: '3px',
+                              fontSize: '0.9em',
+                              fontFamily: 'monospace',
+                              wordBreak: 'break-all',
+                              whiteSpace: 'pre-wrap',
+                            }}
+                            {...props}
+                          >
+                            {children}
+                          </code>
+                        );
+                      },
+                      a: ({ node, ...props }) => (
+                        <a
                           {...props}
-                        >
-                          {children}
-                        </code>
-                      );
-                    },
-                    a: ({ node, ...props }) => (
-                      <a
-                        {...props}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          color: isUser ? 'rgba(255,255,255,0.9)' : undefined,
-                          textDecoration: 'underline',
-                          textUnderlineOffset: '2px',
-                          textDecorationThickness: '1px',
-                          transition: 'opacity 0.2s ease',
-                        }}
-                        onMouseOver={(e) => { e.currentTarget.style.opacity = '0.8'; }}
-                        onMouseOut={(e) => { e.currentTarget.style.opacity = '1'; }}
-                      />
-                    ),
-                    p: ({ node, ...props }) => (
-                      <p
-                        style={{
-                          margin: '0.5em 0',
-                          padding: 0,
-                          maxWidth: '100%',
-                          overflowWrap: 'break-word',
-                          wordBreak: 'break-word',
-                        }}
-                        {...props}
-                      />
-                    ),
-                    ul: ({ node, ...props }) => (
-                      <ul
-                        style={{
-                          paddingLeft: '1.5em',
-                          margin: '0.6em 0',
-                          listStyleType: 'disc',
-                          listStylePosition: 'outside'
-                        }}
-                        {...props}
-                      />
-                    ),
-                    ol: ({ node, ...props }) => (
-                      <ol
-                        style={{
-                          paddingLeft: '1.5em',
-                          margin: '0.6em 0',
-                          listStyleType: 'decimal',
-                          listStylePosition: 'outside'
-                        }}
-                        {...props}
-                      />
-                    ),
-                    li: ({ node, ...props }) => (
-                      <li
-                        style={{
-                          margin: '0.25em 0',
-                          paddingLeft: '0.2em',
-                          display: 'list-item'
-                        }}
-                        {...props}
-                      />
-                    ),
-                    blockquote: ({ node, ...props }) => (
-                      <blockquote
-                        style={{
-                          borderLeft: `3px solid ${isUser ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.2)'}`,
-                          margin: '0.6em 0',
-                          color: isUser ? 'rgba(255,255,255,0.9)' : undefined,
-                          fontStyle: 'italic',
-                          backgroundColor: isUser ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)',
-                          padding: '0.5em 0.75em',
-                          borderRadius: '0 6px 6px 0',
-                          boxShadow: `inset 0 1px 3px ${isUser ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.03)'}`
-                        }}
-                        {...props}
-                      />
-                    ),
-                    hr: ({ node, ...props }) => (
-                      <hr
-                        style={{
-                          border: 'none',
-                          height: '2px',
-                          backgroundImage: isUser
-                            ? 'linear-gradient(to right, rgba(255,255,255,0.1), rgba(255,255,255,0.3), rgba(255,255,255,0.1))'
-                            : 'linear-gradient(to right, rgba(0,0,0,0.03), rgba(0,0,0,0.1), rgba(0,0,0,0.03))',
-                          margin: '1.5em 0'
-                        }}
-                        {...props}
-                      />
-                    ),
-                    h1: ({ node, ...props }) => (
-                      <h1
-                        style={{
-                          borderBottom: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
-                          paddingBottom: '0.3em',
-                          marginTop: '1.5em',
-                          marginBottom: '0.75em',
-                          fontWeight: 600,
-                          fontSize: '1.6em',
-                          lineHeight: 1.3
-                        }}
-                        {...props}
-                      />
-                    ),
-                    h2: ({ node, ...props }) => (
-                      <h2
-                        style={{
-                          borderBottom: `1px solid ${isUser ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
-                          paddingBottom: '0.2em',
-                          marginTop: '1.4em',
-                          marginBottom: '0.7em',
-                          fontWeight: 600,
-                          fontSize: '1.4em',
-                          lineHeight: 1.3
-                        }}
-                        {...props}
-                      />
-                    ),
-                    h3: ({ node, ...props }) => (
-                      <h3
-                        style={{
-                          marginTop: '1.3em',
-                          marginBottom: '0.6em',
-                          fontWeight: 600,
-                          fontSize: '1.2em',
-                          lineHeight: 1.3
-                        }}
-                        {...props}
-                      />
-                    ),
-                    h4: ({ node, ...props }) => (
-                      <h4
-                        style={{
-                          marginTop: '1.2em',
-                          marginBottom: '0.5em',
-                          fontWeight: 600,
-                          fontSize: '1.1em',
-                          lineHeight: 1.3
-                        }}
-                        {...props}
-                      />
-                    ),
-                    table: ({ node, ...props }) => (
-                      <div style={{
-                        width: '100%',
-                        maxWidth: '100%',
-                        overflowX: 'auto',
-                        margin: '1em 0',
-                        padding: '0',
-                        borderRadius: '6px',
-                        border: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : colors.borderColor}`,
-                      }}>
-                        <table
+                          target="_blank"
+                          rel="noopener noreferrer"
                           style={{
-                            borderCollapse: 'collapse',
-                            width: 'auto',
-                            fontSize: '0.9em',
-                            margin: 0,
+                            color: isUser ? 'rgba(255,255,255,0.9)' : undefined,
+                            textDecoration: 'underline',
+                            textUnderlineOffset: '2px',
+                            textDecorationThickness: '1px',
+                            transition: 'opacity 0.2s ease',
+                          }}
+                          onMouseOver={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                          onMouseOut={(e) => { e.currentTarget.style.opacity = '1'; }}
+                        />
+                      ),
+                      p: ({ node, ...props }) => (
+                        <p
+                          style={{
+                            margin: '0.5em 0',
                             padding: 0,
+                            maxWidth: '100%',
+                            overflowWrap: 'break-word',
+                            wordBreak: 'break-word',
                           }}
                           {...props}
                         />
-                      </div>
-                    ),
-                    thead: ({ node, ...props }) => (
-                      <thead
-                        style={{
-                          backgroundColor: isUser
-                            ? 'rgba(255,255,255,0.15)'
-                            : useColorModeValue('rgba(0,0,0,0.05)', 'rgba(255,255,255,0.05)'),
-                          margin: 0,
-                          padding: 0
-                        }}
-                        {...props}
-                      />
-                    ),
-                    tbody: ({ node, ...props }) => <tbody {...props} />,
-                    tr: ({ node, ...props }) => (
-                      <tr
-                        style={{
-                          borderBottom: `1px solid ${isUser
-                            ? 'rgba(255,255,255,0.2)'
-                            : colors.borderColor}`
-                        }}
-                        {...props}
-                      />
-                    ),
-                    th: ({ node, ...props }) => (
-                      <th
-                        style={{
-                          padding: '0.5em 0.75em',
-                          textAlign: 'left',
-                          fontWeight: 'bold',
-                          borderBottom: `2px solid ${isUser
-                            ? 'rgba(255,255,255,0.3)'
-                            : colors.borderColor}`,
-                          borderRight: `1px solid ${isUser
-                            ? 'rgba(255,255,255,0.1)'
-                            : colors.borderColor}`
-                        }}
-                        {...props}
-                      />
-                    ),
-                    td: ({ node, ...props }) => (
-                      <td
-                        style={{
-                          padding: '0.5em 0.75em',
-                          borderRight: `1px solid ${isUser
-                            ? 'rgba(255,255,255,0.1)'
-                            : colors.borderColor}`
-                        }}
-                        {...props}
-                      />
-                    ),
-                    img: ({ node, ...props }) => (
-                      <img
-                        style={{
+                      ),
+                      ul: ({ node, ...props }) => (
+                        <ul
+                          style={{
+                            paddingLeft: '1.5em',
+                            margin: '0.6em 0',
+                            listStyleType: 'disc',
+                            listStylePosition: 'outside'
+                          }}
+                          {...props}
+                        />
+                      ),
+                      ol: ({ node, ...props }) => (
+                        <ol
+                          style={{
+                            paddingLeft: '1.5em',
+                            margin: '0.6em 0',
+                            listStyleType: 'decimal',
+                            listStylePosition: 'outside'
+                          }}
+                          {...props}
+                        />
+                      ),
+                      li: ({ node, ...props }) => (
+                        <li
+                          style={{
+                            margin: '0.25em 0',
+                            paddingLeft: '0.2em',
+                            display: 'list-item'
+                          }}
+                          {...props}
+                        />
+                      ),
+                      blockquote: ({ node, ...props }) => (
+                        <blockquote
+                          style={{
+                            borderLeft: `3px solid ${isUser ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.2)'}`,
+                            margin: '0.6em 0',
+                            color: isUser ? 'rgba(255,255,255,0.9)' : undefined,
+                            fontStyle: 'italic',
+                            backgroundColor: isUser ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)',
+                            padding: '0.5em 0.75em',
+                            borderRadius: '0 6px 6px 0',
+                            boxShadow: `inset 0 1px 3px ${isUser ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.03)'}`
+                          }}
+                          {...props}
+                        />
+                      ),
+                      hr: ({ node, ...props }) => (
+                        <hr
+                          style={{
+                            border: 'none',
+                            height: '2px',
+                            backgroundImage: isUser
+                              ? 'linear-gradient(to right, rgba(255,255,255,0.1), rgba(255,255,255,0.3), rgba(255,255,255,0.1))'
+                              : 'linear-gradient(to right, rgba(0,0,0,0.03), rgba(0,0,0,0.1), rgba(0,0,0,0.03))',
+                            margin: '1.5em 0'
+                          }}
+                          {...props}
+                        />
+                      ),
+                      h1: ({ node, ...props }) => (
+                        <h1
+                          style={{
+                            borderBottom: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
+                            paddingBottom: '0.3em',
+                            marginTop: '1.5em',
+                            marginBottom: '0.75em',
+                            fontWeight: 600,
+                            fontSize: '1.6em',
+                            lineHeight: 1.3
+                          }}
+                          {...props}
+                        />
+                      ),
+                      h2: ({ node, ...props }) => (
+                        <h2
+                          style={{
+                            borderBottom: `1px solid ${isUser ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
+                            paddingBottom: '0.2em',
+                            marginTop: '1.4em',
+                            marginBottom: '0.7em',
+                            fontWeight: 600,
+                            fontSize: '1.4em',
+                            lineHeight: 1.3
+                          }}
+                          {...props}
+                        />
+                      ),
+                      h3: ({ node, ...props }) => (
+                        <h3
+                          style={{
+                            marginTop: '1.3em',
+                            marginBottom: '0.6em',
+                            fontWeight: 600,
+                            fontSize: '1.2em',
+                            lineHeight: 1.3
+                          }}
+                          {...props}
+                        />
+                      ),
+                      h4: ({ node, ...props }) => (
+                        <h4
+                          style={{
+                            marginTop: '1.2em',
+                            marginBottom: '0.5em',
+                            fontWeight: 600,
+                            fontSize: '1.1em',
+                            lineHeight: 1.3
+                          }}
+                          {...props}
+                        />
+                      ),
+                      table: ({ node, ...props }) => (
+                        <div style={{
+                          width: '100%',
                           maxWidth: '100%',
-                          height: 'auto',
-                          borderRadius: '4px',
-                          margin: '0.5em 0',
-                          border: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
-                        }}
-                        {...props}
-                        loading="lazy"
-                      />
-                    ),
-                    pre: ({ children }: any) => <>{children}</>,
-                  }}
-                >
-                  {message.content}
-                </ReactMarkdown>
-              </div>
-            )}
-          </Box>
-        </Box>
-      </Menu.ContextTrigger>
-      <Portal>
-        <Menu.Positioner>
-          <Menu.Content
-            bg={useColorModeValue("white", "gray.800")}
-            borderRadius="xl"
-            boxShadow={useColorModeValue(
-              "0 4px 12px rgba(0,0,0,0.1)",
-              "0 4px 12px rgba(0,0,0,0.3)"
-            )}
-            overflow="hidden"
-            border="1px solid"
-            borderColor={useColorModeValue("gray.100", "gray.700")}
-            minWidth="180px"
-            maxWidth="220px"
-            style={{
-              position: "fixed",
-              zIndex: 1000,
-              transform: "none"
-            }}
-          >
-            <Group
-              grow
-              gap="0"
-              p={1.5}
-              borderBottom="1px solid"
-              borderColor={useColorModeValue("gray.100", "gray.700")}
-            >
-              {horizontalMenuItems.map((item) => (
-                <Menu.Item
-                  key={item.value}
-                  value={item.value}
-                  width="10"
-                  height="10"
-                  gap="0"
-                  flexDirection="column"
-                  fontSize="lg"
-                  borderRadius="md"
-                  _hover={{ bg: useColorModeValue("gray.50", "gray.700") }}
-                  p={1}
-                >
-                  {item.label}
-                </Menu.Item>
-              ))}
-            </Group>
-
-            <Box py={1}>
-              {verticalMenuItems.map((item) => (
-                <Menu.Item
-                  key={item.value}
-                  value={item.value}
-                  onClick={item.onClick}
-                  borderRadius="md"
-                  _hover={{ bg: useColorModeValue("gray.50", "gray.700") }}
-                  py={1.5}
-                  px={3}
-                  fontSize="sm"
-                >
-                  <Group gap={2} justify="flex-start" align="center">
-                    <Box fontSize="sm" color={useColorModeValue("gray.600", "gray.400")}>{item.icon}</Box>
-                    <Text fontWeight="medium" color={useColorModeValue("gray.800", "gray.200")}>{item.label}</Text>
-                  </Group>
-                </Menu.Item>
-              ))}
+                          overflowX: 'auto',
+                          margin: '1em 0',
+                          padding: '0',
+                          borderRadius: '6px',
+                          border: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : colors.borderColor}`,
+                        }}>
+                          <table
+                            style={{
+                              borderCollapse: 'collapse',
+                              width: 'auto',
+                              fontSize: '0.9em',
+                              margin: 0,
+                              padding: 0,
+                            }}
+                            {...props}
+                          />
+                        </div>
+                      ),
+                      thead: ({ node, ...props }) => (
+                        <thead
+                          style={{
+                            backgroundColor: isUser
+                              ? 'rgba(255,255,255,0.15)'
+                              : useColorModeValue('rgba(0,0,0,0.05)', 'rgba(255,255,255,0.05)'),
+                            margin: 0,
+                            padding: 0
+                          }}
+                          {...props}
+                        />
+                      ),
+                      tbody: ({ node, ...props }) => <tbody {...props} />,
+                      tr: ({ node, ...props }) => (
+                        <tr
+                          style={{
+                            borderBottom: `1px solid ${isUser
+                              ? 'rgba(255,255,255,0.2)'
+                              : colors.borderColor}`
+                          }}
+                          {...props}
+                        />
+                      ),
+                      th: ({ node, ...props }) => (
+                        <th
+                          style={{
+                            padding: '0.5em 0.75em',
+                            textAlign: 'left',
+                            fontWeight: 'bold',
+                            borderBottom: `2px solid ${isUser
+                              ? 'rgba(255,255,255,0.3)'
+                              : colors.borderColor}`,
+                            borderRight: `1px solid ${isUser
+                              ? 'rgba(255,255,255,0.1)'
+                              : colors.borderColor}`
+                          }}
+                          {...props}
+                        />
+                      ),
+                      td: ({ node, ...props }) => (
+                        <td
+                          style={{
+                            padding: '0.5em 0.75em',
+                            borderRight: `1px solid ${isUser
+                              ? 'rgba(255,255,255,0.1)'
+                              : colors.borderColor}`
+                          }}
+                          {...props}
+                        />
+                      ),
+                      img: ({ node, ...props }) => (
+                        <img
+                          style={{
+                            maxWidth: '100%',
+                            height: 'auto',
+                            borderRadius: '4px',
+                            margin: '0.5em 0',
+                            border: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
+                          }}
+                          {...props}
+                          loading="lazy"
+                        />
+                      ),
+                      pre: ({ children }: any) => <>{children}</>,
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
+              )}
             </Box>
-          </Menu.Content>
-        </Menu.Positioner>
-      </Portal>
-    </Menu.Root>
+          </Box>
+        </Menu.ContextTrigger>
+        <Portal>
+          <Menu.Positioner>
+            <Menu.Content
+              bg={menuBgColor}
+              borderRadius="xl"
+              boxShadow={useColorModeValue(
+                "0 4px 12px rgba(0,0,0,0.1)",
+                "0 4px 12px rgba(0,0,0,0.3)"
+              )}
+              overflow="hidden"
+              border="1px solid"
+              borderColor={menuBorderColor}
+              minWidth="180px"
+              maxWidth="220px"
+              style={{
+                position: "fixed",
+                zIndex: 1000,
+                transform: "none"
+              }}
+            >
+              <Group
+                grow
+                gap="0"
+                p={1.5}
+                borderBottom="1px solid"
+                borderColor={menuBorderColor}
+              >
+                {horizontalMenuItems.map((item) => (
+                  <Menu.Item
+                    key={item.value}
+                    value={item.value}
+                    width="10"
+                    height="10"
+                    gap="0"
+                    flexDirection="column"
+                    fontSize="lg"
+                    borderRadius="md"
+                    _hover={{ bg: menuItemHoverBg }}
+                    p={1}
+                  >
+                    {item.label}
+                  </Menu.Item>
+                ))}
+              </Group>
+
+              <Box py={1}>
+                {verticalMenuItems.map((item) => (
+                  <Menu.Item
+                    key={item.value}
+                    value={item.value}
+                    onClick={item.onClick}
+                    borderRadius="md"
+                    _hover={{ bg: item.disabled ? "transparent" : menuItemHoverBg }}
+                    py={1.5}
+                    px={3}
+                    fontSize="sm"
+                    opacity={item.disabled ? 0.5 : 1}
+                    cursor={item.disabled ? "not-allowed" : "pointer"}
+                    title={item.tooltip}
+                  >
+                    <Group gap={2} justify="flex-start" align="center">
+                      <Box fontSize="sm" color={menuIconColor}>{item.icon}</Box>
+                      <Text fontWeight="medium" color={menuTextColor}>{item.label}</Text>
+                    </Group>
+                  </Menu.Item>
+                ))}
+              </Box>
+            </Menu.Content>
+          </Menu.Positioner>
+        </Portal>
+      </Menu.Root>
+
+      {/* Add the delete message modal */}
+      {isUser && (
+        <DeleteMessageModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          message={message}
+          onDeleteSuccess={handleDeleteSuccess}
+        />
+      )}
+    </>
   );
 }, (prevProps, nextProps) => {
   if (

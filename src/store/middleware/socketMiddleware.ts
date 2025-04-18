@@ -7,7 +7,8 @@ import {
     updateRoom,
     setSelectedRoom,
     setUnreadCount,
-    clearSelectedRoom
+    clearSelectedRoom,
+    deleteMessage
 } from '../features/chatSlice';
 import { IMessage } from '@/types/chat';
 import { INotification } from '@/types/notification';
@@ -95,6 +96,11 @@ export const socketMiddleware: Middleware = store => next => (action: unknown) =
                     type: "error"
                 });
             }
+        });
+
+        socketClient.onMessageDeleted((data: { roomId: string, messageId: string }) => {
+            console.log("Message deleted event received:", data);
+            dispatch(deleteMessage(data));
         });
 
         socketClient.onNotification((notification: INotification) => {
@@ -233,6 +239,18 @@ export const socketMiddleware: Middleware = store => next => (action: unknown) =
         }
         if (socketClient && socketClient.socket && socketClient.socket.connected) {
             socketClient.sendNotification(notification);
+        }
+        return next(action);
+    }
+
+    if (chatAction.type === 'chat/deleteMessage') {
+        const { roomId, messageId } = chatAction.payload;
+        if (socketClient && socketClient.socket && socketClient.socket.connected) {
+            // Immediately update the local state to prevent UI lag
+            dispatch({ type: 'chat/localDeleteMessage', payload: { roomId, messageId } });
+
+            // Send the delete request to the server
+            socketClient.deleteMessage(roomId, messageId);
         }
         return next(action);
     }
