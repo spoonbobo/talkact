@@ -13,6 +13,7 @@ interface ChatState {
     isLoadingRooms: boolean;
     isLoadingMessages: boolean;
     messagesLoaded: Record<string, boolean>; // Track which rooms have loaded messages from server
+    planSectionWidth: number; // Add this new property for plan section width
 }
 
 const initialState: ChatState = {
@@ -24,13 +25,14 @@ const initialState: ChatState = {
     isLoadingRooms: false,
     isLoadingMessages: false,
     messagesLoaded: {},
+    planSectionWidth: 250, // Default width
 };
 
 // Configure persist for chat slice
 const chatPersistConfig = {
     key: 'chat',
     storage,
-    whitelist: ['messages'], // Only persist messages
+    whitelist: ['messages', 'planSectionWidth'], // Add planSectionWidth to persisted state
 };
 
 export const chatSlice = createSlice({
@@ -186,6 +188,9 @@ export const chatSlice = createSlice({
             const { roomId, messageId } = action.payload;
             deleteMessageFromState(state, roomId, messageId);
         },
+        setPlanSectionWidth: (state, action: PayloadAction<number>) => {
+            state.planSectionWidth = action.payload;
+        },
     },
 });
 
@@ -227,6 +232,7 @@ export const {
     updateMessage,
     deleteMessage,
     localDeleteMessage,
+    setPlanSectionWidth,
 } = chatSlice.actions;
 
 export const setLoadingRooms = createAction<boolean>('chat/setLoadingRooms');

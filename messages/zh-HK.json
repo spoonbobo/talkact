@@ -201,7 +201,12 @@
     "today": "今天",
     "yesterday": "昨天",
     "room_name": "聊天室名稱",
-    "edit": "編輯"
+    "edit": "編輯",
+    "create_new_room": "創建新聊天室",
+    "select_room_or_create_new": "選擇聊天室或創建新聊天室",
+    "plan_section": "計劃",
+    "current_room": "當前聊天室",
+    "create_room": "創建聊天室"
   },
   "Plans": {
     "plans": "計劃",
@@ -353,7 +358,8 @@
     "active_users": "成員",
     "last_updated": "最後更新",
     "refresh": "刷新",
-    "search_chatrooms": "搜索聊天室"
+    "search_chatrooms": "搜索聊天室",
+    "members": "成員"
   },
   "Settings": {
     "settings": "設定",

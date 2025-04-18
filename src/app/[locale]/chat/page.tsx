@@ -6,7 +6,6 @@ import {
   Flex,
   Icon,
   Container,
-  Heading,
   Button,
   CloseButton,
   Drawer,
@@ -20,9 +19,9 @@ import {
   Input
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaComments, FaUsers, FaTasks, FaUserPlus, FaEdit, FaTimes } from "react-icons/fa";
+import { FaUsers, FaTasks, FaUserPlus, FaEdit, FaTimes, FaCalendarAlt, FaPlus, FaLink } from "react-icons/fa";
 import { useTranslations } from "next-intl";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
 import { IChatRoom, IMessage } from "@/types/chat";
 import { User } from "@/types/user";
@@ -44,7 +43,8 @@ import {
   removeUserFromRoom,
   setUnreadCount,
   addMessage,
-  updateMessage
+  updateMessage,
+  setPlanSectionWidth
 } from '@/store/features/chatSlice';
 import { updateActiveRooms } from '@/store/features/userSlice';
 import React from "react";
@@ -70,7 +70,7 @@ const openai = new OpenAI({
 });
 
 export default function ChatPage() {
-  const { currentUser, isAuthenticated } = useSelector((state: RootState) => state.user);
+  const { isAuthenticated } = useSelector((state: RootState) => state.user);
   const router = useRouter();
 
   useEffect(() => {
@@ -102,6 +102,7 @@ const ChatPageContent = () => {
   const isLoadingMessages = useSelector((state: RootState) => state.chat.isLoadingMessages);
   const messagesLoaded = useSelector((state: RootState) => state.chat.messagesLoaded);
   const isSocketConnected = useSelector((state: RootState) => state.chat.isSocketConnected);
+  const planSectionWidth = useSelector((state: RootState) => state.chat.planSectionWidth);
 
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const isOwner = useSelector((state: RootState) => state.user.isOwner);
@@ -137,6 +138,64 @@ const ChatPageContent = () => {
   const [roomUsers, setRoomUsers] = useState<User[]>([]);
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [isUpdatingName, setIsUpdatingName] = useState<boolean>(false);
+
+  // Add resize state for plan section
+  const [planSectionResizing, setPlanSectionResizing] = useState(false);
+  const [resizeStartPosition, setResizeStartPosition] = useState(0);
+  const planSectionRef = useRef<HTMLDivElement>(null);
+
+  // Constants for min/max widths
+  const MIN_PLAN_SECTION_WIDTH = 200;
+  const MAX_PLAN_SECTION_WIDTH = 500;
+
+  // Get the current room
+  const currentRoom = useMemo(() => {
+    return rooms.find(room => room.id === selectedRoomId);
+  }, [rooms, selectedRoomId]);
+
+  // Handle plan section resize start
+  const handlePlanSectionResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setPlanSectionResizing(true);
+    setResizeStartPosition(e.clientX);
+  };
+
+  // Effect for plan section resizing
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (planSectionResizing && planSectionRef.current) {
+        const deltaX = e.clientX - resizeStartPosition;
+        const newWidth = Math.max(
+          MIN_PLAN_SECTION_WIDTH,
+          Math.min(MAX_PLAN_SECTION_WIDTH, planSectionWidth - deltaX)
+        );
+
+        // Update Redux state
+        dispatch(setPlanSectionWidth(newWidth));
+
+        // Update DOM directly for smooth resizing
+        planSectionRef.current.style.width = `${newWidth}px`;
+
+        setResizeStartPosition(e.clientX);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setPlanSectionResizing(false);
+    };
+
+    if (planSectionResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
+    };
+  }, [planSectionResizing, resizeStartPosition, planSectionWidth, dispatch]);
 
   // Fetch rooms
   useEffect(() => {
@@ -432,56 +491,52 @@ const ChatPageContent = () => {
   };
 
   const handleCreateRoom = async () => {
-    if (newRoomName.trim()) {
-      try {
-        setIsCreatingRoomLoading(true);
-        const roomName = newRoomName.trim();
-        const response = await axios.post("/api/chat/create_room", {
-          name: roomName,
-          active_users: [],
-          unread: 0,
-        });
-        const roomId = response.data.room_id;
-        setNewRoomName("");
-        setIsCreatingRoom(false);
+    if (!newRoomName.trim()) {
+      toaster.create({
+        title: t("error"),
+        description: t("room_name_required"),
+        type: "error"
+      });
+      return;
+    }
 
-        // join the new room
-        dispatch(joinRoom(roomId));
+    setIsCreatingRoomLoading(true);
 
-        // Add the room to the user's active_rooms
-        await axios.post("/api/user/update_user", {
-          roomId: roomId,
-          action: "add"
-        });
+    try {
+      const response = await axios.post("/api/chat/create_room", {
+        name: newRoomName,
+      });
 
-        // Update the Redux state to match the database
-        dispatch(updateActiveRooms({ roomId, action: "add" }));
+      const newRoom = response.data;
 
-        if (currentUser) {
-          await axios.put("/api/chat/update_room", {
-            roomId: roomId,
-            active_users: [currentUser.user_id]
-          });
-        }
+      // Add the new room to the Redux store
+      dispatch(joinRoom(newRoom.id));
 
-        const roomsResponse = await axios.get("/api/chat/get_rooms");
+      // Refresh the room list
+      const roomsResponse = await axios.get("/api/chat/get_rooms");
+      dispatch(setRooms(roomsResponse.data));
 
-        dispatch(setRooms(roomsResponse.data));
+      // Select the new room
+      dispatch(setSelectedRoom(newRoom.id));
 
-        toaster.create({
-          title: t("room_created"),
-          description: t("room_created_description"),
-          type: "success"
-        });
-      } catch (error) {
-        toaster.create({
-          title: t("error"),
-          description: t("error_creating_room"),
-          type: "error"
-        });
-      } finally {
-        setIsCreatingRoomLoading(false);
-      }
+      // Reset the form
+      setNewRoomName("");
+      setIsCreatingRoom(false);
+
+      toaster.create({
+        title: t("success"),
+        description: t("room_created_successfully"),
+        type: "success"
+      });
+    } catch (error) {
+      console.error("Error creating room:", error);
+      toaster.create({
+        title: t("error"),
+        description: t("error_creating_room"),
+        type: "error"
+      });
+    } finally {
+      setIsCreatingRoomLoading(false);
     }
   };
 
@@ -533,9 +588,6 @@ const ChatPageContent = () => {
       []
     ) || [])
     : [];
-
-  // Update to use selectedRoomId from Redux
-  const currentRoom = rooms.find((r) => r.id === selectedRoomId);
 
   // Fetch user details when currentRoom changes
   useEffect(() => {
@@ -873,268 +925,69 @@ const ChatPageContent = () => {
     }
   }, [isSocketConnected, rooms, dispatch]);
 
-  // IMPORTANT: Move this conditional rendering AFTER all hooks are defined
-  // This ensures all hooks are called in the same order on every render
+  // If loading, show loading indicator
   if (isLoadingRooms || isLoadingMessages || !session) {
     return <Loading />;
   }
 
   return (
-    <Container
-      maxW="1400px"
-      px={{ base: 4, md: 6, lg: 8 }}
-      py={4}
-      height="100%"
-      position="relative"
-      overflow="hidden"
-    >
-      <MotionBox
-        width="100%"
-        height="100%"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        display="flex"
-        flexDirection="column"
-        overflow="hidden"
+    <Flex width="100%" height="100%" gap={4}>
+      {/* Chat Interface Component - Make it flexible */}
+      <Box flex="1" minWidth="0">
+        <ChatInterfaceContainer
+          isCreatingRoom={isCreatingRoom}
+          newRoomName={newRoomName}
+          setNewRoomName={setNewRoomName}
+          handleCreateRoom={handleCreateRoom}
+          setIsCreatingRoom={setIsCreatingRoom}
+          currentRoom={currentRoom}
+          currentUser={currentUser}
+          groupedMessages={groupedMessages}
+          messagesEndRef={messagesEndRef}
+          loadMoreMessages={loadMoreMessages}
+          isLoadingMore={isLoadingMore}
+          hasMoreMessages={hasMoreMessages}
+          chatInputProps={chatInputProps}
+          colors={colors}
+          t={t}
+          dispatch={dispatch}
+          setIsRoomDetailsOpen={setIsRoomDetailsOpen}
+          clearSelectedRoom={clearSelectedRoom}
+          quitRoom={quitRoom}
+          isCreatingRoomLoading={isCreatingRoomLoading}
+        />
+      </Box>
+
+      {/* Plan Section Component with resize handle */}
+      <Box
+        ref={planSectionRef}
+        width={`${planSectionWidth}px`}
+        flexShrink={0}
         position="relative"
+        transition={planSectionResizing ? 'none' : 'width 0.2s'}
       >
-        <Heading
-          size="lg"
-          mb={6}
-          display="flex"
-          alignItems="center"
-          color={textColorHeading}
-        >
-          <Icon as={FaComments} mr={3} color="blue.500" />
-          {t("chat")}
-        </Heading>
+        <SimplifiedPlanSection
+          currentRoom={currentRoom}
+          colors={colors}
+          t={t}
+        />
 
-        <Flex
-          width="100%"
-          height="calc(100% - 60px)"
-          position="relative"
-          overflow="hidden"
-          gap={4}
-        >
-          {/* Room List Component with fixed width - simplified without layout flipping */}
-          <MotionBox
-            layout
-            initial={false}
-            animate={{
-              left: 0,
-              opacity: 1,
-              scale: 1,
-              width: "300px",
-              pointerEvents: "auto",
-            }}
-            transition={{
-              duration: 0.5,
-              ease: "easeInOut",
-              opacity: { duration: 0.3 },
-              scale: { duration: 0.3 },
-              width: { duration: 0.5 }
-            }}
-            position="absolute"
-            height="100%"
-            zIndex={1}
-            whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-          >
-            <Box height="100%">
-              <ChatRoomList
-                rooms={rooms}
-                selectedRoomId={selectedRoomId}
-                unreadCounts={unreadCounts}
-                onSelectRoom={(roomId) => dispatch(setSelectedRoom(roomId))}
-                onCreateRoomClick={() => setIsCreatingRoom(true)}
-                isCreatingRoomLoading={isCreatingRoomLoading}
-              />
-            </Box>
-          </MotionBox>
-
-          {/* Chat Interface Component - simplified without layout flipping */}
-          <MotionBox
-            layout
-            initial={false}
-            animate={{
-              left: "300px",
-              width: "calc(100% - 300px - 1rem)",
-              opacity: 1,
-              scale: 1,
-            }}
-            style={{
-              backgroundColor: bgSubtle,
-            }}
-            transition={{
-              duration: 0.5,
-              ease: "easeInOut",
-              opacity: { duration: 0.3 },
-              scale: { duration: 0.3 }
-            }}
-            position="absolute"
-            height="100%"
-            overflow="hidden"
-            borderRadius="md"
-            display="flex"
-            flexDirection="column"
-            borderWidth="1px"
-            borderColor={borderColor}
-            zIndex={2}
-            whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-          >
-            {/* Chat header */}
-            <Flex
-              p={4}
-              borderBottomWidth="1px"
-              borderColor={borderColor}
-              bg={bgSubtle}
-              align="center"
-              minHeight="80px"
-              width="100%"
-              position="relative"
-              justifyContent="space-between"
-            >
-              <AnimatePresence mode="wait">
-                {isCreatingRoom ? (
-                  <CreateRoomForm
-                    newRoomName={newRoomName}
-                    setNewRoomName={setNewRoomName}
-                    handleCreateRoom={handleCreateRoom}
-                    handleCancel={() => {
-                      setIsCreatingRoom(false);
-                      setNewRoomName("");
-                    }}
-                    isCreatingRoomLoading={isCreatingRoomLoading}
-                  />
-                ) : (
-                  <motion.div
-                    key="room-info"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                  >
-                    <Box ml={3}>
-                      <Text
-                        fontSize="lg"
-                        fontWeight="bold"
-                        color={textColorHeading}
-                        display="flex"
-                        alignItems="center"
-                      >
-                        {currentRoom?.name || t("select_room")}
-                      </Text>
-                      <AnimatePresence>
-                        {currentRoom && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <Flex align="center">
-                              <Icon
-                                as={FaUsers}
-                                color={colors.aiNameColor}
-                                boxSize={3}
-                                mr={1}
-                              />
-                              <Text fontSize="xs" color={colors.textColor}>
-                                {t("active_users")}:{" "}
-                                {currentRoom?.active_users?.length || 0}
-                              </Text>
-                            </Flex>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </Box>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Room Menu moved to right side */}
-              {currentRoom && !isCreatingRoom && (
-                <Box>
-                  <RoomMenu
-                    onRoomDetails={() => {
-                      setIsRoomDetailsOpen(true);
-                    }}
-                    onExitRoom={async () => {
-                      try {
-                        // Call API to remove room from active rooms
-                        const response = await fetch('/api/user/update_user', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            roomId: currentRoom.id,
-                            action: 'remove'
-                          }),
-                        });
-
-                        // Call the remove_user_from_room endpoint
-                        await axios.put(`/api/chat/remove_user_from_room`, {
-                          roomId: currentRoom.id,
-                          userId: currentUser?.user_id
-                        });
-
-                        // Only dispatch if currentUser and user_id exist
-                        if (currentUser?.user_id) {
-                          dispatch(removeUserFromRoom({
-                            roomId: currentRoom.id,
-                            userId: currentUser.user_id
-                          }));
-                        }
-
-                        if (!response.ok) {
-                          throw new Error('Failed to exit room');
-                        }
-
-                        // Clear the selected room in Redux
-                        dispatch(clearSelectedRoom());
-
-                        // notice server to quit room
-                        dispatch(quitRoom(currentRoom.id));
-
-                        // refresh room list
-                        const roomsResponse = await axios.get("/api/chat/get_rooms");
-                        dispatch(setRooms(roomsResponse.data));
-
-                        toaster.create({
-                          title: t("success"),
-                          description: t("left_room_successfully"),
-                          type: "info"
-                        });
-                      } catch (error) {
-                        console.error("Error exiting room:", error);
-                        toaster.create({
-                          title: t("error"),
-                          description: t("error_leaving_room"),
-                          type: "error"
-                        });
-                      }
-                    }}
-                  />
-                </Box>
-              )}
-            </Flex>
-
-            {/* Messages area - remove isTaskMode prop */}
-            <ChatMessageList
-              messageGroups={groupedMessages}
-              messagesEndRef={messagesEndRef}
-              onLoadMore={loadMoreMessages}
-              isLoadingMore={isLoadingMore}
-              hasMoreMessages={hasMoreMessages}
-              className="message-list-container"
-            />
-
-            {/* Input area */}
-            <ChatInput {...chatInputProps} />
-          </MotionBox>
-        </Flex>
-      </MotionBox>
+        {/* Resize handle for plan section */}
+        <Box
+          position="absolute"
+          top="0"
+          left="-4px"
+          width="8px"
+          height="100%"
+          cursor="col-resize"
+          onMouseDown={handlePlanSectionResizeStart}
+          _hover={{
+            bg: colors.borderColor || "blue.500",
+            opacity: 0.5
+          }}
+          zIndex={2}
+        />
+      </Box>
 
       {/* Room Details Drawer */}
       <Drawer.Root open={isRoomDetailsOpen} onOpenChange={(e) => setIsRoomDetailsOpen(e.open)}>
@@ -1316,6 +1169,294 @@ const ChatPageContent = () => {
           </Drawer.Positioner>
         </Portal>
       </Drawer.Root>
-    </Container>
+    </Flex>
+  );
+};
+
+// Interface for ChatInterfaceContainer props
+interface ChatInterfaceContainerProps {
+  isCreatingRoom: boolean;
+  newRoomName: string;
+  setNewRoomName: (name: string) => void;
+  handleCreateRoom: () => void;
+  setIsCreatingRoom: (value: boolean) => void;
+  currentRoom: IChatRoom | undefined;
+  currentUser: User | null;
+  groupedMessages: Array<{
+    sender: string;
+    senderId?: string;
+    avatar: string;
+    messages: IMessage[];
+    isCurrentUser: boolean;
+  }>;
+  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  loadMoreMessages: () => void;
+  isLoadingMore: boolean;
+  hasMoreMessages: boolean;
+  chatInputProps: any; // You can define a more specific type if needed
+  colors: ReturnType<typeof useChatPageColors>;
+  t: any; // Replace with proper translation type if available
+  dispatch: any; // Replace with proper dispatch type if needed
+  setIsRoomDetailsOpen: (value: boolean) => void;
+  clearSelectedRoom: any; // Replace with proper action type
+  quitRoom: any; // Replace with proper action type
+  isCreatingRoomLoading: boolean;
+}
+
+// Then update the component definition
+const ChatInterfaceContainer = ({
+  isCreatingRoom,
+  newRoomName,
+  setNewRoomName,
+  handleCreateRoom,
+  setIsCreatingRoom,
+  currentRoom,
+  currentUser,
+  groupedMessages,
+  messagesEndRef,
+  loadMoreMessages,
+  isLoadingMore,
+  hasMoreMessages,
+  chatInputProps,
+  colors,
+  t,
+  dispatch,
+  setIsRoomDetailsOpen,
+  clearSelectedRoom,
+  quitRoom,
+  isCreatingRoomLoading
+}: ChatInterfaceContainerProps) => {
+  const { bgSubtle, textColor, textColorHeading, borderColor } = colors;
+
+  return (
+    <MotionBox
+      layout
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1, scale: 1 }}
+      style={{ backgroundColor: bgSubtle }}
+      transition={{
+        duration: 0.5,
+        ease: "easeInOut",
+        opacity: { duration: 0.3 },
+        scale: { duration: 0.3 }
+      }}
+      height="100%"
+      width="100%"
+      overflow="hidden"
+      borderRadius="md"
+      display="flex"
+      flexDirection="column"
+      borderWidth="1px"
+      borderColor={borderColor}
+      zIndex={2}
+      whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+    >
+      {/* Chat header */}
+      <Flex
+        p={4}
+        borderBottomWidth="1px"
+        borderColor={borderColor}
+        bg={bgSubtle}
+        align="center"
+        minHeight="80px"
+        width="100%"
+        position="relative"
+        justifyContent="space-between"
+      >
+        <AnimatePresence mode="wait">
+          {isCreatingRoom ? (
+            <CreateRoomForm
+              newRoomName={newRoomName}
+              setNewRoomName={setNewRoomName}
+              handleCreateRoom={handleCreateRoom}
+              handleCancel={() => {
+                setIsCreatingRoom(false);
+                setNewRoomName("");
+              }}
+              isCreatingRoomLoading={isCreatingRoomLoading}
+            />
+          ) : (
+            <motion.div
+              key="room-info"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+            >
+              <Box ml={3}>
+                <Text
+                  fontSize="lg"
+                  fontWeight="bold"
+                  color={textColorHeading}
+                  display="flex"
+                  alignItems="center"
+                >
+                  {currentRoom?.name || t("select_room")}
+                </Text>
+                <AnimatePresence>
+                  {currentRoom && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Flex align="center">
+                        <Icon
+                          as={FaUsers}
+                          color={colors.aiNameColor}
+                          boxSize={3}
+                          mr={1}
+                        />
+                        <Text fontSize="xs" color={colors.textColor}>
+                          {t("active_users")}:{" "}
+                          {currentRoom?.active_users?.length || 0}
+                        </Text>
+                      </Flex>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Box>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Room Menu moved to right side */}
+        {currentRoom && !isCreatingRoom && (
+          <Box>
+            <RoomMenu
+              onRoomDetails={() => {
+                setIsRoomDetailsOpen(true);
+              }}
+              onExitRoom={async () => {
+                try {
+                  // Call API to remove room from active rooms
+                  const response = await fetch('/api/user/update_user', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      roomId: currentRoom.id,
+                      action: 'remove'
+                    }),
+                  });
+
+                  // Call the remove_user_from_room endpoint
+                  await axios.put(`/api/chat/remove_user_from_room`, {
+                    roomId: currentRoom.id,
+                    userId: currentUser?.user_id
+                  });
+
+                  // Only dispatch if currentUser and user_id exist
+                  if (currentUser?.user_id) {
+                    dispatch(removeUserFromRoom({
+                      roomId: currentRoom.id,
+                      userId: currentUser.user_id
+                    }));
+                  }
+
+                  if (!response.ok) {
+                    throw new Error('Failed to exit room');
+                  }
+
+                  // Clear the selected room in Redux
+                  dispatch(clearSelectedRoom());
+
+                  // notice server to quit room
+                  dispatch(quitRoom(currentRoom.id));
+
+                  // refresh room list
+                  const roomsResponse = await axios.get("/api/chat/get_rooms");
+                  dispatch(setRooms(roomsResponse.data));
+
+                  toaster.create({
+                    title: t("success"),
+                    description: t("left_room_successfully"),
+                    type: "info"
+                  });
+                } catch (error) {
+                  console.error("Error exiting room:", error);
+                  toaster.create({
+                    title: t("error"),
+                    description: t("error_leaving_room"),
+                    type: "error"
+                  });
+                }
+              }}
+            />
+          </Box>
+        )}
+      </Flex>
+
+      {/* Messages area */}
+      <ChatMessageList
+        messageGroups={groupedMessages}
+        messagesEndRef={messagesEndRef}
+        onLoadMore={loadMoreMessages}
+        isLoadingMore={isLoadingMore}
+        hasMoreMessages={hasMoreMessages}
+        className="message-list-container"
+      />
+
+      {/* Input area */}
+      <ChatInput {...chatInputProps} />
+    </MotionBox>
+  );
+};
+
+// Replace PlanSection with a simplified version
+interface SimplifiedPlanSectionProps {
+  currentRoom: IChatRoom | undefined;
+  colors: ReturnType<typeof useChatPageColors>;
+  t: any;
+}
+
+const SimplifiedPlanSection = ({
+  currentRoom,
+  colors,
+  t
+}: SimplifiedPlanSectionProps) => {
+  return (
+    <MotionBox
+      layout
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      style={{ backgroundColor: colors.bgSubtle }}
+      transition={{ duration: 0.5 }}
+      height="100%"
+      width="100%"
+      overflow="hidden"
+      borderRadius="md"
+      display="flex"
+      flexDirection="column"
+      borderWidth="1px"
+      borderColor={colors.borderColor}
+      zIndex={1}
+      whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+    >
+      <Box p={4} borderBottomWidth="1px" borderColor={colors.borderColor}>
+        <Text fontSize="lg" fontWeight="bold" color={colors.textColorHeading}>
+          {t("plan_section")}
+        </Text>
+      </Box>
+
+      <VStack gap={4} p={4} align="stretch">
+        {currentRoom ? (
+          <Box>
+            <Text fontSize="sm" fontWeight="bold" color={colors.textColorHeading} mb={1}>
+              {t("current_room")}
+            </Text>
+            <Text fontSize="sm" color={colors.textColor}>
+              {currentRoom.name}
+            </Text>
+          </Box>
+        ) : (
+          <Text fontSize="sm" color={colors.textColor}>
+            {t("select_room_to_see_plans")}
+          </Text>
+        )}
+      </VStack>
+    </MotionBox>
   );
 };
