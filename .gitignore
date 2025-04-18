@@ -1,7 +1,13 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Python cache files
 *.pyc
 **/*.pyc
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
 mcp/agent_home/*
 
 # dependencies
@@ -14,6 +20,7 @@ mcp/agent_home/*
 !.yarn/releases
 !.yarn/versions
 knowledge_base/local/
+knowledge_base/foryou/
 
 # testing
 /coverage
