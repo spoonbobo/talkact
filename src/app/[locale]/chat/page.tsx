@@ -306,6 +306,10 @@ const ChatPageContent = () => {
         avatar: deepseekUser.avatar || ""
       };
 
+      // Add a small delay before dispatching the initial empty message
+      // This ensures the user's message has time to be fully rendered
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       // Dispatch the initial empty message to show the bubble
       dispatch(addMessage({ roomId, message: initialMessage }));
 
@@ -683,11 +687,11 @@ const ChatPageContent = () => {
 
       console.log("Message dispatched to Redux");
 
-      // Use setTimeout to ensure the user's message is rendered first
+      // Use a longer timeout to ensure the user's message is fully rendered
+      // before starting any AI processing
       setTimeout(() => {
         // Check for @deepseek mentions
         if (newMessage.content.toLowerCase().includes('@deepseek')) {
-
           // Call the deepseek API with streaming
           triggerDeepseekAPI(newMessage.content, selectedRoomId);
         }
@@ -704,7 +708,7 @@ const ChatPageContent = () => {
             }
           });
         }
-      }, 500); // Small delay to ensure user message renders first
+      }, 300); // Increased delay to ensure user message renders first
 
       setMessageInput("");
 
