@@ -1,11 +1,9 @@
 # onlysaid
 
 ## Features
-
+- Complete any tasks with your team with only natural language
 - All-in-one MCP stack with highly configurable and extensible client & servers
-- Intelligent planning system based on chatroom's context
-- Planning management with MCP tool executions
-- Global AI assistant with a growing knowledge base integrated
+- Intelligent planning and execution system with full natural-langugage support
 - Support multiple languages, Chinese, English, Japanese, Korean, and more to come
 
 ## Setup
