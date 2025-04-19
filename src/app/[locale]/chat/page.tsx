@@ -103,7 +103,6 @@ const ChatPageContent = () => {
   const isLoadingMessages = useSelector((state: RootState) => state.chat.isLoadingMessages);
   const messagesLoaded = useSelector((state: RootState) => state.chat.messagesLoaded);
   const isSocketConnected = useSelector((state: RootState) => state.chat.isSocketConnected);
-  const planSectionWidth = useSelector((state: RootState) => state.chat.planSectionWidth);
   const isStreaming = useSelector((state: RootState) => state.assistant.isStreaming);
   const streamingMessageId = useSelector((state: RootState) => state.assistant.streamingMessageId);
 
@@ -142,63 +141,13 @@ const ChatPageContent = () => {
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [isUpdatingName, setIsUpdatingName] = useState<boolean>(false);
 
-  // Add resize state for plan section
-  const [planSectionResizing, setPlanSectionResizing] = useState(false);
-  const [resizeStartPosition, setResizeStartPosition] = useState(0);
-  const planSectionRef = useRef<HTMLDivElement>(null);
-
-  // Constants for min/max widths
-  const MIN_PLAN_SECTION_WIDTH = 200;
-  const MAX_PLAN_SECTION_WIDTH = 500;
-
   // Get the current room
   const currentRoom = useMemo(() => {
     return rooms.find(room => room.id === selectedRoomId);
   }, [rooms, selectedRoomId]);
 
-  // Handle plan section resize start
-  const handlePlanSectionResizeStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setPlanSectionResizing(true);
-    setResizeStartPosition(e.clientX);
-  };
-
-  // Effect for plan section resizing
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (planSectionResizing && planSectionRef.current) {
-        const deltaX = e.clientX - resizeStartPosition;
-        const newWidth = Math.max(
-          MIN_PLAN_SECTION_WIDTH,
-          Math.min(MAX_PLAN_SECTION_WIDTH, planSectionWidth - deltaX)
-        );
-
-        // Update Redux state
-        dispatch(setPlanSectionWidth(newWidth));
-
-        // Update DOM directly for smooth resizing
-        planSectionRef.current.style.width = `${newWidth}px`;
-
-        setResizeStartPosition(e.clientX);
-      }
-    };
-
-    const handleMouseUp = () => {
-      setPlanSectionResizing(false);
-    };
-
-    if (planSectionResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = 'none';
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = '';
-    };
-  }, [planSectionResizing, resizeStartPosition, planSectionWidth, dispatch]);
+  // Add this at the top of your component
+  const isProcessingRef = useRef(false);
 
   // Fetch rooms
   useEffect(() => {
@@ -253,9 +202,6 @@ const ChatPageContent = () => {
       fetchUsersAndAgents();
     }
   }, [session]);
-
-  // Add this at the top of your component
-  const isProcessingRef = useRef(false);
 
   // Add this new function to handle the agent API call
   const triggerAgentAPI = async (message: string, roomId: string) => {
@@ -996,7 +942,7 @@ const ChatPageContent = () => {
   }
 
   return (
-    <Flex width="100%" height="100%" gap={4}>
+    <Flex width="100%" height="100%">
       {/* Chat Interface Component - Make it flexible */}
       <Box flex="1" minWidth="0">
         <ChatInterfaceContainer
@@ -1022,37 +968,6 @@ const ChatPageContent = () => {
           isCreatingRoomLoading={isCreatingRoomLoading}
           isStreaming={isStreaming}
           streamingMessageId={streamingMessageId}
-        />
-      </Box>
-
-      {/* Plan Section Component with resize handle */}
-      <Box
-        ref={planSectionRef}
-        width={`${planSectionWidth}px`}
-        flexShrink={0}
-        position="relative"
-        transition={planSectionResizing ? 'none' : 'width 0.2s'}
-      >
-        <SimplifiedPlanSection
-          currentRoom={currentRoom}
-          colors={colors}
-          t={t}
-        />
-
-        {/* Resize handle for plan section */}
-        <Box
-          position="absolute"
-          top="0"
-          left="-4px"
-          width="8px"
-          height="100%"
-          cursor="col-resize"
-          onMouseDown={handlePlanSectionResizeStart}
-          _hover={{
-            bg: colors.borderColor || "blue.500",
-            opacity: 0.5
-          }}
-          zIndex={2}
         />
       </Box>
 
@@ -1474,62 +1389,6 @@ const ChatInterfaceContainer = ({
 
       {/* Input area */}
       <ChatInput {...chatInputProps} />
-    </MotionBox>
-  );
-};
-
-// Replace PlanSection with a simplified version
-interface SimplifiedPlanSectionProps {
-  currentRoom: IChatRoom | undefined;
-  colors: ReturnType<typeof useChatPageColors>;
-  t: any;
-}
-
-const SimplifiedPlanSection = ({
-  currentRoom,
-  colors,
-  t
-}: SimplifiedPlanSectionProps) => {
-  return (
-    <MotionBox
-      layout
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      style={{ backgroundColor: colors.bgSubtle }}
-      transition={{ duration: 0.5 }}
-      height="100%"
-      width="100%"
-      overflow="hidden"
-      borderRadius="md"
-      display="flex"
-      flexDirection="column"
-      borderWidth="1px"
-      borderColor={colors.borderColor}
-      zIndex={1}
-      whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-    >
-      <Box p={4} borderBottomWidth="1px" borderColor={colors.borderColor}>
-        <Text fontSize="lg" fontWeight="bold" color={colors.textColorHeading}>
-          {t("plan_section")}
-        </Text>
-      </Box>
-
-      <VStack gap={4} p={4} align="stretch">
-        {currentRoom ? (
-          <Box>
-            <Text fontSize="sm" fontWeight="bold" color={colors.textColorHeading} mb={1}>
-              {t("current_room")}
-            </Text>
-            <Text fontSize="sm" color={colors.textColor}>
-              {currentRoom.name}
-            </Text>
-          </Box>
-        ) : (
-          <Text fontSize="sm" color={colors.textColor}>
-            {t("select_room_to_see_plans")}
-          </Text>
-        )}
-      </VStack>
     </MotionBox>
   );
 };
