@@ -201,7 +201,11 @@
     "today": "今天",
     "yesterday": "昨天",
     "room_name": "聊天室名称",
-    "edit": "编辑"
+    "edit": "编辑",
+    "create_room": "创建聊天室",
+    "create_new_room": "新建聊天室",
+    "plan_section": "计划区块",
+    "current_room": "当前聊天室"
   },
   "Plans": {
     "plans": "计划",

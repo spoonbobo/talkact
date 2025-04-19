@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
         // Also fetch the plan to get room_id
         const plan = await db('plan')
-            .where('id', planId)
+            .where('plan_id', planId)
             .first();
 
         // Format the tasks to match the ITask interface
@@ -68,9 +68,6 @@ export async function GET(request: Request) {
                 }
             }
 
-            console.log('formattedTask', task);
-            console.log('toolData', toolData);
-
             return {
                 id: task.id,
                 task_id: task.task_id,
@@ -86,7 +83,11 @@ export async function GET(request: Request) {
                 tool: toolData,
                 status: task.status,
                 result: task.result || "",
-                logs: logsData
+                logs: logsData,
+                task_description: task.task_explanation || "",
+                priority: task.priority || "medium",
+                assignee: task.mcp_server || "",
+                assigner: ""
             };
         });
 

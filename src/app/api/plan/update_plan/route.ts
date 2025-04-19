@@ -8,7 +8,6 @@ export async function PUT(request: Request) {
 
         // Special handling for reset_plan operation
         if (reset_plan) {
-            console.log('Resetting plan:', plan_id);
 
             // Update plan to pending status
             const updateData = {
@@ -124,17 +123,14 @@ export async function PUT(request: Request) {
             updateData.completed_at = null;
         }
 
-        console.log('Updating plan with data:', { plan_id, status, progress, logs, step_number });
 
         // Perform the update
         const updatedCount = await db('plan')
             .where({ plan_id: plan_id })
             .update(updateData);
 
-        console.log('Update result:', updatedCount, 'rows affected');
 
         if (updatedCount === 0) {
-            console.log('Plan not found')
             return NextResponse.json({
                 error: 'Plan not found'
             }, { status: 404 });

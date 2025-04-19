@@ -76,7 +76,11 @@ const PlanCalendar = ({ plans, currentPlanId, viewMode, onViewModeChange }: Plan
     // Get plans for a specific day
     const getPlansForDay = (day: Date) => {
         return plans.filter((plan: any) => {
-            const planDate = new Date(plan.created_at);
+            // Ensure created_at is a Date object
+            const planDate = plan.created_at instanceof Date
+                ? plan.created_at
+                : new Date(plan.created_at);
+
             return planDate.getDate() === day.getDate() &&
                 planDate.getMonth() === day.getMonth() &&
                 planDate.getFullYear() === day.getFullYear();
@@ -282,14 +286,22 @@ const PlanCalendar = ({ plans, currentPlanId, viewMode, onViewModeChange }: Plan
                                         {dayPlans.length > 0 ? (
                                             dayPlans.map((plan: any) => {
                                                 // Convert string dates to Date objects
-                                                const typedPlan: IPlan = {
+                                                const typedPlan = {
                                                     ...plan,
-                                                    created_at: plan.created_at ? new Date(plan.created_at) : new Date(),
-                                                    updated_at: plan.updated_at ? new Date(plan.updated_at) : new Date(),
-                                                    completed_at: plan.completed_at ? new Date(plan.completed_at) : null
+                                                    created_at: plan.created_at instanceof Date
+                                                        ? plan.created_at
+                                                        : new Date(plan.created_at),
+                                                    updated_at: plan.updated_at instanceof Date
+                                                        ? plan.updated_at
+                                                        : new Date(plan.updated_at),
+                                                    completed_at: plan.completed_at
+                                                        ? (plan.completed_at instanceof Date
+                                                            ? plan.completed_at
+                                                            : new Date(plan.completed_at))
+                                                        : null
                                                 };
 
-                                                const isSelected = currentPlanId === typedPlan.id;
+                                                const isSelected = currentPlanId === typedPlan.id || currentPlanId === typedPlan.plan_id;
 
                                                 return (
                                                     <Tooltip

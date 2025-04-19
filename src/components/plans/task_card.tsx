@@ -17,7 +17,7 @@ import { FaCheck, FaEdit, FaBrain, FaMagic, FaFileAlt } from 'react-icons/fa';
 import { FiRefreshCw } from 'react-icons/fi';
 import { Tooltip } from "@/components/ui/tooltip";
 import { useTranslations } from "next-intl";
-import { ITask, IPlan } from "@/types/plan";
+import { ITask, IPlan, TaskStatus } from "@/types/plan";
 import StatusBadge from "@/components/ui/StatusBadge";
 import TaskToolInfo from './TaskToolInfo'
 
@@ -82,6 +82,13 @@ export default function TaskCard({
         }
     }, [task.status, isApprovingTask]);
 
+    // Handle click on the task card
+    const handleCardClick = () => {
+        if (onClick) {
+            onClick(task);
+        }
+    };
+
     return (
         <Box
             p={4}
@@ -90,8 +97,14 @@ export default function TaskCard({
             borderColor={shouldHighlightAsCurrent ? colors.accentColor : colors.borderColor}
             bg={shouldHighlightAsCurrent ? `${colors.accentColor}10` : colors.planItemBg}
             position="relative"
-            onClick={() => onClick && onClick(task)}
+            onClick={handleCardClick}
             cursor={onClick ? "pointer" : "default"}
+            _hover={onClick ? {
+                boxShadow: "md",
+                borderColor: colors.accentColor,
+                bg: shouldHighlightAsCurrent ? `${colors.accentColor}15` : `${colors.planItemBg}90`
+            } : undefined}
+            transition="all 0.2s ease"
         >
             {shouldHighlightAsCurrent && (
                 <Circle
@@ -107,7 +120,7 @@ export default function TaskCard({
             <Flex justify="space-between" align="center" mb={2}>
                 <Flex align="center">
                     <Badge mr={2} colorScheme="purple">Step {task.step_number}</Badge>
-                    <StatusBadge status={task.status} mr={2} />
+                    <StatusBadge status={task.status as TaskStatus} mr={2} />
                     <Text fontWeight="bold" color={colors.textColorHeading}>{task.task_name}</Text>
                 </Flex>
 
@@ -226,16 +239,16 @@ export default function TaskCard({
 
             <Grid templateColumns="repeat(3, 1fr)" gap={2} mt={3} fontSize="xs" color={colors.textColorMuted}>
                 <GridItem>
-                    <Text>{t("created")}: {formatDate(task.created_at)}</Text>
+                    <Text>{t("created")}: {formatDate(task.created_at as Date | null)}</Text>
                 </GridItem>
                 {task.start_time && (
                     <GridItem>
-                        <Text>{t("started")}: {formatDate(task.start_time)}</Text>
+                        <Text>{t("started")}: {formatDate(task.start_time as Date | null)}</Text>
                     </GridItem>
                 )}
                 {task.completed_at && (
                     <GridItem>
-                        <Text>{t("completed")}: {formatDate(task.completed_at)}</Text>
+                        <Text>{t("completed")}: {formatDate(task.completed_at as Date | null)}</Text>
                     </GridItem>
                 )}
             </Grid>

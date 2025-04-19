@@ -62,7 +62,6 @@ export async function POST(request: Request) {
             logs: JSON.stringify({}),
             context: body.context ? JSON.stringify(body.context) : null
         };
-        console.log(planData);
 
         // Insert plan into database
         const [insertedPlan] = await db('plan').insert(planData).returning('*');

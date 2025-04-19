@@ -27,6 +27,11 @@ interface ChatAction {
 }
 
 export const socketMiddleware: Middleware = store => next => (action: unknown) => {
+    // GUARD: Prevent recursion from streamingMiddleware or other flagged actions
+    if ((action as any)._fromStreamingMiddleware) {
+        return next(action);
+    }
+
     const { dispatch, getState } = store;
     const chatAction = action as ChatAction;
 

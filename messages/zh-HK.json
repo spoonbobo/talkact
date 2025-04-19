@@ -206,9 +206,11 @@
     "select_room_or_create_new": "選擇聊天室或創建新聊天室",
     "plan_section": "計劃",
     "current_room": "當前聊天室",
-    "create_room": "創建聊天室"
+    "create_room": "創建聊天室",
+    "select_room_to_see_plans": "選擇聊天室查看計劃"
   },
   "Plans": {
+    "calendar": "日曆",
     "plans": "計劃",
     "available_plans": "計劃列表",
     "tasks": "任務",
@@ -276,7 +278,19 @@
     "logs": "日誌",
     "no_plans_in_status": "沒有計劃",
     "today": "今天",
-    "drop_plans_here": "將計劃拖放到這裡"
+    "drop_plans_here": "將計劃拖放到這裡",
+    "plan_calendar": "計劃日曆",
+    "plan_kanban": "計劃看板",
+    "plan_status_updated": "計劃狀態已更新",
+    "room": "聊天室",
+    "moved_to": "已移動",
+    "no_plans_available": "沒有計劃",
+    "drop_tasks_here": "將任務拖放到這裡",
+    "no_plan_selected": "沒有選擇計劃",
+    "select_plan_from_sidebar": "請選擇一個計劃",
+    "step": "步驟",
+    "task": "任務",
+    "task_status_updated": "任務狀態已更新"
   },
   "Learn": {
     "learn": "學習",
@@ -456,6 +470,7 @@
     "kb_disabled": "已停用",
     "kb_running": "運行中",
     "reinitialize": "重新初始化",
+    "deleting": "刪除中",
     "confirm_reinitialize": "確定重新初始化知識庫?",
     "confirm_reinitialize_description": "重置知識庫將會刪除現有知識庫並重新初始化，並需要等待一段時間才能使用。"
   },

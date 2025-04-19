@@ -14,7 +14,7 @@ import { fetchPlans, updateContainerWidth, updateSidebarWidth, updatePlanStatus,
 import { usePlansColors } from "@/utils/colors";
 import { IPlan, PlanStatus } from "@/types/plan";
 import { Global, css } from '@emotion/react';
-import PlanKanban from "@/components/plans/plan_kanban";
+import TaskKanban from "@/components/plans/task_kanban";
 import PlanCalendar from "@/components/plans/plan_calendar";
 
 const MotionBox = motion(Box);
@@ -60,29 +60,17 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10; // Number of plans per page
 
-    // Add state for resizing
-    const [resizing, setResizing] = useState(false);
-    const [resizeStartPosition, setResizeStartPosition] = useState(0);
-    const [sidebarWidth, setSidebarWidth] = useState(layout.sidebarWidth);
-    const sidebarRef = useRef<HTMLDivElement>(null);
-    const MIN_SIDEBAR_WIDTH_PERCENT = 50; // Minimum 50% of container width
-    const MAX_SIDEBAR_WIDTH_PERCENT = 80; // Maximum 80% of container width
-    const INITIAL_SIDEBAR_WIDTH_PERCENT = 70; // Initial 70% of container width
-
-    // Add state for container resizing
+    // Remove sidebar resize state and refs
+    // Keep only container resize functionality
     const [containerResizing, setContainerResizing] = useState(false);
     const [containerResizeEdge, setContainerResizeEdge] = useState<'left' | 'right' | null>(null);
     const [containerWidth, setContainerWidth] = useState(layout.containerWidth);
     const [containerLeft, setContainerLeft] = useState<number | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const [resizeStartPosition, setResizeStartPosition] = useState(0);
     const CONTAINER_MIN_WIDTH = 800; // Minimum container width
     const MARGIN_PERCENT = 5; // 5% margin from window edges
-
-    // Add this constant near your other constants
     const MIN_CONTAINER_WIDTH_PERCENT = 50; // Minimum width as percentage of window
-
-    // Update the viewMode state to use Redux
-    // const [viewMode, setViewMode] = useState<'kanban' | 'calendar'>('kanban');
 
     // Fetch plans on component mount
     useEffect(() => {
@@ -104,84 +92,10 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
         }
     }, [isAuthenticated, router]);
 
-    // // Add this after fetching plans
-    // useEffect(() => {
-    //     if (plans.length > 0 && currentUser) {
-    //         console.log("All plans:", plans);
-    //         console.log("User active rooms:", currentUser.active_rooms);
-
-    //         // Check which plans match active rooms
-    //         const plansInActiveRooms = plans.filter(plan =>
-    //             currentUser.active_rooms?.includes(plan.room_id)
-    //         );
-    //         console.log("Plans in active rooms:", plansInActiveRooms);
-
-    //         // Check if the specific plan exists
-    //         const specificPlan = plans.find(plan =>
-    //             plan.plan_id === "2540061f-031f-4050-8061-25f0e07a6600"
-    //         );
-    //         console.log("Specific plan found:", specificPlan);
-    //     }
-    // }, [plans, currentUser]);
-
     // Log Redux state on mount to verify it's loading correctly
     useEffect(() => {
         console.log("Redux layout state:", layout);
     }, []);
-
-    // Handle resize start
-    const handleResizeStart = (e: React.MouseEvent) => {
-        e.preventDefault();
-        setResizing(true);
-        setResizeStartPosition(e.clientX);
-    };
-
-    // Update sidebar resize effect
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (resizing && sidebarRef.current && containerRef.current) {
-                const containerWidth = containerRef.current.getBoundingClientRect().width;
-                const minWidth = containerWidth * (MIN_SIDEBAR_WIDTH_PERCENT / 100);
-                const maxWidth = containerWidth * (MAX_SIDEBAR_WIDTH_PERCENT / 100);
-
-                const deltaX = e.clientX - resizeStartPosition;
-                const newWidth = Math.max(
-                    minWidth,
-                    Math.min(maxWidth, sidebarWidth + deltaX)
-                );
-
-                // Update local state
-                setSidebarWidth(newWidth);
-
-                // Update DOM directly
-                sidebarRef.current.style.width = `${newWidth}px`;
-
-                // Update Redux immediately
-                dispatch(updateSidebarWidth(newWidth));
-
-                setResizeStartPosition(e.clientX);
-            }
-        };
-
-        const handleMouseUp = () => {
-            if (resizing) {
-                // Final update to Redux
-                dispatch(updateSidebarWidth(sidebarWidth));
-                console.log("Saved sidebar width to Redux:", sidebarWidth);
-            }
-            setResizing(false);
-        };
-
-        if (resizing) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-        }
-
-        return () => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [resizing, resizeStartPosition, sidebarWidth, dispatch]);
 
     // Handle container resize
     const handleContainerResizeStart = (e: React.MouseEvent, edge: 'left' | 'right') => {
@@ -268,33 +182,8 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
         }
     }, [containerWidth]);
 
-    // Initialize from Redux state
+    // Initialize from Redux state - only for container width now
     useEffect(() => {
-        // Apply saved sidebar width from Redux or use initial width
-        if (sidebarRef.current && containerRef.current) {
-            const containerWidth = containerRef.current.getBoundingClientRect().width;
-            const minWidth = containerWidth * (MIN_SIDEBAR_WIDTH_PERCENT / 100);
-            const maxWidth = containerWidth * (MAX_SIDEBAR_WIDTH_PERCENT / 100);
-            const initialWidth = containerWidth * (INITIAL_SIDEBAR_WIDTH_PERCENT / 100);
-
-            // Use saved width from Redux if available, otherwise use initial width
-            const savedWidth = layout.sidebarWidth || initialWidth;
-
-            // Ensure width is within constraints
-            const constrainedWidth = Math.max(
-                Math.min(savedWidth, maxWidth),
-                minWidth
-            );
-
-            setSidebarWidth(constrainedWidth);
-            sidebarRef.current.style.width = `${constrainedWidth}px`;
-
-            // Update Redux if we had to constrain the width
-            if (constrainedWidth !== layout.sidebarWidth) {
-                dispatch(updateSidebarWidth(constrainedWidth));
-            }
-        }
-
         // Apply saved container width from Redux
         if (layout.containerWidth && containerRef.current) {
             setContainerWidth(layout.containerWidth);
@@ -495,25 +384,22 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                             overflow="hidden"
                             position="relative"
                         >
-                            {/* Sidebar with Kanban board */}
+                            {/* Left side - List of plans */}
                             <Box
-                                ref={sidebarRef}
-                                width={`${sidebarWidth}px`}
+                                width="300px"
                                 borderRightWidth="1px"
                                 borderRightColor={colors.borderColor}
                                 overflowY="auto"
                                 p={4}
-                                display="flex"
-                                flexDirection="column"
                                 bg={colors.timelineBg}
-                                position="relative"
-                                minHeight="0"
                             >
                                 <Flex justify="space-between" align="center" mb={4}>
-                                    <Flex align="center">
-                                        <Text fontSize="lg" fontWeight="bold" color={colors.textColorHeading} mr={3}>
-                                            {t("available_plans")} {filteredPlans.length > 0 && `(${filteredPlans.length})`}
-                                        </Text>
+                                    <Text fontSize="lg" fontWeight="bold" color={colors.textColorHeading}>
+                                        {t("available_plans")} {filteredPlans.length > 0 && `(${filteredPlans.length})`}
+                                    </Text>
+
+                                    {/* View mode buttons moved here */}
+                                    <Flex>
                                         <IconButton
                                             aria-label="Kanban view"
                                             size="sm"
@@ -544,11 +430,9 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                             <Icon as={FaCalendarAlt} />
                                         </IconButton>
                                     </Flex>
-                                    <Box> {/* Empty box to maintain the space-between layout */}
-                                    </Box>
                                 </Flex>
 
-                                {/* Search bar with Chakra UI v3 syntax */}
+                                {/* Search bar */}
                                 <Flex position="relative" mb={3}>
                                     <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" zIndex={1}>
                                         <Icon as={FaSearch} color={colors.textColorMuted} />
@@ -565,29 +449,69 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                     />
                                 </Flex>
 
-                                {/* Status filter badges removed */}
-
                                 {loading.plans ? (
                                     <VStack py={8}>
                                         <Spinner size="md" color={colors.accentColor} mb={2} />
                                         <Text fontSize="sm" color={colors.textColor}>{t("loading_plans")}</Text>
                                     </VStack>
                                 ) : (
-                                    layout.viewMode === 'kanban' ? (
-                                        <PlanKanban
-                                            plans={filteredPlans}
-                                            currentPlanId={currentPlanId}
-                                            viewMode={layout.viewMode}
-                                            onViewModeChange={handleViewModeChange}
-                                        />
-                                    ) : (
-                                        <PlanCalendar
-                                            plans={filteredPlans}
-                                            currentPlanId={currentPlanId}
-                                            viewMode={layout.viewMode}
-                                            onViewModeChange={handleViewModeChange}
-                                        />
-                                    )
+                                    <VStack gap={2} align="stretch" overflowY="auto" flex="1">
+                                        {filteredPlans.length === 0 ? (
+                                            <Text color={colors.textColorMuted} textAlign="center" py={8}>
+                                                {t("no_plans_found")}
+                                            </Text>
+                                        ) : (
+                                            filteredPlans.map((plan: any) => {
+                                                // Convert string dates to Date objects
+                                                const planWithDateObjects = {
+                                                    ...plan,
+                                                    created_at: plan.created_at ? new Date(plan.created_at) : new Date(),
+                                                    updated_at: plan.updated_at ? new Date(plan.updated_at) : new Date(),
+                                                    completed_at: plan.completed_at ? new Date(plan.completed_at) : null
+                                                };
+
+                                                return (
+                                                    <Box
+                                                        key={planWithDateObjects.plan_id}
+                                                        p={3}
+                                                        borderRadius="md"
+                                                        borderWidth="1px"
+                                                        borderColor={planWithDateObjects.plan_id === currentPlanId ? colors.accentColor : colors.borderColor}
+                                                        bg={planWithDateObjects.plan_id === currentPlanId ? `${colors.accentColor}15` : colors.cardBg}
+                                                        _hover={{ bg: colors.hoverBg, borderColor: colors.accentColor }}
+                                                        cursor="pointer"
+                                                        onClick={() => router.push(`/plans/${planWithDateObjects.id}`)}
+                                                        transition="all 0.2s"
+                                                    >
+                                                        <Flex justify="space-between" align="center" mb={1}>
+                                                            <Text fontWeight="bold" fontSize="sm" lineClamp={1} color={colors.textColorHeading}>
+                                                                {planWithDateObjects.plan_name}
+                                                            </Text>
+                                                            <Badge
+                                                                colorScheme={
+                                                                    planWithDateObjects.status === 'success' ? 'green' :
+                                                                        planWithDateObjects.status === 'running' ? 'blue' :
+                                                                            planWithDateObjects.status === 'pending' ? 'yellow' :
+                                                                                planWithDateObjects.status === 'failure' ? 'red' : 'gray'
+                                                                }
+                                                                fontSize="xs"
+                                                            >
+                                                                {t(`${planWithDateObjects.status}`)}
+                                                            </Badge>
+                                                        </Flex>
+                                                        <Text fontSize="xs" color={colors.textColorMuted} lineClamp={2} mb={2}>
+                                                            {planWithDateObjects.plan_overview}
+                                                        </Text>
+                                                        <Flex justify="space-between" fontSize="xs" color={colors.textColorMuted}>
+                                                            <Text>
+                                                                {formatDate(planWithDateObjects.updated_at)}
+                                                            </Text>
+                                                        </Flex>
+                                                    </Box>
+                                                );
+                                            })
+                                        )}
+                                    </VStack>
                                 )}
 
                                 {/* Pagination Controls */}
@@ -626,45 +550,30 @@ export default function PlansLayout({ children }: { children: React.ReactNode })
                                         </IconButton>
                                     </Flex>
                                 )}
-
-                                {/* Resize handle */}
-                                <Box
-                                    position="absolute"
-                                    top="0"
-                                    right="0"
-                                    width="8px"
-                                    height="100%"
-                                    cursor="col-resize"
-                                    onMouseDown={handleResizeStart}
-                                    _hover={{
-                                        bg: colors.accentColor,
-                                        opacity: 0.5
-                                    }}
-                                    zIndex={2}
-                                />
                             </Box>
 
-                            {/* Main content area */}
-                            <Box flex="1" p={0} position="relative" overflowY="auto" bg={colors.detailsBg}>
-                                {!isDetailView && !loading.plans ? (
-                                    <Flex
-                                        direction="column"
-                                        align="center"
-                                        justify="center"
-                                        height="100%"
-                                        p={8}
-                                    >
-                                        <Icon as={FaTasks} fontSize="6xl" color={colors.accentColor} mb={6} />
-                                        <Text fontSize="xl" fontWeight="bold" color={colors.textColorHeading} mb={2}>
-                                            {t("select_plan")}
-                                        </Text>
-                                        <Text color={colors.textColorMuted} textAlign="center" maxW="md">
-                                            {t("select_plan_description")}
-                                        </Text>
-                                    </Flex>
-                                ) : (
-                                    children
-                                )}
+                            {/* Right side - Main content area with children (Kanban/Calendar) */}
+                            <Box
+                                flex="1"
+                                position="relative"
+                                overflowY="hidden"
+                                bg={colors.detailsBg}
+                            >
+                                <Flex justify="space-between" align="center" p={4} borderBottomWidth="1px" borderColor={colors.borderColor}>
+                                    <Text fontSize="lg" fontWeight="bold" color={colors.textColorHeading}>
+                                        {layout.viewMode === 'kanban' ? t("tasks") : t("calendar")}
+                                    </Text>
+                                </Flex>
+
+                                {/* Wrap children in a container with controlled overflow */}
+                                <Box
+                                    height="calc(100% - 60px)"
+                                    overflowY={pathname === '/plans' || pathname === '/plans/' ? "hidden" : "auto"}
+                                >
+                                    {children}
+                                </Box>
+
+                                {/* Removed resize handle between layout and page view */}
                             </Box>
                         </Flex>
                     </MotionBox>

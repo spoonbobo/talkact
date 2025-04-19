@@ -32,7 +32,7 @@ const initialState: ChatState = {
 const chatPersistConfig = {
     key: 'chat',
     storage,
-    whitelist: ['messages', 'planSectionWidth'], // Add planSectionWidth to persisted state
+    whitelist: ['planSectionWidth'], // Add planSectionWidth to persisted state
 };
 
 export const chatSlice = createSlice({

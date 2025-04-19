@@ -20,35 +20,54 @@ export type TaskStatus = 'pending' | 'running' | 'success' | 'failure' | 'denied
 export interface IPlan {
     id: string;
     plan_id: string;
-    created_at: Date;
-    updated_at: Date;
-    completed_at: Date | null;
     plan_name: string;
     plan_overview: string;
-    status: PlanStatus;
+    status: string;
     progress: number;
     room_id: string;
     assigner: string;
     assignee: string;
     reviewer: string | null;
-    logs: any;
-    context: IContextItem[];
+    created_at: Date;
+    updated_at: Date;
+    completed_at: Date | null;
+    logs?: Record<string, any>;
+    context?: any[];
 }
 
 export interface ITask {
-    id: string;
-    task_id: string;
+    id?: string;
+    task_id?: string;
     plan_id: string;
-    step_number: number;
     task_name: string;
-    created_at: Date;
-    start_time: Date | null;
-    completed_at: Date | null;
-    task_explanation: string;
-    expected_result: string | null;
-    mcp_server: string | null;
-    tool: ITool | null;
-    status: TaskStatus;
-    result: string | null;
-    logs: any;
+    task_explanation?: string;
+    status: string;
+    step_number: number;
+    created_at?: Date;
+    updated_at?: Date;
+    start_time?: Date | null;
+    completed_at?: Date | null;
+    tool?: any;
+    expected_result?: string;
+    result?: string;
+    mcp_server?: string;
+    logs?: any;
+}
+
+export interface IPlanFromAPI {
+    id: string;
+    plan_id: string;
+    plan_name: string;
+    plan_overview: string;
+    status: string;
+    progress: number;
+    room_id: string;
+    assigner: string;
+    assignee: string;
+    reviewer: string | null;
+    created_at: string;
+    updated_at: string;
+    completed_at: string | null;
+    logs?: Record<string, any>;
+    context?: any[];
 } 

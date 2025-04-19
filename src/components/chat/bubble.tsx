@@ -3,7 +3,7 @@
 import { Box, Text, Menu, Portal, Group } from "@chakra-ui/react";
 import { IMessage } from "@/types/chat";
 import ReactMarkdown from "react-markdown";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
 import { useTranslations } from "next-intl";
 import React from "react";
 import { useChatPageColors, useCodeSyntaxHighlightColors } from "@/utils/colors";
@@ -14,6 +14,224 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { DeleteMessageModal } from "@/components/chat/delete_message.modal";
+import { motion, AnimatePresence } from 'framer-motion';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+// Define the cn function directly
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+// An improved Web Animation API based staggered text animation
+const StaggeredTextAnimation = ({ text, className = '' }: { text: string; className?: string }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Use a layout effect to set up the animation once
+  useLayoutEffect(() => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+    // Clear any existing content
+    container.innerHTML = '';
+
+    // Skip animation for very long texts to improve performance
+    if (text.length > 1000) {
+      container.textContent = text;
+      return;
+    }
+
+    // Create a document fragment for better performance
+    const fragment = document.createDocumentFragment();
+
+    // Group characters into chunks for better performance
+    const chunkSize = 4; // Process characters in small groups
+    const chunks = [];
+
+    for (let i = 0; i < text.length; i += chunkSize) {
+      chunks.push(text.slice(i, i + chunkSize));
+    }
+
+    // Create and append each chunk
+    chunks.forEach((chunk, chunkIndex) => {
+      const span = document.createElement('span');
+      span.textContent = chunk;
+      span.style.opacity = '0';
+      span.style.display = 'inline';
+
+      // Add to fragment instead of directly to DOM
+      fragment.appendChild(span);
+
+      // Use Web Animation API with easing for smoother animation
+      requestAnimationFrame(() => {
+        span.animate(
+          [
+            { opacity: 0, transform: 'translateY(2px)' },
+            { opacity: 1, transform: 'translateY(0)' }
+          ],
+          {
+            duration: 120, // Slightly longer for smoother effect
+            delay: chunkIndex * 8, // Increased stagger for more visible effect
+            easing: 'ease-out', // Add easing for smoother animation
+            fill: 'forwards'
+          }
+        );
+      });
+    });
+
+    // Append all elements at once
+    container.appendChild(fragment);
+
+  }, [text]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn("w-full whitespace-pre-wrap", className)}
+    />
+  );
+};
+
+// An improved streaming content component with better animations
+const StreamingContent = ({ content, className = '' }: { content: string; className?: string }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const previousContentRef = useRef('');
+
+  // Use a layout effect to update only the new content
+  useLayoutEffect(() => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+    const previousContent = previousContentRef.current;
+
+    // If this is the first render or content is shorter than before (rare case)
+    if (!previousContent || content.length < previousContent.length) {
+      container.innerHTML = '';
+      previousContentRef.current = '';
+    }
+
+    // Only process the new chunk (what's been added since last update)
+    if (content.length > previousContent.length) {
+      const newChunk = content.slice(previousContent.length);
+
+      // Group characters into chunks for better performance
+      const chunkSize = 4; // Process characters in small groups
+      const chunks = [];
+
+      for (let i = 0; i < newChunk.length; i += chunkSize) {
+        chunks.push(newChunk.slice(i, i + chunkSize));
+      }
+
+      // Create a document fragment for better performance
+      const fragment = document.createDocumentFragment();
+
+      // Create and append each chunk with improved animation
+      chunks.forEach((chunk, chunkIndex) => {
+        const span = document.createElement('span');
+        span.textContent = chunk;
+        span.style.opacity = '0';
+        span.style.display = 'inline';
+
+        // Add to fragment instead of directly to DOM
+        fragment.appendChild(span);
+
+        // Use Web Animation API with improved animation
+        requestAnimationFrame(() => {
+          span.animate(
+            [
+              { opacity: 0, transform: 'translateY(1px)' },
+              { opacity: 1, transform: 'translateY(0)' }
+            ],
+            {
+              duration: 100, // Slightly longer for smoother effect
+              delay: chunkIndex * 5, // Small stagger between chunks
+              easing: 'ease-out', // Add easing for smoother animation
+              fill: 'forwards'
+            }
+          );
+        });
+      });
+
+      // Append the new chunk
+      container.appendChild(fragment);
+
+      // Update the previous content reference
+      previousContentRef.current = content;
+    }
+  }, [content]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn("w-full whitespace-pre-wrap", className)}
+    />
+  );
+};
+
+// Add a shimmering loading effect component
+const ShimmeringLoadingEffect = () => {
+  return (
+    <div className="relative overflow-hidden w-full">
+      <div className="animate-pulse bg-gray-200 dark:bg-gray-700 opacity-30 h-4 w-24 rounded mb-2"></div>
+      <div className="animate-pulse bg-gray-200 dark:bg-gray-700 opacity-30 h-4 w-full rounded mb-2"></div>
+      <div className="animate-pulse bg-gray-200 dark:bg-gray-700 opacity-30 h-4 w-3/4 rounded mb-2"></div>
+      <div className="animate-pulse bg-gray-200 dark:bg-gray-700 opacity-30 h-4 w-5/6 rounded"></div>
+
+      {/* Shimmering overlay effect */}
+      <div
+        className="absolute inset-0 z-10"
+        style={{
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+          animation: 'shimmer 2s infinite',
+        }}
+      ></div>
+
+      <style jsx>{`
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+// Add a component for the generating text with shimmer effect
+const GeneratingText = () => {
+  const t = useTranslations("Chat");
+
+  return (
+    <div className="relative inline-block">
+      <span
+        className="font-medium italic bg-clip-text text-transparent"
+        style={{
+          backgroundImage:
+            'linear-gradient(270deg, #ff6b6b, #f7d774, #6bffb0, #6bc1ff, #b86bff, #ff6b6b)',
+          backgroundSize: '400% 100%',
+          backgroundRepeat: 'repeat',
+          animation: 'shine-multicolor 4s linear infinite',
+        }}
+      >
+        {t("generating")}
+      </span>
+
+      <style jsx>{`
+        @keyframes shine-multicolor {
+          0% {
+            background-position: 400% center;
+          }
+          100% {
+            background-position: 0% center;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
 
 // Extend the props interface directly in the file
 interface IChatBubbleProps {
@@ -49,7 +267,7 @@ export const ChatBubble = React.memo(({
   const colors = useChatPageColors();
   const codeColors = useCodeSyntaxHighlightColors();
 
-  // Pre-define all color mode values at the top
+  // Move these to the top of the component function
   const menuBgColor = useColorModeValue("white", "gray.800");
   const menuBorderColor = useColorModeValue("gray.100", "gray.700");
   const menuItemHoverBg = useColorModeValue("gray.50", "gray.700");
@@ -57,11 +275,10 @@ export const ChatBubble = React.memo(({
   const menuTextColor = useColorModeValue("gray.800", "gray.200");
   const codeBlockBg = useColorModeValue('rgba(0,0,0,0.03)', 'rgba(255,255,255,0.05)');
   const tableHeadBg = useColorModeValue('rgba(0,0,0,0.05)', 'rgba(255,255,255,0.05)');
-
-  // Add blinking cursor for streaming messages
-  const [showCursor, setShowCursor] = useState(true);
-  const [dotCount, setDotCount] = useState(1);
-  const [isVisible, setIsVisible] = useState(false);
+  const menuBoxShadow = useColorModeValue(
+    "0 4px 12px rgba(0,0,0,0.1)",
+    "0 4px 12px rgba(0,0,0,0.3)"
+  );
 
   // Add state to track if content is single line
   const [isSingleLine, setIsSingleLine] = useState(false);
@@ -69,32 +286,15 @@ export const ChatBubble = React.memo(({
   // Add ref for the bubble element to enable scrolling into view
   const bubbleRef = React.useRef<HTMLDivElement>(null);
 
-  // Softer, more glowing mention colors for user bubbles (dark backgrounds)
-  const agentMentionBgInUserBubble = useColorModeValue("rgba(154, 230, 180, 0.3)", "rgba(74, 222, 128, 0.2)");
-  const agentMentionColorInUserBubble = useColorModeValue("#e6ffed", "#d9f7be");
-  const agentMentionBorderInUserBubble = useColorModeValue("rgba(154, 230, 180, 0.5)", "rgba(74, 222, 128, 0.4)");
-
-  const userMentionBgInUserBubble = useColorModeValue("rgba(173, 216, 230, 0.3)", "rgba(96, 165, 250, 0.2)");
-  const userMentionColorInUserBubble = useColorModeValue("#e6f7ff", "#d6e4ff");
-  const userMentionBorderInUserBubble = useColorModeValue("rgba(173, 216, 230, 0.5)", "rgba(96, 165, 250, 0.4)");
-
-  // Softer, more glowing mention colors for other bubbles (light backgrounds)
-  const agentMentionBgInOtherBubble = useColorModeValue("rgba(154, 230, 180, 0.15)", "rgba(74, 222, 128, 0.15)");
-  const agentMentionColorInOtherBubble = useColorModeValue("#2c7a7b", "#9ae6b4");
-  const agentMentionBorderInOtherBubble = useColorModeValue("rgba(154, 230, 180, 0.4)", "rgba(74, 222, 128, 0.3)");
-
-  const userMentionBgInOtherBubble = useColorModeValue("rgba(173, 216, 230, 0.15)", "rgba(96, 165, 250, 0.15)");
-  const userMentionColorInOtherBubble = useColorModeValue("#2b6cb0", "#90cdf4");
-  const userMentionBorderInOtherBubble = useColorModeValue("rgba(173, 216, 230, 0.4)", "rgba(96, 165, 250, 0.3)");
-
-  // Even lighter bubble colors
-  const userBgTask = useColorModeValue("rgba(66, 153, 225, 0.85)", "rgba(56, 161, 105, 0.85)"); // Blue for light, Green for dark
-  const userBgChat = useColorModeValue("rgba(72, 187, 120, 0.85)", "rgba(49, 130, 206, 0.85)"); // Green for light, Blue for dark
+  // Get current bubble background
+  const currentBubbleBg = isUser
+    ? (isTaskMode ? colors.userBgTask : colors.userBgChat)
+    : (isTaskMode ? colors.otherBgTask : colors.otherBgChat);
 
   // Add state for delete modal
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  // Pre-process the message content to handle tables better
+  // Pre-process the message content
   const processedContent = useMemo(() => {
     if (!message.content) return "";
 
@@ -142,12 +342,6 @@ export const ChatBubble = React.memo(({
       return match; // Not a separator row, leave as is
     });
 
-    // Now convert remaining newlines to <br> tags for non-table content
-    content = content.replace(/\n/g, '<br>');
-
-    // But restore proper newlines for tables
-    content = content.replace(/\|<br>\|/g, '|\n|');
-
     // If this is an interrupted message, add special styling to the interruption notice
     if (isInterrupted) {
       content = content.replace(
@@ -156,74 +350,16 @@ export const ChatBubble = React.memo(({
       );
     }
 
-    // Then replace @mentions with HTML spans that have glowing styling
-    return content.replace(/@(\w+)/g, (match, username) => {
-      const isAgent = username.startsWith('agent');
+    return content;
+  }, [message.content]);
 
-      // Select appropriate colors based on bubble type and mention type
-      const bgColor = isUser
-        ? (isAgent ? agentMentionBgInUserBubble : userMentionBgInUserBubble)
-        : (isAgent ? agentMentionBgInOtherBubble : userMentionBgInOtherBubble);
-
-      const textColor = isUser
-        ? (isAgent ? agentMentionColorInUserBubble : userMentionColorInUserBubble)
-        : (isAgent ? agentMentionColorInOtherBubble : userMentionColorInOtherBubble);
-
-      const borderColor = isUser
-        ? (isAgent ? agentMentionBorderInUserBubble : userMentionBorderInUserBubble)
-        : (isAgent ? agentMentionBorderInOtherBubble : userMentionBorderInOtherBubble);
-
-      // Create a span with glowing styling for the mention
-      return `<span class="mention" data-mention="${username}" style="
-        background-color: ${bgColor}; 
-        color: ${textColor}; 
-        padding: 0.125rem 0.375rem; 
-        border-radius: 0.25rem; 
-        font-weight: 500; 
-        margin: 0 0.125rem;
-        border: 1px solid ${borderColor};
-        box-shadow: 0 0 4px ${borderColor};
-        text-shadow: 0 0 1px ${isUser ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.1)'};
-      ">${match}</span>`;
-    });
-  }, [message.content, isUser,
-    agentMentionBgInUserBubble, userMentionBgInUserBubble, agentMentionBgInOtherBubble, userMentionBgInOtherBubble,
-    agentMentionColorInUserBubble, userMentionColorInUserBubble, agentMentionColorInOtherBubble, userMentionColorInOtherBubble,
-    agentMentionBorderInUserBubble, userMentionBorderInUserBubble, agentMentionBorderInOtherBubble, userMentionBorderInOtherBubble]);
-
-  // Content with cursor for streaming messages or generating text
-  const contentWithCursor = isStreaming
-    ? message.content
-      ? processedContent + (showCursor ? '|' : ' ')
-      : t("generating") + '.'.repeat(dotCount)
-    : processedContent || (t("generating") + '.'.repeat(dotCount)); // Show "Generating..." with dots for empty bubbles
-
-  // Blinking cursor effect for streaming messages
-  useEffect(() => {
-    if (!isStreaming) return;
-
-    const cursorInterval = setInterval(() => {
-      setShowCursor(prev => !prev);
-    }, 500);
-
-    return () => clearInterval(cursorInterval);
-  }, [isStreaming]);
-
-  // Animated dots for "generating..." text
-  useEffect(() => {
-    if ((!isStreaming && message.content) || !message.content === false) return;
-
-    const dotsInterval = setInterval(() => {
-      setDotCount(prev => prev < 3 ? prev + 1 : 1);
-    }, 400);
-
-    return () => clearInterval(dotsInterval);
-  }, [isStreaming, message.content]);
-
-  // Fade-in effect
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
+  // Function to handle message deletion success
+  const handleDeleteSuccess = () => {
+    // Your existing delete success logic...
+    window.dispatchEvent(new CustomEvent('messageDeleted', {
+      detail: { messageId: message.id }
+    }));
+  };
 
   // Check if content is a single line (no line breaks or paragraphs)
   useEffect(() => {
@@ -241,517 +377,402 @@ export const ChatBubble = React.memo(({
     setIsSingleLine(hasSingleLine);
   }, [message.content]);
 
-  // Auto-scroll when the bubble appears or content changes
-  useEffect(() => {
-    // Only auto-scroll for new messages (streaming or first in group at the bottom)
-    // Don't auto-scroll when loading older messages at the top
-    if (bubbleRef.current && isStreaming && !isLoadingOlder) {
-      // For streaming messages, we still want to scroll into view
-      bubbleRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'end'
-      });
-
-      // Dispatch an event to notify that we're scrolling to bottom
-      window.dispatchEvent(new CustomEvent('scrollToBottom'));
-    }
-  }, [message.content, isStreaming, isLoadingOlder]);
-
-  // Add a small delay to ensure content is fully rendered before scrolling
-  useEffect(() => {
-    // Only auto-scroll for new messages at the bottom
-    // Don't auto-scroll when loading older messages at the top
-    if (bubbleRef.current && isFirstInGroup && isStreaming && !isLoadingOlder) {
-      const timer = setTimeout(() => {
-        bubbleRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'end'
-        });
-      }, 100);
-
-      return () => clearTimeout(timer);
-    }
-  }, [isFirstInGroup, isStreaming, isLoadingOlder]);
-
+  // Handle copy functionality
   const handleCopy = () => {
     if (!message.content) return;
 
-    // Use the fallback method directly without trying the Clipboard API first
-    fallbackCopy(message.content);
+    // Use the fallback method directly
+    const textArea = document.createElement('textarea');
+    textArea.value = message.content;
 
-    // Optionally, you could add a visual feedback that the content was copied
-    // For example, you could use a toast notification or a temporary state change
-  };
+    // Make the textarea out of viewport
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
 
-  // Fallback copy method using textarea
-  const fallbackCopy = (text: string) => {
+    textArea.focus();
+    textArea.select();
+
     try {
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-
-      // Make the textarea out of viewport
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
-      document.body.appendChild(textArea);
-
-      textArea.focus();
-      textArea.select();
-
-      const successful = document.execCommand('copy');
-      document.body.removeChild(textArea);
-
-      if (successful) {
-        console.log('Fallback: Copying text command was successful');
-      } else {
-        console.error('Fallback: Could not copy text');
-      }
+      document.execCommand('copy');
     } catch (err) {
-      console.error('Fallback: Oops, unable to copy', err);
+      console.error('Failed to copy text: ', err);
     }
+
+    document.body.removeChild(textArea);
   };
 
-  // Define horizontal menu items with emojis
-  const horizontalMenuItems = [
-    { label: "👍", value: "like", icon: null },
-    { label: "👎", value: "unlike", icon: null },
-    { label: "❤️", value: "heart", icon: null },
-    { label: "😂", value: "laugh", icon: null },
-  ];
+  // Add a ref to track if we're currently streaming
+  const isCurrentlyStreamingRef = useRef(isStreaming);
 
-  // Add this function inside the ChatBubble component
-  const isMessageDeletable = useMemo(() => {
-    if (!message.created_at) return false;
+  // Update the ref when isStreaming changes
+  useEffect(() => {
+    isCurrentlyStreamingRef.current = isStreaming;
+  }, [isStreaming]);
 
-    const messageTime = new Date(message.created_at).getTime();
-    const currentTime = new Date().getTime();
-    const thirtyMinutesInMs = 30 * 60 * 1000;
+  // Use a ref to track the last processed content to avoid unnecessary DOM updates
+  const lastContentRef = useRef('');
 
-    return (currentTime - messageTime) <= thirtyMinutesInMs;
-  }, [message.created_at]);
-
-  // Define vertical menu items - starting with copy
-  const verticalMenuItems: MenuItemType[] = [
-    { label: t("Copy"), value: "copy", icon: <LuCopy />, onClick: handleCopy },
-  ];
-
-  // Add edit and delete options only for user messages that are recent enough
-  if (isUser) {
-    verticalMenuItems.push(
-      { label: t("Edit"), value: "edit", icon: <LuPencil /> }
-    );
-
-    // Only add delete option if message is less than 30 minutes old
-    if (isMessageDeletable) {
-      verticalMenuItems.push({
-        label: t("Delete"),
-        value: "delete",
-        icon: <LuTrash />,
-        onClick: () => setIsDeleteModalOpen(true)
-      });
-    } else {
-      // Optionally add a disabled delete option that shows why it's disabled
-      verticalMenuItems.push({
-        label: t("Delete"),
-        value: "delete_disabled",
-        icon: <LuTrash />,
-        disabled: true,
-        tooltip: t("message_too_old_to_delete") || "Messages older than 30 minutes cannot be deleted"
-      });
-    }
-  }
-
-  // Add function to handle message deletion success
-  const handleDeleteSuccess = () => {
-    // You might want to emit an event that the parent components can listen to
-    window.dispatchEvent(new CustomEvent('messageDeleted', {
-      detail: { messageId: message.id }
-    }));
-  };
+  // Use a ref to track the last content length to optimize updates
+  const lastContentLengthRef = useRef(0);
 
   return (
     <>
       <Menu.Root>
         <Menu.ContextTrigger>
-          <Box
-            ref={bubbleRef}
-            position="relative"
-            px={3}
-            py={isSingleLine ? 1.5 : 2}
-            width="auto"
-            maxW="100%"
-            borderRadius="xl"
-            bg={isUser
-              ? (isTaskMode ? userBgTask : userBgChat)
-              : (isTaskMode ? colors.otherBgTask : colors.otherBgChat)}
-            color={isUser
-              ? "white"
-              : (isTaskMode ? colors.otherTextTask : colors.otherTextChat)}
-            mb={1}
-            boxShadow="0 2px 4px rgba(0,0,0,0.08)"
-            alignSelf={isUser ? "flex-end" : "flex-start"}
-            wordBreak="break-word"
-            textAlign="left"
-            style={{
-              opacity: isVisible ? 1 : 0,
-              transition: "opacity 0.5s ease-in-out",
-              userSelect: "text",
-              marginLeft: !isUser && showThumbnails ? '40px' : '0',
-              marginRight: isUser && showThumbnails ? '40px' : '0',
-            }}
-          >
-            <Box position="relative" textAlign="left" width="100%" overflow="hidden">
-              {isStreaming || !message.content ? (
-                <div
-                  dangerouslySetInnerHTML={{ __html: contentWithCursor }}
-                  style={{ whiteSpace: "pre-wrap" }}
-                />
-              ) : (
-                <div style={{ maxWidth: '100%' }}>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeRaw, rehypeSanitize]}
-                    components={{
-                      code({ node, inline, className, children, ...props }: any) {
-                        const match = /language-(\w+)/.exec(className || '');
+          <div>
+            <Box
+              ref={bubbleRef}
+              position="relative"
+              px={3}
+              py={isSingleLine ? 1.5 : 2}
+              width="auto"
+              maxW="100%"
+              borderRadius="xl"
+              bg={currentBubbleBg}
+              color={isUser
+                ? "white"
+                : (isTaskMode ? colors.otherTextTask : colors.otherTextChat)}
+              mb={1}
+              boxShadow="0 2px 4px rgba(0,0,0,0.08)"
+              alignSelf={isUser ? "flex-end" : "flex-start"}
+              wordBreak="break-word"
+              textAlign="left"
+              style={{
+                opacity: 1,
+                userSelect: "text",
+                marginLeft: !isUser && showThumbnails ? '40px' : '0',
+                marginRight: isUser && showThumbnails ? '40px' : '0',
+                transition: 'all 0.2s ease-out',
+                transform: 'scale(1)',
+              }}
+            >
+              <Box position="relative" textAlign="left" width="100%" overflow="hidden">
+                {/* Use our custom components for streaming content */}
+                {isStreaming ? (
+                  processedContent ? (
+                    <StreamingContent
+                      content={processedContent}
+                      className="whitespace-pre-wrap"
+                    />
+                  ) : (
+                    // Show the generating text with shimmer effect
+                    <GeneratingText />
+                  )
+                ) : (
+                  <div style={{ maxWidth: '100%' }}>
+                    {message.content ? (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                        components={{
+                          code({ node, inline, className, children, ...props }: any) {
+                            const match = /language-(\w+)/.exec(className || '');
 
-                        if (!inline && match) {
-                          // Force horizontal scrolling with explicit inline styles
-                          return (
+                            if (!inline && match) {
+                              return (
+                                <div style={{
+                                  position: 'relative',
+                                  margin: '0.75em 0',
+                                  borderRadius: '6px',
+                                  border: `1px solid ${isUser ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'}`,
+                                  backgroundColor: isUser ? 'rgba(0,0,0,0.2)' : codeBlockBg,
+                                  maxWidth: '100%',
+                                  overflow: 'hidden'
+                                }}>
+                                  <div className="custom-scrollbar" style={{
+                                    overflowX: 'auto',
+                                    overflowY: 'auto',
+                                    maxHeight: '400px',
+                                    width: '100%',
+                                    WebkitOverflowScrolling: 'touch',
+                                    scrollbarWidth: 'thin',
+                                  }}>
+                                    <SyntaxHighlighter
+                                      language={match[1]}
+                                      style={codeColors.codeStyle}
+                                      customStyle={{
+                                        margin: 0,
+                                        padding: '1em',
+                                        fontSize: '0.875em',
+                                        lineHeight: 1.5,
+                                        backgroundColor: 'transparent'
+                                      }}
+                                    >
+                                      {String(children).replace(/\n$/, '')}
+                                    </SyntaxHighlighter>
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // For inline code
+                            return (
+                              <code
+                                className={className}
+                                style={{
+                                  backgroundColor: isUser ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.05)',
+                                  padding: '0.2em 0.4em',
+                                  borderRadius: '3px',
+                                  fontSize: '0.9em',
+                                  fontFamily: 'monospace',
+                                  wordBreak: 'break-all',
+                                  whiteSpace: 'pre-wrap',
+                                }}
+                                {...props}
+                              >
+                                {children}
+                              </code>
+                            );
+                          },
+                          a: ({ node, ...props }) => (
+                            <a
+                              {...props}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                color: isUser ? 'rgba(255,255,255,0.9)' : undefined,
+                                textDecoration: 'underline',
+                                textUnderlineOffset: '2px',
+                                textDecorationThickness: '1px',
+                                transition: 'opacity 0.2s ease',
+                              }}
+                              onMouseOver={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                              onMouseOut={(e) => { e.currentTarget.style.opacity = '1'; }}
+                            />
+                          ),
+                          p: ({ node, ...props }) => (
+                            <p
+                              style={{
+                                margin: '0.5em 0',
+                                padding: 0,
+                                maxWidth: '100%',
+                                overflowWrap: 'break-word',
+                                wordBreak: 'break-word',
+                              }}
+                              {...props}
+                            />
+                          ),
+                          ul: ({ node, ...props }) => (
+                            <ul
+                              style={{
+                                paddingLeft: '1.5em',
+                                margin: '0.6em 0',
+                                listStyleType: 'disc',
+                                listStylePosition: 'outside'
+                              }}
+                              {...props}
+                            />
+                          ),
+                          ol: ({ node, ...props }) => (
+                            <ol
+                              style={{
+                                paddingLeft: '1.5em',
+                                margin: '0.6em 0',
+                                listStyleType: 'decimal',
+                                listStylePosition: 'outside'
+                              }}
+                              {...props}
+                            />
+                          ),
+                          li: ({ node, ...props }) => (
+                            <li
+                              style={{
+                                margin: '0.25em 0',
+                                paddingLeft: '0.2em',
+                                display: 'list-item'
+                              }}
+                              {...props}
+                            />
+                          ),
+                          blockquote: ({ node, ...props }) => (
+                            <blockquote
+                              style={{
+                                borderLeft: `3px solid ${isUser ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.2)'}`,
+                                margin: '0.6em 0',
+                                color: isUser ? 'rgba(255,255,255,0.9)' : undefined,
+                                fontStyle: 'italic',
+                                backgroundColor: isUser ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)',
+                                padding: '0.5em 0.75em',
+                                borderRadius: '0 6px 6px 0',
+                                boxShadow: `inset 0 1px 3px ${isUser ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.03)'}`
+                              }}
+                              {...props}
+                            />
+                          ),
+                          hr: ({ node, ...props }) => (
+                            <hr
+                              style={{
+                                border: 'none',
+                                height: '2px',
+                                backgroundImage: isUser
+                                  ? 'linear-gradient(to right, rgba(255,255,255,0.1), rgba(255,255,255,0.3), rgba(255,255,255,0.1))'
+                                  : 'linear-gradient(to right, rgba(0,0,0,0.03), rgba(0,0,0,0.1), rgba(0,0,0,0.03))',
+                                margin: '1.5em 0'
+                              }}
+                              {...props}
+                            />
+                          ),
+                          h1: ({ node, ...props }) => (
+                            <h1
+                              style={{
+                                borderBottom: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
+                                paddingBottom: '0.3em',
+                                marginTop: '1.5em',
+                                marginBottom: '0.75em',
+                                fontWeight: 600,
+                                fontSize: '1.6em',
+                                lineHeight: 1.3
+                              }}
+                              {...props}
+                            />
+                          ),
+                          h2: ({ node, ...props }) => (
+                            <h2
+                              style={{
+                                borderBottom: `1px solid ${isUser ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
+                                paddingBottom: '0.2em',
+                                marginTop: '1.4em',
+                                marginBottom: '0.7em',
+                                fontWeight: 600,
+                                fontSize: '1.4em',
+                                lineHeight: 1.3
+                              }}
+                              {...props}
+                            />
+                          ),
+                          h3: ({ node, ...props }) => (
+                            <h3
+                              style={{
+                                marginTop: '1.3em',
+                                marginBottom: '0.6em',
+                                fontWeight: 600,
+                                fontSize: '1.2em',
+                                lineHeight: 1.3
+                              }}
+                              {...props}
+                            />
+                          ),
+                          h4: ({ node, ...props }) => (
+                            <h4
+                              style={{
+                                marginTop: '1.2em',
+                                marginBottom: '0.5em',
+                                fontWeight: 600,
+                                fontSize: '1.1em',
+                                lineHeight: 1.3
+                              }}
+                              {...props}
+                            />
+                          ),
+                          table: ({ node, ...props }) => (
                             <div style={{
-                              position: 'relative',
-                              margin: '0.75em 0',
-                              borderRadius: '6px',
-                              border: `1px solid ${isUser ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'}`,
-                              backgroundColor: isUser ? 'rgba(0,0,0,0.2)' : useColorModeValue('rgba(0,0,0,0.03)', 'rgba(255,255,255,0.05)'),
+                              width: '100%',
                               maxWidth: '100%',
-                              overflow: 'hidden'
+                              overflowX: 'auto',
+                              margin: '1em 0',
+                              padding: '0',
+                              borderRadius: '6px',
+                              border: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
                             }}>
-                              {/* Add custom scrollbar styling */}
-                              <style jsx>{`
-                                .custom-scrollbar::-webkit-scrollbar {
-                                  height: 6px;
-                                  background-color: transparent;
-                                }
-                                
-                                .custom-scrollbar::-webkit-scrollbar-thumb {
-                                  background-color: ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'};
-                                  border-radius: 3px;
-                                }
-                                
-                                .custom-scrollbar::-webkit-scrollbar-button {
-                                  display: none;
-                                }
-                              `}</style>
-
-                              <div className="custom-scrollbar" style={{
-                                overflowX: 'auto',
-                                overflowY: 'auto',
-                                maxHeight: '400px',
-                                width: '100%',
-                                WebkitOverflowScrolling: 'touch',
-                                scrollbarWidth: 'thin',
-                              }}>
-                                <table style={{
-                                  tableLayout: 'fixed',
-                                  width: '1px', // This forces the table to be as narrow as possible
+                              <table
+                                style={{
+                                  borderCollapse: 'collapse',
+                                  width: 'auto',
+                                  fontSize: '0.9em',
                                   margin: 0,
                                   padding: 0,
-                                  border: 'none',
-                                  borderCollapse: 'collapse'
-                                }}>
-                                  <tbody>
-                                    <tr>
-                                      <td style={{
-                                        padding: 0,
-                                        border: 'none',
-                                        whiteSpace: 'pre'
-                                      }}>
-                                        <pre style={{
-                                          margin: 0,
-                                          padding: '1em',
-                                          fontSize: '0.875em',
-                                          lineHeight: 1.5,
-                                          fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
-                                          whiteSpace: 'pre',
-                                          display: 'block'
-                                        }}>
-                                          <code>
-                                            {String(children).replace(/\n$/, '')}
-                                          </code>
-                                        </pre>
-                                      </td>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </div>
+                                }}
+                                {...props}
+                              />
                             </div>
-                          );
-                        }
-
-                        // For inline code
-                        return (
-                          <code
-                            className={className}
-                            style={{
-                              backgroundColor: isUser ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.05)',
-                              padding: '0.2em 0.4em',
-                              borderRadius: '3px',
-                              fontSize: '0.9em',
-                              fontFamily: 'monospace',
-                              wordBreak: 'break-all',
-                              whiteSpace: 'pre-wrap',
-                            }}
-                            {...props}
-                          >
-                            {children}
-                          </code>
-                        );
-                      },
-                      a: ({ node, ...props }) => (
-                        <a
-                          {...props}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            color: isUser ? 'rgba(255,255,255,0.9)' : undefined,
-                            textDecoration: 'underline',
-                            textUnderlineOffset: '2px',
-                            textDecorationThickness: '1px',
-                            transition: 'opacity 0.2s ease',
-                          }}
-                          onMouseOver={(e) => { e.currentTarget.style.opacity = '0.8'; }}
-                          onMouseOut={(e) => { e.currentTarget.style.opacity = '1'; }}
-                        />
-                      ),
-                      p: ({ node, ...props }) => (
-                        <p
-                          style={{
-                            margin: '0.5em 0',
-                            padding: 0,
-                            maxWidth: '100%',
-                            overflowWrap: 'break-word',
-                            wordBreak: 'break-word',
-                          }}
-                          {...props}
-                        />
-                      ),
-                      ul: ({ node, ...props }) => (
-                        <ul
-                          style={{
-                            paddingLeft: '1.5em',
-                            margin: '0.6em 0',
-                            listStyleType: 'disc',
-                            listStylePosition: 'outside'
-                          }}
-                          {...props}
-                        />
-                      ),
-                      ol: ({ node, ...props }) => (
-                        <ol
-                          style={{
-                            paddingLeft: '1.5em',
-                            margin: '0.6em 0',
-                            listStyleType: 'decimal',
-                            listStylePosition: 'outside'
-                          }}
-                          {...props}
-                        />
-                      ),
-                      li: ({ node, ...props }) => (
-                        <li
-                          style={{
-                            margin: '0.25em 0',
-                            paddingLeft: '0.2em',
-                            display: 'list-item'
-                          }}
-                          {...props}
-                        />
-                      ),
-                      blockquote: ({ node, ...props }) => (
-                        <blockquote
-                          style={{
-                            borderLeft: `3px solid ${isUser ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.2)'}`,
-                            margin: '0.6em 0',
-                            color: isUser ? 'rgba(255,255,255,0.9)' : undefined,
-                            fontStyle: 'italic',
-                            backgroundColor: isUser ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)',
-                            padding: '0.5em 0.75em',
-                            borderRadius: '0 6px 6px 0',
-                            boxShadow: `inset 0 1px 3px ${isUser ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.03)'}`
-                          }}
-                          {...props}
-                        />
-                      ),
-                      hr: ({ node, ...props }) => (
-                        <hr
-                          style={{
-                            border: 'none',
-                            height: '2px',
-                            backgroundImage: isUser
-                              ? 'linear-gradient(to right, rgba(255,255,255,0.1), rgba(255,255,255,0.3), rgba(255,255,255,0.1))'
-                              : 'linear-gradient(to right, rgba(0,0,0,0.03), rgba(0,0,0,0.1), rgba(0,0,0,0.03))',
-                            margin: '1.5em 0'
-                          }}
-                          {...props}
-                        />
-                      ),
-                      h1: ({ node, ...props }) => (
-                        <h1
-                          style={{
-                            borderBottom: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
-                            paddingBottom: '0.3em',
-                            marginTop: '1.5em',
-                            marginBottom: '0.75em',
-                            fontWeight: 600,
-                            fontSize: '1.6em',
-                            lineHeight: 1.3
-                          }}
-                          {...props}
-                        />
-                      ),
-                      h2: ({ node, ...props }) => (
-                        <h2
-                          style={{
-                            borderBottom: `1px solid ${isUser ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
-                            paddingBottom: '0.2em',
-                            marginTop: '1.4em',
-                            marginBottom: '0.7em',
-                            fontWeight: 600,
-                            fontSize: '1.4em',
-                            lineHeight: 1.3
-                          }}
-                          {...props}
-                        />
-                      ),
-                      h3: ({ node, ...props }) => (
-                        <h3
-                          style={{
-                            marginTop: '1.3em',
-                            marginBottom: '0.6em',
-                            fontWeight: 600,
-                            fontSize: '1.2em',
-                            lineHeight: 1.3
-                          }}
-                          {...props}
-                        />
-                      ),
-                      h4: ({ node, ...props }) => (
-                        <h4
-                          style={{
-                            marginTop: '1.2em',
-                            marginBottom: '0.5em',
-                            fontWeight: 600,
-                            fontSize: '1.1em',
-                            lineHeight: 1.3
-                          }}
-                          {...props}
-                        />
-                      ),
-                      table: ({ node, ...props }) => (
-                        <div style={{
-                          width: '100%',
-                          maxWidth: '100%',
-                          overflowX: 'auto',
-                          margin: '1em 0',
-                          padding: '0',
-                          borderRadius: '6px',
-                          border: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : colors.borderColor}`,
-                        }}>
-                          <table
-                            style={{
-                              borderCollapse: 'collapse',
-                              width: 'auto',
-                              fontSize: '0.9em',
-                              margin: 0,
-                              padding: 0,
-                            }}
-                            {...props}
-                          />
-                        </div>
-                      ),
-                      thead: ({ node, ...props }) => (
-                        <thead
-                          style={{
-                            backgroundColor: isUser
-                              ? 'rgba(255,255,255,0.15)'
-                              : useColorModeValue('rgba(0,0,0,0.05)', 'rgba(255,255,255,0.05)'),
-                            margin: 0,
-                            padding: 0
-                          }}
-                          {...props}
-                        />
-                      ),
-                      tbody: ({ node, ...props }) => <tbody {...props} />,
-                      tr: ({ node, ...props }) => (
-                        <tr
-                          style={{
-                            borderBottom: `1px solid ${isUser
-                              ? 'rgba(255,255,255,0.2)'
-                              : colors.borderColor}`
-                          }}
-                          {...props}
-                        />
-                      ),
-                      th: ({ node, ...props }) => (
-                        <th
-                          style={{
-                            padding: '0.5em 0.75em',
-                            textAlign: 'left',
-                            fontWeight: 'bold',
-                            borderBottom: `2px solid ${isUser
-                              ? 'rgba(255,255,255,0.3)'
-                              : colors.borderColor}`,
-                            borderRight: `1px solid ${isUser
-                              ? 'rgba(255,255,255,0.1)'
-                              : colors.borderColor}`
-                          }}
-                          {...props}
-                        />
-                      ),
-                      td: ({ node, ...props }) => (
-                        <td
-                          style={{
-                            padding: '0.5em 0.75em',
-                            borderRight: `1px solid ${isUser
-                              ? 'rgba(255,255,255,0.1)'
-                              : colors.borderColor}`
-                          }}
-                          {...props}
-                        />
-                      ),
-                      img: ({ node, ...props }) => (
-                        <img
-                          style={{
-                            maxWidth: '100%',
-                            height: 'auto',
-                            borderRadius: '4px',
-                            margin: '0.5em 0',
-                            border: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
-                          }}
-                          {...props}
-                          loading="lazy"
-                        />
-                      ),
-                      pre: ({ children }: any) => <>{children}</>,
-                    }}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                </div>
-              )}
+                          ),
+                          thead: ({ node, ...props }) => (
+                            <thead
+                              style={{
+                                backgroundColor: isUser
+                                  ? 'rgba(255,255,255,0.15)'
+                                  : tableHeadBg,
+                                margin: 0,
+                                padding: 0
+                              }}
+                              {...props}
+                            />
+                          ),
+                          tbody: ({ node, ...props }) => <tbody {...props} />,
+                          tr: ({ node, ...props }) => (
+                            <tr
+                              style={{
+                                borderBottom: `1px solid ${isUser
+                                  ? 'rgba(255,255,255,0.2)'
+                                  : 'rgba(0,0,0,0.1)'}`
+                              }}
+                              {...props}
+                            />
+                          ),
+                          th: ({ node, ...props }) => (
+                            <th
+                              style={{
+                                padding: '0.5em 0.75em',
+                                textAlign: 'left',
+                                fontWeight: 'bold',
+                                borderBottom: `2px solid ${isUser
+                                  ? 'rgba(255,255,255,0.3)'
+                                  : 'rgba(0,0,0,0.15)'}`,
+                                borderRight: `1px solid ${isUser
+                                  ? 'rgba(255,255,255,0.1)'
+                                  : 'rgba(0,0,0,0.05)'}`
+                              }}
+                              {...props}
+                            />
+                          ),
+                          td: ({ node, ...props }) => (
+                            <td
+                              style={{
+                                padding: '0.5em 0.75em',
+                                borderRight: `1px solid ${isUser
+                                  ? 'rgba(255,255,255,0.1)'
+                                  : 'rgba(0,0,0,0.05)'}`
+                              }}
+                              {...props}
+                            />
+                          ),
+                          img: ({ node, ...props }) => (
+                            <img
+                              style={{
+                                maxWidth: '100%',
+                                height: 'auto',
+                                borderRadius: '4px',
+                                margin: '0.5em 0',
+                                border: `1px solid ${isUser ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
+                              }}
+                              {...props}
+                              loading="lazy"
+                            />
+                          ),
+                          pre: ({ children }: any) => <>{children}</>,
+                        }}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                    ) : (
+                      <Text color={colors.textColorSecondary} fontStyle="italic">
+                        {t("empty_message")}
+                      </Text>
+                    )}
+                  </div>
+                )}
+              </Box>
             </Box>
-          </Box>
+          </div>
         </Menu.ContextTrigger>
         <Portal>
           <Menu.Positioner>
             <Menu.Content
               bg={menuBgColor}
               borderRadius="xl"
-              boxShadow={useColorModeValue(
-                "0 4px 12px rgba(0,0,0,0.1)",
-                "0 4px 12px rgba(0,0,0,0.3)"
-              )}
+              boxShadow={menuBoxShadow}
               overflow="hidden"
               border="1px solid"
               borderColor={menuBorderColor}
@@ -770,7 +791,13 @@ export const ChatBubble = React.memo(({
                 borderBottom="1px solid"
                 borderColor={menuBorderColor}
               >
-                {horizontalMenuItems.map((item) => (
+                {/* Horizontal menu items with emojis */}
+                {[
+                  { label: "👍", value: "like", icon: null },
+                  { label: "👎", value: "unlike", icon: null },
+                  { label: "❤️", value: "heart", icon: null },
+                  { label: "😂", value: "laugh", icon: null },
+                ].map((item) => (
                   <Menu.Item
                     key={item.value}
                     value={item.value}
@@ -789,19 +816,28 @@ export const ChatBubble = React.memo(({
               </Group>
 
               <Box py={1}>
-                {verticalMenuItems.map((item) => (
+                {/* Vertical menu items */}
+                {[
+                  { label: t("Copy"), value: "copy", icon: <LuCopy />, onClick: handleCopy },
+                  ...(isUser ? [
+                    { label: t("Edit"), value: "edit", icon: <LuPencil /> },
+                    {
+                      label: t("Delete"),
+                      value: "delete",
+                      icon: <LuTrash />,
+                      onClick: () => setIsDeleteModalOpen(true)
+                    }
+                  ] : [])
+                ].map((item) => (
                   <Menu.Item
                     key={item.value}
                     value={item.value}
                     onClick={item.onClick}
                     borderRadius="md"
-                    _hover={{ bg: item.disabled ? "transparent" : menuItemHoverBg }}
+                    _hover={{ bg: menuItemHoverBg }}
                     py={1.5}
                     px={3}
                     fontSize="sm"
-                    opacity={item.disabled ? 0.5 : 1}
-                    cursor={item.disabled ? "not-allowed" : "pointer"}
-                    title={item.tooltip}
                   >
                     <Group gap={2} justify="flex-start" align="center">
                       <Box fontSize="sm" color={menuIconColor}>{item.icon}</Box>
@@ -827,6 +863,16 @@ export const ChatBubble = React.memo(({
     </>
   );
 }, (prevProps, nextProps) => {
+  // Always update when streaming state changes
+  if (prevProps.isStreaming !== nextProps.isStreaming) {
+    return false; // Force update
+  }
+
+  // For streaming content, update on any content change
+  if (nextProps.isStreaming && prevProps.message.content !== nextProps.message.content) {
+    return false; // Force update for any content change during streaming
+  }
+
   if (
     prevProps.message.content?.includes('[Generation was interrupted') ||
     nextProps.message.content?.includes('[Generation was interrupted')
@@ -838,7 +884,6 @@ export const ChatBubble = React.memo(({
     prevProps.isUser === nextProps.isUser &&
     prevProps.isFirstInGroup === nextProps.isFirstInGroup &&
     prevProps.isTaskMode === nextProps.isTaskMode &&
-    prevProps.isStreaming === nextProps.isStreaming &&
     prevProps.isLoadingOlder === nextProps.isLoadingOlder &&
     prevProps.showThumbnails === nextProps.showThumbnails &&
     prevProps.message.content === nextProps.message.content

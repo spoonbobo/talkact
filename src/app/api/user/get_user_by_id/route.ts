@@ -12,7 +12,6 @@ export async function GET(request: Request) {
         }
 
         const user = await db('users').where({ user_id: userId }).first();
-        console.log(user);
 
         if (!user) {
             return NextResponse.json({ exists: false }, { status: 404 });

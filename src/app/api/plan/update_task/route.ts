@@ -117,7 +117,6 @@ export async function PUT(request: Request) {
         }
 
         // Handle tool update if provided
-        console.log('tool', tool);
         if (tool !== undefined) {
             try {
                 // For PostgreSQL JSONB, we'll use a raw query with proper JSON casting

@@ -2,6 +2,8 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { createAction } from '@reduxjs/toolkit';
 import { IMessage } from '@/types/chat';
 import { User } from '@/types/user';
+import { updateMessage } from '../features/chatSlice';
+import { updateAssistantMessage } from '../features/assistantSlice';
 
 // Add these new action types
 export const startStreaming = createAction<{
@@ -155,16 +157,23 @@ const assistantSlice = createSlice({
     }
 });
 
-export const {
+const {
     updatePosition,
     setIsOpen,
     toggleOpen,
     addMessage,
     clearMessages,
-    updateMessage,
     setStreamingState,
     updateSize,
-    setPinned // Export the new action
+    setPinned,
 } = assistantSlice.actions;
+
+export {
+    clearMessages,
+    setStreamingState,
+    updateSize,
+    setPinned,
+    updateMessage as updateAssistantMessage,
+};
 
 export default assistantSlice.reducer;

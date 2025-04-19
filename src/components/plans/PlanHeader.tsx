@@ -10,13 +10,18 @@ import {
     HStack,
     Progress,
     Badge,
-    Spinner
+    Spinner,
+    Icon,
+    IconButton
 } from '@chakra-ui/react';
 import { useTranslations } from "next-intl";
-import { IPlan } from "@/types/plan";
+import { IPlan, PlanStatus } from "@/types/plan";
 import StatusBadge, { getStatusColorScheme } from "@/components/ui/StatusBadge";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { FaCheck, FaStop } from 'react-icons/fa';
+import { FiRefreshCw } from 'react-icons/fi';
+import { Tooltip } from "@/components/ui/tooltip";
 
 // Format date for display
 const formatDate = (date: Date | null): string => {
@@ -33,9 +38,11 @@ const formatDate = (date: Date | null): string => {
 interface PlanHeaderProps {
     plan: IPlan;
     colors: any;
+    isLoading?: boolean;
+    loadingTasks?: boolean;
 }
 
-export default function PlanHeader({ plan, colors }: PlanHeaderProps) {
+export default function PlanHeader({ plan, colors, isLoading = false, loadingTasks = false }: PlanHeaderProps) {
     const t = useTranslations("Plans");
     const [roomName, setRoomName] = useState<string>("");
     const [assignerName, setAssignerName] = useState<string>("");
@@ -70,9 +77,7 @@ export default function PlanHeader({ plan, colors }: PlanHeaderProps) {
             try {
                 // Fetch assigner name
                 if (plan.assigner && plan.assigner !== 'system') {
-                    console.log('Fetching assigner with ID:', plan.assigner);
                     const assignerResponse = await axios.get(`/api/user/get_user_by_id?user_id=${plan.assigner}`);
-                    console.log('Assigner API response:', assignerResponse.data);
                     if (assignerResponse.data.exists) {
                         setAssignerName(assignerResponse.data.user.name);
                     } else {
@@ -84,9 +89,7 @@ export default function PlanHeader({ plan, colors }: PlanHeaderProps) {
 
                 // Fetch assignee name
                 if (plan.assignee) {
-                    console.log('Fetching assignee with ID:', plan.assignee);
                     const assigneeResponse = await axios.get(`/api/user/get_user_by_id?user_id=${plan.assignee}`);
-                    console.log('Assignee API response:', assigneeResponse.data);
                     if (assigneeResponse.data.exists) {
                         setAssigneeName(assigneeResponse.data.user.name);
                     } else {
@@ -109,80 +112,157 @@ export default function PlanHeader({ plan, colors }: PlanHeaderProps) {
         }
     }, [plan]);
 
-    return (
-        <Box>
-            <Heading size="md" mb={2} color={colors.textColorHeading}>{plan.plan_name}</Heading>
-            <Flex align="center" mb={2}>
-                <StatusBadge status={plan.status} mr={3} />
-                <HStack width="200px" mr={2} flex="1">
-                    <Progress.Root
-                        value={plan.progress}
-                        size="sm"
-                        colorScheme={getStatusColorScheme(plan.status)}
-                        borderRadius="full"
-                    >
-                        <Progress.Track>
-                            <Progress.Range />
-                        </Progress.Track>
-                    </Progress.Root>
-                    <Text fontSize="sm" fontWeight="bold" color={colors.textColor}>
-                        {plan.progress}%
-                    </Text>
-                </HStack>
+    // Dummy handlers for the action buttons
+    const handleApprove = async () => {
+        console.log('Approve plan clicked');
+    };
 
-                {plan.room_id && (
-                    <Flex align="center">
-                        <Text fontSize="xs" color={colors.textColorMuted} mr={1}>
-                            {t("room")}:
+    const handleDeny = async () => {
+        console.log('Deny plan clicked');
+    };
+
+    const handleRefresh = () => {
+        console.log('Refresh clicked');
+    };
+
+    return (
+        <Flex direction="column" width="100%">
+            {/* Top section with title, status and progress */}
+            <Flex justify="space-between" align="center" width="100%" mb={4}>
+                <Box flex="1">
+                    <Heading size="md" color={colors.textColorHeading}>{plan.plan_name}</Heading>
+                </Box>
+
+                <Flex align="center" gap={3}>
+                    {/* Action Buttons */}
+                    <HStack gap={2}>
+                        <Tooltip content={t("approve_plan")}>
+                            <IconButton
+                                aria-label="approve"
+                                size="sm"
+                                colorScheme="green"
+                                variant="ghost"
+                                loading={isLoading || loadingTasks}
+                                disabled={plan.status === 'success' || plan.status === 'terminated'}
+                                onClick={handleApprove}
+                                _hover={{ bg: "green.50", color: colors.greenBgColor }}
+                            >
+                                <Icon as={FaCheck} color={colors.textColor} />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip content={t("deny_plan")}>
+                            <IconButton
+                                aria-label="deny"
+                                size="sm"
+                                colorScheme="red"
+                                variant="ghost"
+                                loading={isLoading || loadingTasks}
+                                disabled={plan.status === 'success' || plan.status === 'terminated'}
+                                onClick={handleDeny}
+                                _hover={{ bg: "red.50", color: colors.redBgColor }}
+                            >
+                                <Icon as={FaStop} color={colors.textColor} />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip content={t("refresh")}>
+                            <IconButton
+                                aria-label="synchronize"
+                                size="sm"
+                                colorScheme="blue"
+                                variant="ghost"
+                                loading={isLoading || loadingTasks}
+                                onClick={handleRefresh}
+                                _hover={{ bg: "blue.50", color: colors.blueBgColor }}
+                            >
+                                <Icon as={FiRefreshCw} color={colors.textColor} />
+                            </IconButton>
+                        </Tooltip>
+                    </HStack>
+
+                    <StatusBadge status={plan.status as PlanStatus} />
+                    <HStack width="150px">
+                        <Progress.Root
+                            value={plan.progress}
+                            size="sm"
+                            colorScheme={getStatusColorScheme(plan.status as PlanStatus)}
+                            borderRadius="full"
+                        >
+                            <Progress.Track>
+                                <Progress.Range />
+                            </Progress.Track>
+                        </Progress.Root>
+                        <Text fontSize="sm" fontWeight="bold" color={colors.textColor} minWidth="36px" textAlign="right">
+                            {plan.progress}%
                         </Text>
-                        <Badge colorScheme="purple">
+                    </HStack>
+
+                    {plan.room_id && (
+                        <Badge colorScheme="purple" px={2} py={1} borderRadius="md">
                             {roomName || "Loading..."}
                         </Badge>
-                    </Flex>
-                )}
+                    )}
+                </Flex>
             </Flex>
 
-            <Box mb={3}>
-                <Text fontSize="xs" color={colors.textColorMuted}>{t("plan_overview")}:</Text>
-                <Text fontSize="sm" color={colors.textColor}>{plan.plan_overview}</Text>
-            </Box>
+            {/* Main content area with two columns */}
+            <Flex width="100%" gap={6}>
+                {/* Left column - Plan overview */}
+                <Box flex="1" p={4} bg={`${colors.accentColor}05`} borderRadius="md">
+                    <Text fontSize="xs" color={colors.textColorMuted} mb={1}>{t("plan_overview")}:</Text>
+                    <Text fontSize="sm" color={colors.textColor}>{plan.plan_overview}</Text>
+                </Box>
 
-            <Grid templateColumns="repeat(2, 1fr)" gap={4} mt={4}>
-                <GridItem>
-                    <Text fontSize="xs" color={colors.textColorMuted}>{t("assigner")}:</Text>
-                    {isLoadingUsers ? (
-                        <Flex align="center">
-                            <Spinner size="xs" mr={2} />
-                            <Text fontSize="sm" color={colors.textColor}>Loading...</Text>
-                        </Flex>
-                    ) : (
-                        <Text fontSize="sm" color={colors.textColor}>
-                            {assignerName || plan.assigner}
-                        </Text>
-                    )}
-                </GridItem>
-                <GridItem>
-                    <Text fontSize="xs" color={colors.textColorMuted}>{t("assignee")}:</Text>
-                    {isLoadingUsers ? (
-                        <Flex align="center">
-                            <Spinner size="xs" mr={2} />
-                            <Text fontSize="sm" color={colors.textColor}>Loading...</Text>
-                        </Flex>
-                    ) : (
-                        <Text fontSize="sm" color={colors.textColor}>
-                            {assigneeName || plan.assignee}
-                        </Text>
-                    )}
-                </GridItem>
-                <GridItem>
-                    <Text fontSize="xs" color={colors.textColorMuted}>{t("created")}:</Text>
-                    <Text fontSize="sm" color={colors.textColor}>{formatDate(plan.created_at)}</Text>
-                </GridItem>
-                <GridItem>
-                    <Text fontSize="xs" color={colors.textColorMuted}>{t("updated")}:</Text>
-                    <Text fontSize="sm" color={colors.textColor}>{formatDate(plan.updated_at)}</Text>
-                </GridItem>
-            </Grid>
-        </Box>
+                {/* Right column - Time and user information */}
+                <Flex direction="column" flex="1" gap={4}>
+                    {/* Time information */}
+                    <Flex gap={4} width="100%">
+                        <Box flex="1" p={3} bg={`${colors.accentColor}10`} borderRadius="md">
+                            <Text fontSize="xs" color={colors.textColorMuted}>{t("created")}:</Text>
+                            <Text fontSize="md" fontWeight="bold" color={colors.textColor}>
+                                {formatDate(plan.created_at)}
+                            </Text>
+                        </Box>
+
+                        <Box flex="1" p={3} bg={`${colors.accentColor}10`} borderRadius="md">
+                            <Text fontSize="xs" color={colors.textColorMuted}>{t("updated")}:</Text>
+                            <Text fontSize="md" fontWeight="bold" color={colors.textColor}>
+                                {formatDate(plan.updated_at)}
+                            </Text>
+                        </Box>
+                    </Flex>
+
+                    {/* User information */}
+                    <Flex gap={4} width="100%">
+                        <Box flex="1" p={3} borderWidth="1px" borderColor={`${colors.borderColor}`} borderRadius="md">
+                            <Text fontSize="xs" color={colors.textColorMuted}>{t("assigner")}:</Text>
+                            {isLoadingUsers ? (
+                                <Flex align="center">
+                                    <Spinner size="xs" mr={2} />
+                                    <Text fontSize="sm" color={colors.textColor}>Loading...</Text>
+                                </Flex>
+                            ) : (
+                                <Text fontSize="sm" fontWeight="medium" color={colors.textColor}>
+                                    {assignerName || plan.assigner}
+                                </Text>
+                            )}
+                        </Box>
+
+                        <Box flex="1" p={3} borderWidth="1px" borderColor={`${colors.borderColor}`} borderRadius="md">
+                            <Text fontSize="xs" color={colors.textColorMuted}>{t("assignee")}:</Text>
+                            {isLoadingUsers ? (
+                                <Flex align="center">
+                                    <Spinner size="xs" mr={2} />
+                                    <Text fontSize="sm" color={colors.textColor}>Loading...</Text>
+                                </Flex>
+                            ) : (
+                                <Text fontSize="sm" fontWeight="medium" color={colors.textColor}>
+                                    {assigneeName || plan.assignee}
+                                </Text>
+                            )}
+                        </Box>
+                    </Flex>
+                </Flex>
+            </Flex>
+        </Flex>
     );
 } 

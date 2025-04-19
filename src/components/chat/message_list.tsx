@@ -8,6 +8,7 @@ import { ChatBubble } from "@/components/chat/bubble";
 import React, { useState, useEffect, useCallback } from "react";
 import { useChatPageColors } from "@/utils/colors";
 import { useTranslations } from "next-intl";
+import { useSelector } from "react-redux";
 
 interface MessageGroup {
     sender: string | User;
@@ -23,6 +24,8 @@ interface ChatMessageListProps {
     isLoadingMore?: boolean;
     hasMoreMessages?: boolean;
     className?: string;
+    isStreaming?: boolean;
+    streamingMessageId?: string | null;
 }
 
 export const ChatMessageList = ({
@@ -31,7 +34,9 @@ export const ChatMessageList = ({
     onLoadMore,
     isLoadingMore = false,
     hasMoreMessages = true,
-    className = ''
+    className = '',
+    isStreaming = false,
+    streamingMessageId = null
 }: ChatMessageListProps) => {
     const colors = useChatPageColors();
     const t = useTranslations("Chat");
@@ -61,6 +66,9 @@ export const ChatMessageList = ({
     // Add this state to track when we're loading older messages
     const [isLoadingOlder, setIsLoadingOlder] = useState(false);
 
+    // Add this ref to track if the first scroll event has occurred
+    const hasUserScrolled = React.useRef(false);
+
     // Move formatMessageDate inside the component to access the t function
     const formatMessageDate = (date: Date): string => {
         const today = new Date();
@@ -81,48 +89,52 @@ export const ChatMessageList = ({
         }
     };
 
-    // Modify the handleScroll function to preserve scroll position
+    // Modify the handleScroll function to prevent onLoadMore on initial mount
     const handleScroll = useCallback(() => {
         if (!scrollContainerRef.current) return;
 
         const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
 
+        // Mark that the user has scrolled at least once
+        if (!hasUserScrolled.current && scrollTop !== 0) {
+            hasUserScrolled.current = true;
+        }
+
         // Check if user is near bottom for auto-scroll
         const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
         shouldScrollToBottom.current = isNearBottom;
 
-        // Check if user is near top for loading more messages
+        // Only trigger onLoadMore if the user has scrolled before
         const loadMoreThreshold = clientHeight * 0.1;
-        if (scrollTop < loadMoreThreshold && onLoadMore && !isLoadingMore && hasMoreMessages) {
+        if (
+            scrollTop < loadMoreThreshold &&
+            onLoadMore &&
+            !isLoadingMore &&
+            hasMoreMessages &&
+            hasUserScrolled.current // Only after user scrolls
+        ) {
             // Store current scroll height and position
             const prevScrollHeight = scrollHeight;
             const prevScrollPosition = scrollTop;
 
-            // Set flag to indicate we're loading older messages
             setIsLoadingOlder(true);
 
-            // Load more messages
             onLoadMore();
 
-            // Use MutationObserver to detect DOM changes and maintain scroll position
             const observer = new MutationObserver(() => {
                 if (scrollContainerRef.current) {
                     const newScrollHeight = scrollContainerRef.current.scrollHeight;
                     const heightDifference = newScrollHeight - prevScrollHeight;
-
-                    // Adjust scroll position to maintain the same relative position
                     scrollContainerRef.current.scrollTop = prevScrollPosition + heightDifference;
                 }
             });
 
-            // Start observing the container for changes
             if (scrollContainerRef.current) {
                 observer.observe(scrollContainerRef.current, {
                     childList: true,
                     subtree: true
                 });
 
-                // Stop observing after a reasonable time
                 setTimeout(() => {
                     observer.disconnect();
                     setIsLoadingOlder(false);
@@ -386,24 +398,16 @@ export const ChatMessageList = ({
                                             alignItems: group.isCurrentUser ? "flex-end" : "flex-start"
                                         }}
                                     >
-                                        <motion.div
-                                            // Only animate new messages, not on initial load
-                                            initial={hasMounted.current ? { scale: 0.95, opacity: 0.5 } : { scale: 1, opacity: 1 }}
-                                            animate={{ scale: 1, opacity: 1 }}
-                                            transition={{
-                                                duration: 0.1,
-                                                delay: 0 // No delay between messages
-                                            }}
-                                        >
+                                        <div>
                                             <ChatBubble
                                                 key={message.id}
                                                 message={message}
                                                 isUser={group.isCurrentUser}
                                                 isFirstInGroup={msgIndex === 0}
-                                                isStreaming={!message.content}
+                                                isStreaming={isStreaming && streamingMessageId === message.id}
                                                 isLoadingOlder={isLoadingOlder}
                                             />
-                                        </motion.div>
+                                        </div>
 
                                         {/* Timestamp with improved colors and positioning */}
                                         {msgIndex === group.messages.length - 1 && (
@@ -477,7 +481,7 @@ export const ChatMessageList = ({
                     },
                 }}
             >
-                {/* Loading indicator at the top - improved with animation */}
+                {/* Loading indicator at the top - removed animation */}
                 {isLoadingMore && (
                     <Flex
                         justify="center"
@@ -487,7 +491,6 @@ export const ChatMessageList = ({
                         position="sticky"
                         top="0"
                         zIndex="1"
-                        as={motion.div}
                     >
                         <HStack gap={2}>
                             <Spinner size="sm" color={colors.textColorSecondary} />
@@ -496,14 +499,13 @@ export const ChatMessageList = ({
                     </Flex>
                 )}
 
-                {/* No more messages indicator - improved with animation */}
+                {/* No more messages indicator - removed animation */}
                 {!hasMoreMessages && messageGroups.length > 0 && (
                     <Text
                         textAlign="center"
                         fontSize="sm"
                         color={colors.textColorSecondary}
                         py={3}
-                        as={motion.div}
                     >
                         {t("no_more_messages")}
                     </Text>

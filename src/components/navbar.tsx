@@ -271,14 +271,14 @@ const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: 
               isExpanded={isExpanded}
             />
 
-            <NavIconButton
+            {/* <NavIconButton
               to="/dashboard"
               icon={FaChartLine}
               label="Dashboard"
               tooltipContent={t("dashboard")}
               isMobile={isMobile}
               isExpanded={isExpanded}
-            />
+            /> */}
 
             <NavIconButton
               to="/learn"

@@ -15,7 +15,6 @@ import { defaultSystem } from "@chakra-ui/react"
 import { ColorModeProvider } from "@/components/ui/color-mode"
 import Notification from "@/components/notification";
 import Footer from "@/components/footer";
-import Assistant from "@/components/assistant";
 import { usePathname } from 'next/navigation';
 import { setCurrentRoute } from '@/store/features/assistantSlice';
 import { useDispatch } from "react-redux";
@@ -117,8 +116,6 @@ export default function Providers({
                     >
                       {children}
                     </Container>
-                    <Notification />
-                    <Assistant />
                   </Box>
                   <Footer />
                 </Flex>
