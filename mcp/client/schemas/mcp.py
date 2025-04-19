@@ -32,7 +32,6 @@ class MCPPlanRequest(BaseModel):
     assigner: str
     assignee: str
     client_host: str | None = None
-    assignee_obj: User | None = None
 
 class Tool(BaseModel):
     tool_name: str

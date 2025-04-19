@@ -105,9 +105,7 @@ class MCPClient:
         self, 
         plan_request: MCPPlanRequest, 
     ) -> None:
-        # logger.info(f"Server tools: {self.server_tools_dict}")
         client_url = os.environ.get("CLIENT_URL", "")
-        logger.info(f"Plan request-------------------: {plan_request}")
 
         async with httpx.AsyncClient() as client:
             try:
@@ -118,12 +116,10 @@ class MCPClient:
                 )
                 response.raise_for_status()
                 messages = response.json()
-                logger.info(f"Messages---------------------------->: {messages}")
             except Exception as e:
                 logger.error(f"Error fetching messages: {e}")
                 messages = []
         
-        logger.info(f"Summoner: {plan_request.summoner}")
         query = plan_request.query
         query = query.replace("@agent", "")
         query = [{"role": "user", "content": query}]
@@ -161,29 +157,9 @@ class MCPClient:
             temperature=0.7
         )
         
-        msgs = [
-                {
-                    "role": "system", 
-                    "content": PLAN_SYSTEM_PROMPT
-                },
-                {
-                    "role": "user", 
-                    "content": PLAN_CREATE_PROMPT.format(
-                        conversations=self.format_conversation(conversations),
-                        additional_context=additional_context,
-                        assistants=self.server_names,
-                        assistant_descriptions=self.format_server_descriptions()
-                    )
-                }
-            ]
-        logger.info(f"prompt: {msgs}")
-        logger.info(f"Response: {response}")
-        
         # Extract and parse the JSON plan from the response
         plan_json = self.extract_json_from_response(response)
         if plan_json:
-            logger.info(f"Extracted plan: {plan_json}")
-            
             # First, create a plan record in the database
             plan_overview = plan_json.get("plan_overview", "No plan overview provided")
             plan_name = plan_json.get("plan_name", "No plan name provided")
@@ -221,16 +197,27 @@ class MCPClient:
                     plan_response.raise_for_status()
                     plan_data = plan_response.json()
                     plan_id = plan_data["plan"]["id"]
-                    logger.info(f"Created plan with ID: {plan_id}")
+                    
+                    # Fetch user information from the API
+                    user_response = await client.get(
+                        f"{client_url}/api/user/get_user_by_id?user_id={plan_request.assignee}",
+                        headers={"Content-Type": "application/json"}
+                    )
+                    user_response.raise_for_status()
+                    user_data = user_response.json()
+                    
+                    # Use the entire user data from the API response
+                    sender_data = user_data["user"]
+                    logger.info(f"DEBUGGGGGGGGGGGGGGGG, {sender_data}")
                     
                     # notify all users in the room
                     await self.socket_client.send_message(
                         {
                             "id": str(uuid4()),
                             "created_at": datetime.datetime.now().isoformat(),
-                            "sender": plan_request.assignee_obj.model_dump(), # type: ignore
+                            "sender": sender_data,
                             "content": f"Plan **{plan_name}** has been created",
-                            "avatar": getattr(plan_request.assignee_obj, 'avatar', None),
+                            "avatar": sender_data.get("avatar", None),
                             "room_id": plan_request.room_id,
                             "mentions": []
                         }
@@ -251,9 +238,7 @@ class MCPClient:
                         )
                         tasks_response.raise_for_status()
                         tasks_data = tasks_response.json()
-                        logger.info(f"Created {len(tasks_data['tasks'])} tasks for plan {plan_id}")
                     else:
-                        logger.warning(f"No tasks created for plan {plan_id}")
                         # Mark the plan as completed if no tasks were created
                         await client.put(
                             f"{client_url}/api/plan/update_plan",
@@ -265,7 +250,6 @@ class MCPClient:
                             },
                             headers={"Content-Type": "application/json"}
                         )
-                        logger.info(f"Marked plan {plan_id} as completed since no tasks were created")
                         
             except Exception as e:
                 logger.error(f"Error creating plan or tasks in database: {e}")
@@ -347,16 +331,13 @@ class MCPClient:
     async def create_mcp_request(self, mcp_request: MCPTaskRequest):
         task = mcp_request.task
         mcp_server = task.mcp_server
-        # mcp_tools = self.server_tools_dict[mcp_server]
         plan = mcp_request.plan.context.conversations
-        logger.info(f"Plan======================>: {plan}")
         mcp_tools = self.mcp_tools_dict[mcp_server]
         client_url = os.environ.get("CLIENT_URL", "")
         
         system_prompt = MCP_REQUEST_SYSTEM_PROMPT.format(
             mcp_server_speciality=self.server_descriptions_dict[mcp_server]
         )
-        logger.info(f"System prompt: {system_prompt}")
         background_information = self.prepare_background_information(mcp_request.plan, mcp_request.task.step_number)
         
         user_prompt = MCP_REQUEST_PROMPT.format(
@@ -367,8 +348,6 @@ class MCPClient:
             reason=mcp_request.task.task_explanation,
             expectation=mcp_request.task.expected_result
         )
-        logger.info(f"User prompt: {user_prompt}")
-        logger.info(f"Tools: {mcp_tools}")
         
         tools = self.openai_client.chat.completions.create(
             model="deepseek-chat",
@@ -376,8 +355,6 @@ class MCPClient:
             tools=mcp_tools,
             tool_choice="required"
         )
-        
-        logger.info(f"Tools: {tools}")
         
         # Parse the tools response into ToolCallInfo objects
         tool_calls = parse_mcp_tools(tools, mcp_server, self.mcp_tools_dict)
@@ -408,15 +385,12 @@ class MCPClient:
                     "status": "pending"  # Optionally update status
                 }
                 
-                logger.debug(f"Updating task with payload: {json.dumps(update_payload)}")
-                
                 update_response = await client.put(
                     update_url,
                     json=update_payload,
                     headers={"Content-Type": "application/json"}
                 )
                 update_response.raise_for_status()
-                logger.info(f"Task updated successfully: {update_response.status_code}")
                 
                 # Then continue with your existing code to fetch messages
                 response = await client.post(
@@ -518,7 +492,6 @@ class MCPClient:
             
     def prepare_background_information(self, plan: PlanData, step_number: int):
         background = ""
-        logger.info(f"Plan: {plan}")
         conversations = plan.context.conversations
         background += "Conversations:\n"
 
@@ -533,7 +506,6 @@ class MCPClient:
                 step_log_str += f"Tool: {tool}\nResult: {result}\n"
             background += f"Step {step}: {step_log_str}\n"
 
-        logger.info(f"Background information: {background}")
         return background
 
     async def get_servers(self) -> Dict[str, MCPServer]:

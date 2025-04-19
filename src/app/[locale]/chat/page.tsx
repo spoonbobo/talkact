@@ -208,7 +208,6 @@ const ChatPageContent = () => {
     try {
       // Extract the mentioned agent username
       let assigneeId = null;
-      let assigneeObj = null;
       const mentionMatch = message.match(/@([a-zA-Z0-9_]+)/);
 
       if (mentionMatch && mentionMatch[1]) {
@@ -222,7 +221,6 @@ const ChatPageContent = () => {
 
         if (mentionedUser) {
           assigneeId = mentionedUser.user_id;
-          assigneeObj = mentionedUser;
         }
       }
 
@@ -234,7 +232,6 @@ const ChatPageContent = () => {
         assigner: currentUser?.user_id,
         created_at: new Date().toISOString(),
         assignee: assigneeId, // Always include this field, even if null
-        assignee_obj: assigneeObj // Include this too, can be null
       };
 
       const response = await axios.post(`/api/mcp/create_plan`, payload);

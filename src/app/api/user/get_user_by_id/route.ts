@@ -20,8 +20,11 @@ export async function GET(request: Request) {
         // Return only necessary user information
         const userInfo = {
             id: user.id,
+            user_id: user.user_id,
             name: user.username,
+            username: user.username,
             email: user.email,
+            avatar: user.avatar,
         };
 
         return NextResponse.json({ exists: true, user: userInfo }, { status: 200 });

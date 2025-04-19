@@ -363,7 +363,8 @@ async function insertionMessageInAppDb(message) {
     roomId: message.room_id,
     active_users: message.active_users,
   });
-   await axios.post(url, message);
+  console.log("DEBUGGGGGGGGGGGGGGGGG", message);
+  await axios.post(url, message);
 
 }
 

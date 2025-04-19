@@ -5,11 +5,6 @@
             "path": "/servers/web_surfer.py",
             "metadata": {}
         },
-        "zabbix": {
-            "description": "/servers/description/zabbix.md",
-            "path": "/servers/zabbix.py",
-            "metadata": {}
-        },
         "pyaudit": {
             "description": "/servers/description/pyaudit.md",
             "path": "/servers/pyaudit.py",
