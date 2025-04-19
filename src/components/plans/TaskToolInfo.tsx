@@ -108,7 +108,7 @@ export default function TaskToolInfo({ task, colors, t }: TaskToolInfoProps) {
                                                                     <Table.Cell fontWeight="medium" fontSize="xs" color={colors.textColor}>{paramName}</Table.Cell>
                                                                     <Table.Cell fontSize="xs" color={colors.textColorMuted}>
                                                                         <Badge size="sm" colorScheme="blue" variant="subtle">
-                                                                            {paramType as string}
+                                                                            {String(paramType)}
                                                                         </Badge>
                                                                     </Table.Cell>
                                                                     <Table.Cell fontSize="xs" color={colors.textColor}>
@@ -187,7 +187,7 @@ export default function TaskToolInfo({ task, colors, t }: TaskToolInfoProps) {
                                                             <Table.Cell fontWeight="medium" fontSize="xs" color={colors.textColor}>{paramName}</Table.Cell>
                                                             <Table.Cell fontSize="xs" color={colors.textColorMuted}>
                                                                 <Badge size="sm" colorScheme="blue" variant="subtle">
-                                                                    {paramType}
+                                                                    {String(paramType)}
                                                                 </Badge>
                                                             </Table.Cell>
                                                             <Table.Cell fontSize="xs" color={colors.textColor}>

@@ -7,6 +7,7 @@ import {
     Heading,
     Icon,
     Text,
+    VStack,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaComments } from "react-icons/fa";
@@ -14,7 +15,7 @@ import { useTranslations } from "next-intl";
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useChatPageColors } from "@/utils/colors";
 import { Global, css } from '@emotion/react';
 import axios from "axios";
@@ -24,14 +25,72 @@ import {
     setSelectedRoom,
     setLoadingRooms,
     setUnreadCount,
-    joinRoom
+    joinRoom,
+    setPlanSectionWidth
 } from '@/store/features/chatSlice';
 import { ChatRoomList } from "@/components/chat/room_list";
 import Loading from "@/components/loading";
 import { useSession } from "next-auth/react";
 import { CreateRoomModal } from "@/components/chat/create_room_modal";
+import { IChatRoom } from "@/types/chat";
 
 const MotionBox = motion(Box);
+
+// Add SimplifiedPlanSection component
+interface SimplifiedPlanSectionProps {
+    currentRoom: IChatRoom | undefined;
+    colors: ReturnType<typeof useChatPageColors>;
+    t: any;
+}
+
+const SimplifiedPlanSection = ({
+    currentRoom,
+    colors,
+    t
+}: SimplifiedPlanSectionProps) => {
+    return (
+        <MotionBox
+            layout
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{ backgroundColor: colors.bgSubtle }}
+            transition={{ duration: 0.5 }}
+            height="100%"
+            width="100%"
+            overflow="hidden"
+            borderRadius="md"
+            display="flex"
+            flexDirection="column"
+            borderWidth="1px"
+            borderColor={colors.borderColor}
+            zIndex={1}
+            whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+        >
+            <Box p={4} borderBottomWidth="1px" borderColor={colors.borderColor}>
+                <Text fontSize="lg" fontWeight="bold" color={colors.textColorHeading}>
+                    {t("plan_section")}
+                </Text>
+            </Box>
+
+            <VStack gap={4} p={4} align="stretch">
+                {currentRoom ? (
+                    <Box>
+                        <Text fontSize="sm" fontWeight="bold" color={colors.textColorHeading} mb={1}>
+                            {t("current_room")}
+                        </Text>
+                        <Text fontSize="sm" color={colors.textColor}>
+                            {currentRoom.name}
+                        </Text>
+                    </Box>
+                ) : (
+                    <Text fontSize="sm" color={colors.textColor}>
+                        {t("select_room_to_see_plans")}
+                    </Text>
+                )}
+            </VStack>
+        </MotionBox>
+    );
+};
 
 export default function ChatLayout({
     children,
@@ -51,7 +110,8 @@ export default function ChatLayout({
         selectedRoomId,
         unreadCounts,
         isLoadingRooms,
-        isSocketConnected
+        isSocketConnected,
+        planSectionWidth
     } = useSelector((state: RootState) => state.chat);
 
     // Add state for container resizing
@@ -75,6 +135,12 @@ export default function ChatLayout({
     const sidebarRef = useRef<HTMLDivElement>(null);
     const MIN_SIDEBAR_WIDTH = 200;
     const MAX_SIDEBAR_WIDTH = 400;
+
+    // Add state for plan section resizing
+    const [planSectionResizing, setPlanSectionResizing] = useState(false);
+    const planSectionRef = useRef<HTMLDivElement>(null);
+    const MIN_PLAN_SECTION_WIDTH = 200;
+    const MAX_PLAN_SECTION_WIDTH = 500;
 
     // Authentication check
     useEffect(() => {
@@ -260,6 +326,55 @@ export default function ChatLayout({
         };
     }, [sidebarResizing, resizeStartPosition, sidebarWidth]);
 
+    // Get the current room
+    const currentRoom = useMemo(() => {
+        return rooms.find(room => room.id === selectedRoomId);
+    }, [rooms, selectedRoomId]);
+
+    // Handle plan section resize start
+    const handlePlanSectionResizeStart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setPlanSectionResizing(true);
+        setResizeStartPosition(e.clientX);
+    };
+
+    // Effect for plan section resizing
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (planSectionResizing && planSectionRef.current) {
+                const deltaX = e.clientX - resizeStartPosition;
+                const newWidth = Math.max(
+                    MIN_PLAN_SECTION_WIDTH,
+                    Math.min(MAX_PLAN_SECTION_WIDTH, planSectionWidth - deltaX)
+                );
+
+                // Update Redux state
+                dispatch(setPlanSectionWidth(newWidth));
+
+                // Update DOM directly for smooth resizing
+                planSectionRef.current.style.width = `${newWidth}px`;
+
+                setResizeStartPosition(e.clientX);
+            }
+        };
+
+        const handleMouseUp = () => {
+            setPlanSectionResizing(false);
+        };
+
+        if (planSectionResizing) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = 'none';
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = '';
+        };
+    }, [planSectionResizing, resizeStartPosition, planSectionWidth, dispatch]);
+
     if (!isAuthenticated) {
         return null;
     }
@@ -420,6 +535,37 @@ export default function ChatLayout({
                             {/* Main content area - will render children */}
                             <Box flex="1" minWidth="0">
                                 {children}
+                            </Box>
+
+                            {/* Plan Section Component with resize handle */}
+                            <Box
+                                ref={planSectionRef}
+                                width={`${planSectionWidth}px`}
+                                flexShrink={0}
+                                position="relative"
+                                transition={planSectionResizing ? 'none' : 'width 0.2s'}
+                            >
+                                <SimplifiedPlanSection
+                                    currentRoom={currentRoom}
+                                    colors={colors}
+                                    t={t}
+                                />
+
+                                {/* Resize handle for plan section */}
+                                <Box
+                                    position="absolute"
+                                    top="0"
+                                    left="-4px"
+                                    width="8px"
+                                    height="100%"
+                                    cursor="col-resize"
+                                    onMouseDown={handlePlanSectionResizeStart}
+                                    _hover={{
+                                        bg: colors.borderColor || "blue.500",
+                                        opacity: 0.5
+                                    }}
+                                    zIndex={2}
+                                />
                             </Box>
                         </Flex>
                     </MotionBox>
