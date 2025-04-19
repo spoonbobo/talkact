@@ -79,6 +79,14 @@ class PlanData(BaseModel):
     assignee: str
     reviewer: Optional[str] = None
 
+class PlanLog(BaseModel):
+    id: str
+    plan_id: str
+    task_id: str
+    created_at: str
+    type: str
+    content: str
+
 class MCPTaskRequest(BaseModel):
     task: TaskData
     plan: PlanData

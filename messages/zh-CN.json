@@ -205,7 +205,16 @@
     "create_room": "创建聊天室",
     "create_new_room": "新建聊天室",
     "plan_section": "计划区块",
-    "current_room": "当前聊天室"
+    "current_room": "当前聊天室",
+    "plans": "计划",
+    "loading_plans": "加载计划中...",
+    "select_plans": "选择计划",
+    "selected_plans": "已选择的计划",
+    "none_selected": "未选择",
+    "plan_logs": "计划日志",
+    "no_logs_found": "没有日志",
+    "no_plans_found": "没有计划 (@agent 以创建计划)",
+    "open_plan": "打开计划"
   },
   "Plans": {
     "plans": "计划",
@@ -275,7 +284,9 @@
     "logs": "日志",
     "no_plans_in_status": "没有计划",
     "today": "今天",
-    "drop_plans_here": "将计划拖放到这里"
+    "drop_plans_here": "将计划拖放到这里",
+    "managed_by_ai": "由AI管理",
+    "drag_and_drop_disabled_message": "拖放功能暂时禁用，AI正在管理您的计划和任务。"
   },
   "Learn": {
     "learn": "学习",

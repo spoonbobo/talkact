@@ -8,6 +8,12 @@ import {
     Icon,
     Text,
     VStack,
+    Select,
+    Portal,
+    createListCollection,
+    Card,
+    Stack,
+    Progress
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaComments } from "react-icons/fa";
@@ -33,10 +39,17 @@ import Loading from "@/components/loading";
 import { useSession } from "next-auth/react";
 import { CreateRoomModal } from "@/components/chat/create_room_modal";
 import { IChatRoom } from "@/types/chat";
+import { Log } from "@/types/plan";
+import PlanLogSection from "@/components/plans/plan_log_section";
+import { getStatusColorScheme } from "@/components/ui/StatusBadge";
 
 const MotionBox = motion(Box);
 
-// Add SimplifiedPlanSection component
+const colorPalettes = [
+    "blue", "green", "yellow", "orange", "red", "purple", "teal", "gray"
+];
+
+// Update SimplifiedPlanSection component
 interface SimplifiedPlanSectionProps {
     currentRoom: IChatRoom | undefined;
     colors: ReturnType<typeof useChatPageColors>;
@@ -48,12 +61,161 @@ const SimplifiedPlanSection = ({
     colors,
     t
 }: SimplifiedPlanSectionProps) => {
+    const [plans, setPlans] = useState<Array<{
+        id: string,
+        name: string,
+        plan_id?: string,
+        progress?: number,
+        logs?: Log[]
+    }>>([]);
+    const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+    const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
+    const [logsByPlan, setLogsByPlan] = useState<Record<string, Log[]>>({});
+
+    // Create collection for plans
+    const plansCollection = useMemo(() => {
+        return createListCollection({
+            items: plans.map(plan => ({
+                label: plan.name,
+                value: plan.id
+            }))
+        });
+    }, [plans]);
+
+    // Fetch plans when room changes
+    useEffect(() => {
+        const fetchPlans = async () => {
+            if (!currentRoom) {
+                setPlans([]);
+                setSelectedPlans([]);
+                setLogsByPlan({});
+                return;
+            }
+
+            setIsLoadingPlans(true);
+            try {
+                const response = await axios.get(`/api/plan/get_plans?roomId=${currentRoom.id}`);
+                setPlans(response.data.map((plan: any) => ({
+                    id: plan.id,
+                    name: plan.plan_name || `Plan ${plan.plan_id}`,
+                    plan_id: plan.plan_id,
+                    progress: plan.progress,
+                    logs: plan.logs || []
+                })));
+            } catch (error) {
+                console.error("Error fetching plans:", error);
+            } finally {
+                setIsLoadingPlans(false);
+            }
+        };
+
+        fetchPlans();
+    }, [currentRoom]);
+
+    // Fetch logs for selected plans
+    useEffect(() => {
+        const fetchLogs = async () => {
+            // If no plans are selected, show logs from all plans
+            if (!selectedPlans.length) {
+                // Create logs object with all plans' logs
+                const logsObj: Record<string, Log[]> = {};
+
+                plans.forEach(plan => {
+                    if (plan && plan.logs) {
+                        // Format logs to match PlanLogSection props requirements
+                        const formattedLogs = plan.logs.map(log => ({
+                            ...log,
+                            planName: plan.name,
+                            planShortId: getShortId(plan.plan_id),
+                            planNavId: plan.id // Add the full plan ID for navigation
+                        }));
+                        logsObj[plan.id] = formattedLogs;
+                    }
+                });
+
+                setLogsByPlan(logsObj);
+                return;
+            }
+
+            // Use logs directly from the plans data for selected plans
+            const logsObj: Record<string, Log[]> = {};
+
+            selectedPlans.forEach(planId => {
+                const plan = plans.find(p => p.id === planId);
+                if (plan && plan.logs) {
+                    // Format logs to match PlanLogSection props requirements
+                    const formattedLogs = plan.logs.map(log => ({
+                        ...log,
+                        planName: plan.name,
+                        planShortId: getShortId(plan.plan_id),
+                        planNavId: plan.id // Add the full plan ID for navigation
+                    }));
+                    logsObj[planId] = formattedLogs;
+                } else {
+                    logsObj[planId] = [];
+                }
+            });
+
+            setLogsByPlan(logsObj);
+        };
+
+        fetchLogs();
+    }, [selectedPlans, plans]);
+
+    // Helper to get first chunk of uuid
+    const getShortId = (uuid?: string) => uuid ? uuid.split('-')[0] : '';
+
+    // Combine all logs from selected plans into a single array, with plan info
+    const allLogs = useMemo(() => {
+        let logs: Array<Log & { planName?: string; planShortId?: string; planNavId?: string }> = [];
+
+        // If no plans are selected, use logs from all plans
+        if (selectedPlans.length === 0) {
+            plans.forEach(plan => {
+                if (plan.logs) {
+                    logs = logs.concat(
+                        plan.logs.map(log => ({
+                            ...log,
+                            planName: plan.name,
+                            planShortId: getShortId(plan.plan_id),
+                            planNavId: plan.id,
+                        }))
+                    );
+                }
+            });
+        } else {
+            // Otherwise use logs from selected plans
+            selectedPlans.forEach(planId => {
+                const plan = plans.find(p => p.id === planId);
+                const planLogs = logsByPlan[planId] || [];
+                logs = logs.concat(
+                    planLogs.map(log => ({
+                        ...log,
+                        planName: plan?.name,
+                        planShortId: getShortId(plan?.plan_id),
+                        planNavId: plan?.id,
+                    }))
+                );
+            });
+        }
+
+        // Sort by created_at descending
+        return logs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }, [selectedPlans, logsByPlan, plans]);
+
+    // Map status to color scheme
+    const getColorForPlan = (plan: any) => {
+        // Default to 'running' if no status is provided
+        const status = plan.status || 'running';
+        return getStatusColorScheme(status);
+    };
+
     return (
         <MotionBox
             layout
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            style={{ backgroundColor: colors.bgSubtle }}
+            bg={colors.cardBg}
             transition={{ duration: 0.5 }}
             height="100%"
             width="100%"
@@ -62,30 +224,209 @@ const SimplifiedPlanSection = ({
             display="flex"
             flexDirection="column"
             borderWidth="1px"
-            borderColor={colors.borderColor}
+            borderColor={colors.planSectionBorder}
             zIndex={1}
-            whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+            whileHover={{ boxShadow: colors.planSectionHoverShadow }}
         >
-            <Box p={4} borderBottomWidth="1px" borderColor={colors.borderColor}>
-                <Text fontSize="lg" fontWeight="bold" color={colors.textColorHeading}>
+            <Box
+                p={4}
+                borderBottomWidth="1px"
+                borderColor={colors.planSectionBorder}
+                bg={colors.planSectionHeaderBg}
+            >
+                <Text
+                    fontSize="lg"
+                    fontWeight="bold"
+                    color={colors.planSectionHeaderText}
+                >
                     {t("plan_section")}
                 </Text>
             </Box>
 
-            <VStack gap={4} p={4} align="stretch">
+            <VStack gap={4} p={4} align="stretch" overflowY="auto">
                 {currentRoom ? (
-                    <Box>
-                        <Text fontSize="sm" fontWeight="bold" color={colors.textColorHeading} mb={1}>
-                            {t("current_room")}
-                        </Text>
+                    <>
+                        <Box>
+                            <Text
+                                fontSize="sm"
+                                fontWeight="bold"
+                                color={colors.planLabelText}
+                                mb={2}
+                            >
+                                {t("select_plans")}
+                            </Text>
+                            {isLoadingPlans ? (
+                                <Box
+                                    p={3}
+                                    borderWidth="1px"
+                                    borderRadius="md"
+                                    borderColor={colors.planItemBorder}
+                                    bg={colors.planItemBg}
+                                    textAlign="center"
+                                >
+                                    <Text fontSize="sm" color={colors.textColor}>
+                                        {t("loading_plans")}...
+                                    </Text>
+                                </Box>
+                            ) : plans.length > 0 ? (
+                                <>
+                                    <Select.Root
+                                        multiple
+                                        collection={plansCollection}
+                                        size="sm"
+                                        width="100%"
+                                        onValueChange={obj => {
+                                            const value = obj?.value;
+                                            setSelectedPlans(Array.isArray(value) ? value : value ? [value] : []);
+                                        }}
+                                        value={selectedPlans}
+                                    >
+                                        <Select.HiddenSelect />
+                                        {/* <Select.Label color={colors.textColor}>Select plans</Select.Label> */}
+                                        <Select.Control>
+                                            <Select.Trigger>
+                                                <Select.ValueText
+                                                    placeholder={t("select_plans")}
+                                                    color={colors.textColor}
+                                                />
+                                            </Select.Trigger>
+                                            <Select.IndicatorGroup>
+                                                <Select.Indicator />
+                                            </Select.IndicatorGroup>
+                                        </Select.Control>
+                                        <Portal>
+                                            <Select.Positioner>
+                                                <Select.Content bg={colors.dropdownBg}>
+                                                    {plansCollection.items.map((plan) => {
+                                                        // Find the full plan object for progress/plan_id
+                                                        const fullPlan = plans.find(p => p.id === plan.value);
+                                                        return (
+                                                            <Select.Item
+                                                                item={plan}
+                                                                key={plan.value}
+                                                                color={colors.dropdownText}
+                                                                _hover={{ bg: colors.dropdownHoverBg }}
+                                                                px={2}
+                                                                py={1}
+                                                            >
+                                                                <Flex align="center" justify="space-between" width="100%">
+                                                                    <Box>
+                                                                        <Text as="span" fontWeight="medium">
+                                                                            {plan.label}
+                                                                        </Text>
+                                                                        <Text as="span" color="gray.400" fontSize="xs" ml={2}>
+                                                                            [{getShortId(fullPlan?.plan_id)}]
+                                                                        </Text>
+                                                                    </Box>
+                                                                    {typeof fullPlan?.progress === "number" && (
+                                                                        <Box minW="40px" textAlign="right">
+                                                                            <Text as="span" color="gray.400" fontSize="xs">
+                                                                                {fullPlan.progress}%
+                                                                            </Text>
+                                                                        </Box>
+                                                                    )}
+                                                                </Flex>
+                                                                <Select.ItemIndicator />
+                                                            </Select.Item>
+                                                        );
+                                                    })}
+                                                </Select.Content>
+                                            </Select.Positioner>
+                                        </Portal>
+                                    </Select.Root>
+                                    <Box mt={2}>
+                                        <Stack gap={1}>
+                                            {plans
+                                                .filter(plan => selectedPlans.includes(plan.id))
+                                                .map((plan) => {
+                                                    const colorScheme = getColorForPlan(plan);
+                                                    return (
+                                                        <Flex
+                                                            key={plan.id}
+                                                            align="center"
+                                                            justify="space-between"
+                                                            width="100%"
+                                                            py={1}
+                                                        >
+                                                            {/* Plan name with ID */}
+                                                            <Text
+                                                                width="45%"
+                                                                color={colors.textColor}
+                                                                fontSize="sm"
+                                                                lineClamp={1}
+                                                            >
+                                                                {plan.name}
+                                                                <Text as="span" color="gray.500" fontSize="xs" ml={1}>
+                                                                    [{getShortId(plan.plan_id)}]
+                                                                </Text>
+                                                            </Text>
+
+                                                            {/* Progress bar */}
+                                                            <Progress.Root
+                                                                width="40%"
+                                                                defaultValue={plan.progress ?? 0}
+                                                                colorScheme={colorScheme}
+                                                                variant="outline"
+                                                                size="sm"
+                                                            >
+                                                                <Progress.Track>
+                                                                    <Progress.Range />
+                                                                </Progress.Track>
+                                                            </Progress.Root>
+
+                                                            {/* Percentage */}
+                                                            <Text
+                                                                width="15%"
+                                                                fontSize="xs"
+                                                                color={colors.textColor}
+                                                                textAlign="right"
+                                                            >
+                                                                {typeof plan.progress === "number" ? `${plan.progress}%` : "0%"}
+                                                            </Text>
+                                                        </Flex>
+                                                    );
+                                                })}
+                                        </Stack>
+                                    </Box>
+                                    {/* Render PlanLogSection with the logs */}
+                                    {currentRoom && (
+                                        <Box mt={4}>
+                                            <PlanLogSection
+                                                logs={allLogs}
+                                                colors={colors}
+                                                t={t}
+                                            />
+                                        </Box>
+                                    )}
+                                </>
+                            ) : (
+                                <Box
+                                    p={3}
+                                    borderWidth="1px"
+                                    borderRadius="md"
+                                    borderColor={colors.planItemBorder}
+                                    bg={colors.planItemBg}
+                                >
+                                    <Text fontSize="sm" color={colors.textColor}>
+                                        {t("no_plans_found")}
+                                    </Text>
+                                </Box>
+                            )}
+                        </Box>
+                    </>
+                ) : (
+                    <Box
+                        p={4}
+                        borderWidth="1px"
+                        borderRadius="md"
+                        borderColor={colors.planItemBorder}
+                        bg={colors.planItemBg}
+                        textAlign="center"
+                    >
                         <Text fontSize="sm" color={colors.textColor}>
-                            {currentRoom.name}
+                            {t("select_room_to_see_plans")}
                         </Text>
                     </Box>
-                ) : (
-                    <Text fontSize="sm" color={colors.textColor}>
-                        {t("select_room_to_see_plans")}
-                    </Text>
                 )}
             </VStack>
         </MotionBox>

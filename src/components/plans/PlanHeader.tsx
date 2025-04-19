@@ -134,50 +134,6 @@ export default function PlanHeader({ plan, colors, isLoading = false, loadingTas
                 </Box>
 
                 <Flex align="center" gap={3}>
-                    {/* Action Buttons */}
-                    <HStack gap={2}>
-                        <Tooltip content={t("approve_plan")}>
-                            <IconButton
-                                aria-label="approve"
-                                size="sm"
-                                colorScheme="green"
-                                variant="ghost"
-                                loading={isLoading || loadingTasks}
-                                disabled={plan.status === 'success' || plan.status === 'terminated'}
-                                onClick={handleApprove}
-                                _hover={{ bg: "green.50", color: colors.greenBgColor }}
-                            >
-                                <Icon as={FaCheck} color={colors.textColor} />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip content={t("deny_plan")}>
-                            <IconButton
-                                aria-label="deny"
-                                size="sm"
-                                colorScheme="red"
-                                variant="ghost"
-                                loading={isLoading || loadingTasks}
-                                disabled={plan.status === 'success' || plan.status === 'terminated'}
-                                onClick={handleDeny}
-                                _hover={{ bg: "red.50", color: colors.redBgColor }}
-                            >
-                                <Icon as={FaStop} color={colors.textColor} />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip content={t("refresh")}>
-                            <IconButton
-                                aria-label="synchronize"
-                                size="sm"
-                                colorScheme="blue"
-                                variant="ghost"
-                                loading={isLoading || loadingTasks}
-                                onClick={handleRefresh}
-                                _hover={{ bg: "blue.50", color: colors.blueBgColor }}
-                            >
-                                <Icon as={FiRefreshCw} color={colors.textColor} />
-                            </IconButton>
-                        </Tooltip>
-                    </HStack>
 
                     <StatusBadge status={plan.status as PlanStatus} />
                     <HStack width="150px">

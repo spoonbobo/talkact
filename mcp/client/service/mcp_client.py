@@ -88,14 +88,12 @@ class MCPClient:
         Returns:
             dict: A tool description in OpenAI function calling format
         """
-        # Create the function object with name, description and parameters
         function_obj = {
             "name": tool.name,
             "description": tool.description,
             "parameters": tool.inputSchema
         }
         
-        # Return the complete tool object in OpenAI format
         return {
             "type": "function",
             "function": function_obj
@@ -178,11 +176,18 @@ class MCPClient:
                 elif plan_json.get("plan_name", "").lower() == "null_plan":
                     no_tools_needed = True
                 
+                # Generate plan_id (client-side ID)
+                plan_id = str(uuid4())
+                
+                # Use timezone-aware datetime
+                current_time = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                
                 # Create the plan via API
                 async with httpx.AsyncClient() as client:
                     plan_response = await client.post(
                         f"{client_url}/api/plan/create_plan",
                         json={
+                            "plan_id": plan_id,  # Only send plan_id, not id
                             "plan_name": plan_name,
                             "plan_overview": plan_overview,
                             "room_id": plan_request.room_id,
@@ -190,13 +195,22 @@ class MCPClient:
                             "assigner": plan_request.assigner,
                             "assignee": plan_request.assignee,
                             "reviewer": getattr(plan_request, 'reviewer', None),
+                            "logs": [
+                                {
+                                    "id": str(uuid4()),
+                                    "created_at": current_time,
+                                    "type": "plan_created",
+                                    "content": f"Plan **{plan_name}** has been created",
+                                    "plan_id": plan_id,
+                                    "task_id": None
+                                }
+                            ],
                             "no_tools_needed": no_tools_needed  # Add this flag to the request
                         },
                         headers={"Content-Type": "application/json"}
                     )
                     plan_response.raise_for_status()
                     plan_data = plan_response.json()
-                    plan_id = plan_data["plan"]["id"]
                     
                     # Fetch user information from the API
                     user_response = await client.get(
@@ -208,15 +222,23 @@ class MCPClient:
                     
                     # Use the entire user data from the API response
                     sender_data = user_data["user"]
-                    logger.info(f"DEBUGGGGGGGGGGGGGGGG, {sender_data}")
                     
-                    # notify all users in the room
+                    # Compose a natural language, markdown-supported message for plan creation
+                    plan_created_message = (
+                        f"✅ **A new plan has been created!**\n\n"
+                        f"**Plan Name:** `{plan_name}`\n"
+                        f"**Plan ID:** `{plan_data['plan']['id']}`\n\n"
+                        f"**Plan Overview:**\n{plan_overview}\n\n"
+                        f"You can now review this plan or assign tasks to team members. "
+                        f"Refer to the Plan ID above for future reference."
+                    )
+
                     await self.socket_client.send_message(
                         {
                             "id": str(uuid4()),
                             "created_at": datetime.datetime.now().isoformat(),
                             "sender": sender_data,
-                            "content": f"Plan **{plan_name}** has been created",
+                            "content": plan_created_message,
                             "avatar": sender_data.get("avatar", None),
                             "room_id": plan_request.room_id,
                             "mentions": []
@@ -224,14 +246,18 @@ class MCPClient:
                     )
                                         
                     # Then create tasks associated with this plan
-                    tasks = self.create_tasks_from_plan(plan_json, plan_request, plan_id)
+                    tasks = self.create_tasks_from_plan(
+                        plan_json, 
+                        plan_request, 
+                        plan_id
+                    )
                     
                     if tasks:
                         # Create the tasks via API
                         tasks_response = await client.post(
                             f"{client_url}/api/plan/create_tasks",
                             json={
-                                "plan_id": plan_id,
+                                "plan_id": plan_data["plan"]["id"],
                                 "tasks": tasks
                             },
                             headers={"Content-Type": "application/json"}

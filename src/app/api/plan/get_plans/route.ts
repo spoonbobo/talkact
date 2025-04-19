@@ -1,17 +1,30 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
+// Helper function to safely parse JSON
+function tryParseJSON(jsonString: string | null | undefined) {
+    if (!jsonString) return null;
+    try {
+        return typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString;
+    } catch (e) {
+        console.error('Error parsing JSON:', e);
+        return null;
+    }
+}
+
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const limitParam = searchParams.get('limit');
         const pageParam = searchParams.get('page');
         const statusParam = searchParams.get('status');
+        const roomIdParam = searchParams.get('roomId'); // Add support for roomId parameter
 
         // Convert parameters to appropriate types
         const limit = limitParam ? parseInt(limitParam, 10) : undefined;
         const page = pageParam ? parseInt(pageParam, 10) : 1;
         const status = statusParam && statusParam !== 'all' ? statusParam : undefined;
+        const roomId = roomIdParam || undefined;
 
         // Validate limit is a positive number if provided
         if (limit !== undefined && (isNaN(limit) || limit <= 0)) {
@@ -32,6 +45,12 @@ export async function GET(request: Request) {
         if (status) {
             countQuery = countQuery.where('status', status);
         }
+
+        // Apply room_id filter to count query if provided
+        if (roomId) {
+            countQuery = countQuery.where('room_id', roomId);
+        }
+
         const [{ count }] = await countQuery.count('* as count');
         const totalCount = parseInt(count as string, 10);
 
@@ -41,6 +60,11 @@ export async function GET(request: Request) {
         // Apply status filter if provided
         if (status) {
             query = query.where('status', status);
+        }
+
+        // Apply room_id filter if provided
+        if (roomId) {
+            query = query.where('room_id', roomId);
         }
 
         // Apply pagination
@@ -89,16 +113,5 @@ export async function GET(request: Request) {
             error: 'Internal Server Error',
             details: error instanceof Error ? error.message : 'Unknown error'
         }, { status: 500 });
-    }
-}
-
-// Helper function to safely parse JSON
-function tryParseJSON(jsonString: string | null) {
-    if (!jsonString) return null;
-
-    try {
-        return JSON.parse(jsonString);
-    } catch (e) {
-        return jsonString; // Return as-is if parsing fails
     }
 }

@@ -346,11 +346,11 @@ class ChatSocketClient {
     disconnect(): void {
         if (this.socket) {
             this.socket.disconnect();
-            toaster.create({
-                title: "Disconnected",
-                description: "Socket disconnected successfully",
-                type: "info"
-            });
+            // toaster.create({
+            //     title: "Disconnected",
+            //     description: "Socket disconnected successfully",
+            //     type: "info"
+            // });
         }
     }
 }

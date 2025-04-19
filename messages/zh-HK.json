@@ -207,7 +207,12 @@
     "plan_section": "計劃",
     "current_room": "當前聊天室",
     "create_room": "創建聊天室",
-    "select_room_to_see_plans": "選擇聊天室查看計劃"
+    "select_room_to_see_plans": "選擇聊天室查看計劃",
+    "select_plans": "選擇計劃",
+    "plan_logs": "計劃日誌",
+    "no_logs_found": "沒有找到日誌",
+    "open_plan": "打開計劃",
+    "no_plans_found": "沒有計劃"
   },
   "Plans": {
     "calendar": "日曆",

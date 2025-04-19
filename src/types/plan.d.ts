@@ -31,9 +31,10 @@ export interface IPlan {
     created_at: Date;
     updated_at: Date;
     completed_at: Date | null;
-    logs?: Record<string, any>;
+    logs?: Log[];
     context?: any[];
 }
+
 
 export interface ITask {
     id?: string;
@@ -68,6 +69,17 @@ export interface IPlanFromAPI {
     created_at: string;
     updated_at: string;
     completed_at: string | null;
-    logs?: Record<string, any>;
+    logs?: Log[];
     context?: any[];
-} 
+}
+
+export const logTypes = ['created_plan', 'created_task', 'updated_task', 'completed_task', 'failed_task', 'denied_task', 'not_started_task'];
+
+export class Log {
+    id: string;
+    created_at: Date;
+    plan_id: string;
+    task_id: string;
+    content: string;
+    type: string;
+}

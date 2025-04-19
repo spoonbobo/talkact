@@ -17,9 +17,9 @@ export async function POST(request: Request) {
             }, { status: 400 });
         }
 
-        // Generate IDs
-        const plan_id = uuidv4();
-        const id = uuidv4();
+        // Use client-provided IDs if available, otherwise generate them
+        const plan_id = body.plan_id || uuidv4();
+        const id = body.id || uuidv4();
 
         // Require user IDs instead of providing defaults
         if (!body.assigner) {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
             assigner: body.assigner,
             assignee: body.assignee,
             reviewer: body.reviewer || null,
-            logs: JSON.stringify({}),
+            logs: JSON.stringify(body.logs),
             context: body.context ? JSON.stringify(body.context) : null
         };
 

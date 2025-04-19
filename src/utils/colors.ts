@@ -74,9 +74,9 @@ export const useAdminPanelColors = () => {
 // Chat page colors
 export const useChatPageColors = () => {
     return {
-        textColor: useColorModeValue("gray.600", "gray.400"),
+        textColor: useColorModeValue("gray.700", "gray.400"),
         textColorHeading: useColorModeValue("gray.800", "gray.100"),
-        textColorSecondary: useColorModeValue("gray.500", "gray.500"),
+        textColorSecondary: useColorModeValue("gray.600", "gray.500"),
         chatModeHeading: useColorModeValue("green.600", "green.400"),
         borderColor: useColorModeValue("gray.200", "gray.700"),
         bgSubtle: useColorModeValue("rgba(249, 250, 251, 0.8)", "rgba(26, 32, 44, 0.8)"),
@@ -98,7 +98,7 @@ export const useChatPageColors = () => {
         emptyStateTextColor: useColorModeValue("teal.700", "teal.300"),
         emptyStateSubtleColor: useColorModeValue("teal.600", "teal.400"),
         aiNameColor: useColorModeValue("teal.600", "teal.400"),
-        formTextColor: useColorModeValue("gray.600", "gray.400"),
+        formTextColor: useColorModeValue("gray.700", "gray.400"),
         formButtonBg: useColorModeValue("gray.200", "gray.700"),
         formButtonHoverBg: useColorModeValue("gray.300", "gray.600"),
         formButtonActiveBg: useColorModeValue("gray.400", "gray.500"),
@@ -106,7 +106,7 @@ export const useChatPageColors = () => {
         createButtonBg: useColorModeValue("blue.500", "blue.500"),
         createButtonHoverBg: useColorModeValue("blue.600", "blue.600"),
         createButtonActiveBg: useColorModeValue("blue.700", "blue.700"),
-        messageTextColor: useColorModeValue("gray.600", "gray.400"),
+        messageTextColor: useColorModeValue("gray.700", "gray.400"),
         scrollbarTrackBg: useColorModeValue("#f1f1f1", "#2d3748"),
         scrollbarThumbBg: useColorModeValue("#c5c5c5", "#4a5568"),
         scrollbarThumbHoverBg: useColorModeValue("#a8a8a8", "#718096"),
@@ -116,6 +116,27 @@ export const useChatPageColors = () => {
         taskModeColor: useColorModeValue("blue.500", "blue.500"),
         taskModeHoverColor: useColorModeValue("blue.600", "blue.600"),
         chatModeHoverColor: useColorModeValue("green.600", "green.600"),
+        selectedItemBg: useColorModeValue("blue.50", "blue.900"),
+        dropdownBg: useColorModeValue("white", "gray.700"),
+        dropdownText: useColorModeValue("gray.800", "gray.200"),
+        dropdownHoverBg: useColorModeValue("gray.50", "gray.600"),
+        dropdownSelectedBg: useColorModeValue("blue.50", "blue.800"),
+        dropdownBorder: useColorModeValue("gray.200", "gray.600"),
+        spinnerColor: useColorModeValue("blue.500", "blue.300"),
+
+        // New plan section specific colors
+        planSectionBg: useColorModeValue("rgba(245, 250, 255, 0.9)", "rgba(23, 32, 42, 0.9)"),
+        planSectionHeaderBg: useColorModeValue("blue.50", "blue.900"),
+        planSectionHeaderText: useColorModeValue("blue.700", "blue.200"),
+        planSectionBorder: useColorModeValue("blue.100", "blue.800"),
+        planSectionHoverShadow: useColorModeValue("0 4px 12px rgba(66, 153, 225, 0.15)", "0 4px 12px rgba(66, 153, 225, 0.3)"),
+        planItemBg: useColorModeValue("white", "gray.750"),
+        planItemHoverBg: useColorModeValue("blue.50", "blue.900"),
+        planItemBorder: useColorModeValue("blue.100", "blue.700"),
+        planItemSelectedBg: useColorModeValue("blue.100", "blue.800"),
+        planItemSelectedBorder: useColorModeValue("blue.300", "blue.600"),
+        planLabelText: useColorModeValue("blue.600", "blue.300"),
+        planValueText: useColorModeValue("gray.700", "gray.300"),
     };
 };
 
