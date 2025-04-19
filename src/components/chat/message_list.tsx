@@ -363,7 +363,7 @@ export const ChatMessageList = ({
                                 )}
                             >
                                 <Avatar.Fallback name={typeof group.sender === 'string' ? group.sender : group.sender?.username || 'Unknown'} />
-                                <Avatar.Image src={group.avatar} />
+                                <Avatar.Image src={group.avatar === "" ? undefined : group.avatar} />
                             </Avatar.Root>
                         )}
 

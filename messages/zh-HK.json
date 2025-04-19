@@ -27,7 +27,7 @@
     "mcp_description": "探索 onlysaid 的 MCP 功能",
     "welcome_message": "你好",
     "guest_welcome": "你好",
-    "guest_welcome_message": "onlysaid (onlysaid）是一個整合MCP Server的程式，全面提升你和團隊的生產力。",
+    "guest_welcome_message": "onlysaid讓您和您的團隊能夠使用自然語言規劃、管理和完成任務",
     "guest_features_title": "功能",
     "guest_cta_title": "馬上開始",
     "guest_cta_description": "登入或註冊後，您將能夠使用 onlysaid 的各種功能",
@@ -212,7 +212,8 @@
     "plan_logs": "計劃日誌",
     "no_logs_found": "沒有找到日誌",
     "open_plan": "打開計劃",
-    "no_plans_found": "沒有計劃"
+    "no_plans_found": "沒有計劃",
+    "loading_plans": "加載計劃中..."
   },
   "Plans": {
     "calendar": "日曆",

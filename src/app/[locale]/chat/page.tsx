@@ -672,7 +672,7 @@ const ChatPageContent = () => {
     }
   }, [rooms, selectedRoomId, dispatch]);
 
-  const handleSendMessage = useCallback((newMessage: IMessage) => {
+  const handleSendMessage = useCallback(async (newMessage: IMessage) => {
     console.log("Sending message:", newMessage);
 
     if (newMessage.content.trim() && selectedRoomId) {
@@ -683,6 +683,10 @@ const ChatPageContent = () => {
       });
 
       console.log("Message dispatched to Redux");
+      await axios.post("/api/mcp/ask_admin", {
+        room_id: selectedRoomId,
+        owner_message: newMessage.content
+      });
 
       // Use a longer timeout to ensure the user's message is fully rendered
       // before starting any AI processing

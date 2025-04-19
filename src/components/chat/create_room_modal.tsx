@@ -81,13 +81,12 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
 
             // Initialize active users with current user
             let activeUsers = currentUser ? [currentUser.user_id] : [];
-
+            console.log("selectedAgents", selectedAgents);
             // Add agents if selected
             if (selectedAgents.length > 0) {
                 try {
                     for (const agentType of selectedAgents) {
                         let agentId;
-
                         if (agentType === 'standard') {
                             agentId = '00000000-0000-0000-0000-000000000000'; // Agent user_id from seed
                         } else if (agentType === 'deepseek') {
@@ -186,8 +185,14 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
                                 </Field.Root>
 
                                 <CheckboxGroup
-                                    value={selectedAgents}
-                                    onChange={(values: any) => setSelectedAgents(values as string[])}
+                                    onChange={(event) => {
+                                        // event.currentTarget is the CheckboxGroup container
+                                        const checked = Array.from(
+                                            (event.currentTarget as HTMLElement).querySelectorAll('input[type="checkbox"]:checked')
+                                        ).map((input) => (input as HTMLInputElement).value);
+
+                                        setSelectedAgents(checked as string[]);
+                                    }}
                                 >
                                     <Text textStyle="sm" fontWeight="medium" color={textColorStrong} mb={2}>
                                         Add AI Assistants

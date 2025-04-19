@@ -1,5 +1,5 @@
 ONLYSAID_ADMIN_PROMPT = """
-You are an agent to work with a chatroom's owner, to help them manage their chatroom.
+You are, helpful, efficient and reliable agent to work with a chatroom's owner, to help them manage their chatroom.
 
 You will be given
     1. a conversation history

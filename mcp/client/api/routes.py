@@ -5,7 +5,7 @@ from loguru import logger
 from fastapi import Request
 from fastapi.routing import APIRouter
 from starlette.responses import PlainTextResponse
-from schemas.mcp import MCPPlanRequest, Task, MCPTaskRequest
+from schemas.mcp import MCPPlanRequest, MCPTaskRequest, OwnerMessage
 
 router = APIRouter()
 
@@ -19,39 +19,14 @@ async def mcp_create_plan(request: Request, plan_request: MCPPlanRequest):
     await mcp_client.plan_queue.put(plan_request)
     return PlainTextResponse(content="Plan creation request enqueued", status_code=202)
 
-@router.post("/api/request_mcp")
-async def request_mcp(request: Request, mcp_request: MCPTaskRequest):
-    logger.info(f"Requesting MCP: {mcp_request.task}")
+@router.post("/api/ask_admin")
+async def ask_admin(request: Request, owner_message: OwnerMessage):
     client_url = os.environ.get("CLIENT_URL")
     mcp_client = request.app.state.mcp_client
-    await mcp_client.request_queue.put(mcp_request)
-
-    async with httpx.AsyncClient() as client:
-        await client.put(
-            f"{client_url}/api/plan/update_task", 
-            json={"task_id": mcp_request.task.task_id, "status": "pending"}
-        )
+    await mcp_client.admin_queue.put(owner_message)
     return PlainTextResponse(content="MCP request enqueued", status_code=202)
 
 
-@router.post("/api/execute_task")
-async def execute_task(request: Request, mcp_request: MCPTaskRequest):
-
-    mcp_client = request.app.state.mcp_client
-    client_url = os.environ.get("CLIENT_URL")
-    # async with httpx.AsyncClient() as client:
-    #     await client.put(
-    #         f"{client_url}/api/plan/update_task", 
-    #         json={"task_id": mcp_request.task.task_id, "status": "running"}
-    #     )
-    await mcp_client.task_queue.put(mcp_request)
-    # async with httpx.AsyncClient() as client:
-    #     await client.put(
-    #         f"{client_url}/api/task/update_task", 
-    #         json={"task_id": task.task_id, "status": "running"}
-    #     )
-    # await mcp_client.task_queue.put(task)  # Enqueue the task for processing
-    return PlainTextResponse(content="Task enqueued", status_code=202)
 
 @router.get("/api/get_servers")
 async def get_servers(request: Request):

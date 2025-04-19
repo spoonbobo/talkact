@@ -43,6 +43,7 @@ class MCPClient:
         self.plan_queue = asyncio.Queue()  # New queue for task creation
         self.request_queue = asyncio.Queue()  # Queue for direct MCP requests
         self.task_queue = asyncio.Queue()  # Execution queue
+        self.admin_queue = asyncio.Queue()  # Queue for admin messages
         self.server_descriptions_dict = {}
         self.server_tools_dict = {}
         self.mcp_tools_dict = {}
@@ -741,3 +742,30 @@ class MCPClient:
     async def cleanup(self):
         for server in self.servers:
             await self.exit_stack[server].aclose()
+
+    async def process_admin_messages(self):
+        logger.info("Processing admin messages")
+        """Process administrative messages from the admin queue"""
+        while True:
+            admin_message = await self.admin_queue.get()
+            room_id = admin_message.room_id
+            owner_message = admin_message.owner_message
+            client_url = os.environ.get("CLIENT_URL", "")
+            try:
+                try:
+                    async with httpx.AsyncClient() as client:
+                        response = await client.post(
+                            f"{client_url}/api/chat/get_messages", 
+                            json={"roomId": room_id, "limit": 100},
+                            headers={"Content-Type": "application/json"}
+                        )
+                        response.raise_for_status()
+                        messages = response.json()
+                        logger.info(f"Messages: {messages}")
+                except Exception as e:
+                    logger.error(f"Error fetching messages: {e}")
+                    messages = []
+            except Exception as e:
+                logger.error(f"Error processing admin message: {e}")
+            finally:
+                self.admin_queue.task_done()

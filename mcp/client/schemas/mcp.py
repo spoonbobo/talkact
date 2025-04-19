@@ -2,6 +2,10 @@ from typing import List, Any, Dict, Optional, Any
 from pydantic import BaseModel
 
 
+class OwnerMessage(BaseModel):
+    room_id: str
+    owner_message: str
+
 class User(BaseModel):
     id: str
     username: str
