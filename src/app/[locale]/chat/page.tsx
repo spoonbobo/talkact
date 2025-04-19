@@ -704,7 +704,7 @@ const ChatPageContent = () => {
             }
           });
         }
-      }, 100); // Small delay to ensure user message renders first
+      }, 500); // Small delay to ensure user message renders first
 
       setMessageInput("");
 
