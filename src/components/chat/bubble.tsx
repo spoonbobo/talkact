@@ -444,12 +444,10 @@ export const ChatBubble = React.memo(({
                 userSelect: "text",
                 marginLeft: !isUser && showThumbnails ? '40px' : '0',
                 marginRight: isUser && showThumbnails ? '40px' : '0',
-                transition: 'all 0.2s ease-out',
-                transform: 'scale(1)',
               }}
             >
               <Box position="relative" textAlign="left" width="100%" overflow="hidden">
-                {/* Use our custom components for streaming content */}
+                {/* Keep streaming content animation but remove regular content animation */}
                 {isStreaming ? (
                   processedContent ? (
                     <StreamingContent
@@ -457,7 +455,6 @@ export const ChatBubble = React.memo(({
                       className="whitespace-pre-wrap"
                     />
                   ) : (
-                    // Show the generating text with shimmer effect
                     <GeneratingText />
                   )
                 ) : (
