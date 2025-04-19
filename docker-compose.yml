@@ -171,6 +171,7 @@ services:
       - ./mcp/client:/app
       - ./mcp/servers:/servers
       - ./mcp/agent_home:/agent_home
+      - .env:/servers/.env
     environment:
       - MCP_SERVERS_JSON=/app/mcp_server.json
       - SOCKET_SERVER_URL=${SOCKET_SERVER_URL}

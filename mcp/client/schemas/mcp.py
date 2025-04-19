@@ -4,7 +4,9 @@ from pydantic import BaseModel
 
 class OwnerMessage(BaseModel):
     room_id: str
+    owner_id: str
     owner_message: str
+    trust: bool = False
 
 class User(BaseModel):
     id: str
@@ -37,7 +39,7 @@ class MCPPlanRequest(BaseModel):
     assignee: str
     client_host: str | None = None
 
-class Tool(BaseModel):
+class Skill(BaseModel):
     tool_name: str
     mcp_server: str
     args: Dict[str, Any]
@@ -54,7 +56,7 @@ class TaskData(BaseModel):
     task_explanation: str
     expected_result: str
     mcp_server: str
-    tool: Any
+    skills: Any
     status: str
     result: str = ""
     logs: Dict[str, Any] = {}
@@ -90,12 +92,14 @@ class PlanLog(BaseModel):
     created_at: str
     type: str
     content: str
+    skills: List[Skill]
+    proposed_action: Optional[str] = None
 
 class MCPTaskRequest(BaseModel):
     task: TaskData
     plan: PlanData
 
-class ToolCallInfo(BaseModel):
+class SkillCallInfo(BaseModel):
     tool_name: str
     mcp_server: str
     args: Dict[str, Any]
@@ -115,4 +119,4 @@ class Task(BaseModel):
     task_summarization: str
     result: str = ""
     context: List[Dict[str, Any]] = []
-    tools_called: List[ToolCallInfo] = []
+    skills_called: List[SkillCallInfo] = []

@@ -33,29 +33,29 @@ export async function POST(request: Request) {
             }, { status: 404 });
         }
 
-        // Prepare tasks data - ensure tool is properly stringified
+        // Prepare tasks data - ensure skills is properly stringified
         const tasksData = tasks.map((task, index) => {
-            // Make sure tool is a JSON string
-            let toolJson = null;
-            if (task.tool) {
-                // If assigner/assignee/reviewer were included in the tool, keep them there
-                const toolData = typeof task.tool === 'string' ? JSON.parse(task.tool) : task.tool;
+            // Make sure skills is a JSON string
+            let skillsJson = null;
+            if (task.skills) {
+                // If assigner/assignee/reviewer were included in the skills, keep them there
+                const skillsData = typeof task.skills === 'string' ? JSON.parse(task.skills) : task.skills;
 
-                // Store assignee/assigner/reviewer in the tool object if they were provided
+                // Store assignee/assigner/reviewer in the skills object if they were provided
                 if (task.assignee) {
-                    toolData.assignee = task.assignee;
+                    skillsData.assignee = task.assignee;
                 }
                 if (task.assigner) {
-                    toolData.assigner = task.assigner;
+                    skillsData.assigner = task.assigner;
                 }
                 if (task.reviewer) {
-                    toolData.reviewer = task.reviewer;
+                    skillsData.reviewer = task.reviewer;
                 }
 
-                toolJson = JSON.stringify(toolData);
+                skillsJson = JSON.stringify(skillsData);
             } else if (task.assignee || task.assigner || task.reviewer) {
-                // If no tool was provided but assignee/assigner/reviewer were, create a tool object for them
-                toolJson = JSON.stringify({
+                // If no skills was provided but assignee/assigner/reviewer were, create a skills object for them
+                skillsJson = JSON.stringify({
                     assignee: task.assignee,
                     assigner: task.assigner,
                     reviewer: task.reviewer
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
                 mcp_server: task.mcp_server || null,
                 task_explanation: task.task_explanation,
                 expected_result: task.expected_result || '',
-                tool: toolJson,
+                skills: skillsJson,
                 status: 'not_started', // Initial status
                 result: '',
                 logs: JSON.stringify({})
@@ -91,16 +91,16 @@ export async function POST(request: Request) {
                 updated_at: new Date()
             });
 
-        // Format the response - handle both string and object cases for tool and logs
+        // Format the response - handle both string and object cases for skills and logs
         const formattedTasks = insertedTasks.map(task => {
-            let parsedTool = null;
-            if (task.tool) {
+            let parsedSkills = null;
+            if (task.skills) {
                 try {
                     // Try to parse if it's a string
-                    parsedTool = typeof task.tool === 'string' ? JSON.parse(task.tool) : task.tool;
+                    parsedSkills = typeof task.skills === 'string' ? JSON.parse(task.skills) : task.skills;
                 } catch (e) {
                     // If parsing fails, use as is
-                    parsedTool = task.tool;
+                    parsedSkills = task.skills;
                 }
             }
 
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
 
             return {
                 ...task,
-                tool: parsedTool,
+                skills: parsedSkills,
                 logs: parsedLogs
             };
         });

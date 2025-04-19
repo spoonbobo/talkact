@@ -3,7 +3,7 @@ const axios = require("axios");
 
 // Make sure these are at the very top of your file, outside any functions or blocks
 const MAX_CONNECTIONS_PER_USER = 5;
-const CONNECTION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+const CONNECTION_TIMEOUT = 12 * 60 * 60 * 1000; // 12 hours
 const connectionTimestamps = new Map();
 
 // io: socket.io
@@ -334,8 +334,8 @@ function setupSocketIO(io, client) {
     }
   };
 
-  // Run cleanup every 15 minutes
-  setInterval(cleanupStaleConnections, 15 * 60 * 1000);
+  // Run cleanup every 12 hours (was 15 minutes)
+  setInterval(cleanupStaleConnections, 12 * 60 * 60 * 1000);
 }
 
 // TODO: not needed for now as we are loading all messages in db anyways.

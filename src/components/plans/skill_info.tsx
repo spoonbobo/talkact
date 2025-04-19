@@ -15,19 +15,23 @@ import { FaTools } from 'react-icons/fa';
 import { FiServer } from 'react-icons/fi';
 import { ITask } from "@/types/plan";
 
-interface TaskToolInfoProps {
+interface TaskSkillInfoProps {
     task: ITask;
     colors: any;
     t: any; // Translation function
+    showDetails?: boolean;
 }
 
-export default function TaskToolInfo({ task, colors, t }: TaskToolInfoProps) {
+export default function SkillInfo({ task, colors, t, showDetails = false }: TaskSkillInfoProps) {
     if (!task) return null;
+
+    // Support both skill and tool properties for backward compatibility
+    const skillData = task.skill || task.skill;
 
     return (
         <Flex direction="column" gap={2} mt={3}>
             <Box>
-                {task.tool && (
+                {skillData && (
                     <Box>
                         <Flex align="center" mb={2}>
                             {task.mcp_server && (
@@ -47,10 +51,10 @@ export default function TaskToolInfo({ task, colors, t }: TaskToolInfoProps) {
                             )}
                         </Flex>
 
-                        {Array.isArray(task.tool) ? (
-                            // Handle array of tool calls with improved styling
+                        {Array.isArray(skillData) ? (
+                            // Handle array of skill calls with improved styling
                             <VStack align="flex-start" gap={2}>
-                                {task.tool.map((toolCall, idx) => (
+                                {skillData.map((skillCall, idx) => (
                                     <Box
                                         key={idx}
                                         p={3}
@@ -65,18 +69,18 @@ export default function TaskToolInfo({ task, colors, t }: TaskToolInfoProps) {
                                             <HStack gap={2}>
                                                 <Icon as={FaTools} color="blue.500" />
                                                 <Text fontWeight="semibold" fontSize="sm" color={colors.textColorHeading}>
-                                                    {toolCall.tool_name || t("not_specified")}
+                                                    {skillCall.skill_name || skillCall.tool_name || t("not_specified")}
                                                 </Text>
                                             </HStack>
                                         </Flex>
 
-                                        {toolCall.description && (
+                                        {skillCall.description && (
                                             <Text fontSize="xs" color={colors.textColor} mb={2}>
-                                                {toolCall.description}
+                                                {skillCall.description}
                                             </Text>
                                         )}
 
-                                        {toolCall.args && Object.keys(toolCall.args).length > 0 && (
+                                        {skillCall.args && Object.keys(skillCall.args).length > 0 && (
                                             <Box
                                                 mt={2}
                                                 p={2}
@@ -97,7 +101,7 @@ export default function TaskToolInfo({ task, colors, t }: TaskToolInfoProps) {
                                                         </Table.Row>
                                                     </Table.Header>
                                                     <Table.Body>
-                                                        {Object.entries(toolCall.args).map(([paramName, paramValue]) => {
+                                                        {Object.entries(skillCall.args).map(([paramName, paramValue]) => {
                                                             // Handle both old format and new augmented format
                                                             const isAugmented = paramValue && typeof paramValue === 'object' && 'value' in paramValue && 'type' in paramValue;
                                                             const displayValue = isAugmented ? paramValue.value : paramValue;
@@ -130,7 +134,7 @@ export default function TaskToolInfo({ task, colors, t }: TaskToolInfoProps) {
                                 ))}
                             </VStack>
                         ) : (
-                            // Fallback for legacy single tool object format with improved styling
+                            // Fallback for legacy single skill object format with improved styling
                             <Box
                                 p={3}
                                 borderRadius="md"
@@ -144,18 +148,18 @@ export default function TaskToolInfo({ task, colors, t }: TaskToolInfoProps) {
                                     <HStack gap={2}>
                                         <Icon as={FaTools} color="blue.500" />
                                         <Text fontWeight="semibold" fontSize="sm" color={colors.textColorHeading}>
-                                            {task.tool.tool_name || t("not_specified")}
+                                            {skillData.skill_name || skillData.tool_name || t("not_specified")}
                                         </Text>
                                     </HStack>
                                 </Flex>
 
-                                {task.tool.description && (
+                                {skillData.description && (
                                     <Text fontSize="xs" color={colors.textColor} mb={2}>
-                                        {task.tool.description}
+                                        {skillData.description}
                                     </Text>
                                 )}
 
-                                {task.tool.args && Object.keys(task.tool.args).length > 0 && (
+                                {skillData.args && Object.keys(skillData.args).length > 0 && (
                                     <Box
                                         mt={2}
                                         p={2}
@@ -176,7 +180,7 @@ export default function TaskToolInfo({ task, colors, t }: TaskToolInfoProps) {
                                                 </Table.Row>
                                             </Table.Header>
                                             <Table.Body>
-                                                {Object.entries(task.tool.args).map(([paramName, paramValue]) => {
+                                                {Object.entries(skillData.args).map(([paramName, paramValue]) => {
                                                     // Handle both old format and new augmented format
                                                     const isAugmented = paramValue && typeof paramValue === 'object' && 'value' in paramValue && 'type' in paramValue;
                                                     const displayValue = isAugmented ? paramValue.value : paramValue;
@@ -210,8 +214,8 @@ export default function TaskToolInfo({ task, colors, t }: TaskToolInfoProps) {
                     </Box>
                 )}
 
-                {/* Show server info alone if no tools */}
-                {!task.tool && task.mcp_server && (
+                {/* Show server info alone if no skills */}
+                {!skillData && task.mcp_server && (
                     <Flex
                         align="center"
                         fontSize="xs"

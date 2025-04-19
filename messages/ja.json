@@ -195,7 +195,14 @@
     "no_logs_found": "ログが見つかりません",
     "open_plan": "プランを開く",
     "no_plans_found": "プランが見つかりません",
-    "loading_plans": "プランを読み込み中..."
+    "loading_plans": "プランを読み込み中...",
+    "pending": "保留中",
+    "needs_confirmation": "確認が必要",
+    "total_logs": "合計ログ",
+    "latest_skills": "最新のスキル",
+    "delete": "削除",
+    "delete_message": "メッセージを削除",
+    "delete_message_confirmation": "このメッセージを削除してもよろしいですか？"
   },
   "Plans": {
     "plans": "プラン",
@@ -275,7 +282,20 @@
     "no_plan_selected": "プランが選択されていません",
     "select_plan_from_sidebar": "サイドバーからプランを選択してください",
     "step": "ステップ",
-    "task_status_updated": "タスクのステータスが更新されました"
+    "task_status_updated": "タスクのステータスが更新されました",
+    "ask_for_plan_approval": "プラン承認の依頼",
+    "plan_id": "プランID",
+    "timestamp": "タイムスタンプ",
+    "approval_request": "承認リクエスト",
+    "plan_requires_approval": "このプランには承認が必要です",
+    "description": "説明",
+    "approve_plan_message": "このプランを承認しますか？",
+    "skills": "スキル",
+    "edit": "編集",
+    "deny": "拒否",
+    "approve": "承認",
+    "plan_log_details": "プランログの詳細",
+    "no_log_selected": "ログが選択されていません"
   },
   "Learn": {
     "learn": "学ぶ",

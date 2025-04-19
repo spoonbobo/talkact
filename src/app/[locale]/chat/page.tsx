@@ -685,6 +685,7 @@ const ChatPageContent = () => {
       console.log("Message dispatched to Redux");
       await axios.post("/api/mcp/ask_admin", {
         room_id: selectedRoomId,
+        owner_id: currentUser?.user_id || '',
         owner_message: newMessage.content
       });
 

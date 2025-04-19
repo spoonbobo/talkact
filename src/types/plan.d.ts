@@ -1,8 +1,8 @@
 import { User } from "./user";
 import { IMessage } from "./chat";
 
-export interface ITool {
-    tool_name?: string;
+export interface ISkill {
+    skill_name?: string;
     mcp_server?: string;
     description?: string;
     type?: string;
@@ -48,7 +48,7 @@ export interface ITask {
     updated_at?: Date;
     start_time?: Date | null;
     completed_at?: Date | null;
-    tool?: any;
+    skill?: any;
     expected_result?: string;
     result?: string;
     mcp_server?: string;
@@ -73,13 +73,17 @@ export interface IPlanFromAPI {
     context?: any[];
 }
 
-export const logTypes = ['created_plan', 'created_task', 'updated_task', 'completed_task', 'failed_task', 'denied_task', 'not_started_task'];
+export const logTypes = ['created_plan', 'ask_for_plan_confirmation'];
 
 export class Log {
     id: string;
     created_at: Date;
-    plan_id: string;
-    task_id: string;
-    content: string;
     type: string;
+    plan_id?: string;
+    task_id?: string;
+    content: string;
+    skills?: any[];
+
+    // for UI
+    confirmation?: boolean;
 }

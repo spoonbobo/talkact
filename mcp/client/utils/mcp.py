@@ -3,24 +3,24 @@ from typing import List
 
 from openai.types.chat import ChatCompletion
 from loguru import logger
-from schemas.mcp import ToolCallInfo
+from schemas.mcp import SkillCallInfo
 
 def parse_mcp_tools(
     completion_response: ChatCompletion, 
     mcp_server: str,
     mcp_tools_dict: dict
-) -> List[ToolCallInfo]:
+) -> List[SkillCallInfo]:
         """
         Parse tool calls from a ChatCompletion response object.
         
         Args:
             completion_response: ChatCompletion response from OpenAI API
-            mcp_server: The MCP server name to associate with the tool calls
+            mcp_server: The MCP server name to associate with the skill calls
             
         Returns:
-            List of ToolCallInfo objects representing the parsed tool calls
+            List of SkillCallInfo objects representing the parsed skill calls
         """
-        tool_call_infos = []
+        skill_call_infos = []
         
         # Check if there are any tool calls in the response
         logger.info(f"Completion response: {completion_response}")
@@ -72,18 +72,18 @@ def parse_mcp_tools(
                             "type": "unknown"
                         }
                 
-                # Create a ToolCallInfo object with augmented args
-                tool_info = ToolCallInfo(
+                # Create a SkillCallInfo object with augmented args
+                skill_info = SkillCallInfo(
                     tool_name=tool_name,
                     mcp_server=mcp_server,
                     args=augmented_args,
                     description=tool_description
                 )
                 
-                tool_call_infos.append(tool_info)
+                skill_call_infos.append(skill_info)
             except (json.JSONDecodeError, AttributeError) as e:
                 # Skip this tool call if there's an error
                 logger.warning(f"Error parsing tool call: {e}")
                 continue
         
-        return tool_call_infos
+        return skill_call_infos

@@ -88,6 +88,7 @@ export async function POST(request: Request) {
         const search = body.search || '';
         const role = body.role || '';
         const userIds = body.user_ids || [];
+        const roomId = body.room_id || '';
 
         // Base query
         let query = db('users').select([
@@ -120,6 +121,11 @@ export async function POST(request: Request) {
             query = query.whereIn('user_id', userIds);
         }
 
+        // Add room_id filtering if room_id is provided
+        if (roomId) {
+            query = query.where('active_rooms', '@>', `{${roomId}}`);
+        }
+
         // Get total count for pagination
         const [{ count }] = await db('users')
             .count('id as count')
@@ -136,6 +142,9 @@ export async function POST(request: Request) {
                 }
                 if (userIds.length > 0) {
                     builder.whereIn('user_id', userIds);
+                }
+                if (roomId) {
+                    builder.where('active_rooms', '@>', `{${roomId}}`);
                 }
             });
 

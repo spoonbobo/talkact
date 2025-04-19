@@ -30,22 +30,8 @@ async def lifespan(app: FastAPI):
 
     app.state.mcp_client = mcp_client
     app.state.socket_client = socket_client
-    # Start all task processors
-    task_processor = asyncio.create_task(mcp_client.process_tasks())  # Process execution queue
-    creation_processor = asyncio.create_task(mcp_client.process_creation_tasks())  # Process creation queue
-    request_processor = asyncio.create_task(mcp_client.process_mcp_requests())  # Process direct MCP requests
-    admin_processor = asyncio.create_task(mcp_client.process_admin_messages())  # Process admin messages
-    logger.info("Started task processors")
     
     yield
-    
-    # Cancel all task processors on shutdown
-    task_processor.cancel()
-    creation_processor.cancel()
-    request_processor.cancel()
-    admin_processor.cancel()
-    logger.info("Cancelled task processors")
-
     await socket_client.disconnect()
 
 app = FastAPI(lifespan=lifespan)
@@ -67,4 +53,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=34430,
         reload=True,
+        workers=4
     )

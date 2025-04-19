@@ -21,6 +21,7 @@ from schemas.mcp import MCPPlanRequest, Task, MCPTaskRequest, PlanData
 from schemas.mcp import MCPTool, MCPServer
 from prompts.plan_create import PLAN_SYSTEM_PROMPT, PLAN_CREATE_PROMPT
 from prompts.mcp_reqeust import MCP_REQUEST_SYSTEM_PROMPT, MCP_REQUEST_PROMPT
+from prompts.onlysaid_admin_prompt import ONLYSAID_ADMIN_PROMPT, ONLYSAID_ADMIN_PROMPT_TEMPLATE
 from utils.mcp import parse_mcp_tools
 from service.socket_client import SocketClient
 class MCPClient:
@@ -40,10 +41,6 @@ class MCPClient:
             api_key=os.getenv("OPENAI_API_KEY"),
             base_url=os.getenv("OPENAI_API_BASE_URL")
         )
-        self.plan_queue = asyncio.Queue()  # New queue for task creation
-        self.request_queue = asyncio.Queue()  # Queue for direct MCP requests
-        self.task_queue = asyncio.Queue()  # Execution queue
-        self.admin_queue = asyncio.Queue()  # Queue for admin messages
         self.server_descriptions_dict = {}
         self.server_tools_dict = {}
         self.mcp_tools_dict = {}
@@ -133,7 +130,7 @@ class MCPClient:
         ] + query
         
         additional_context = f"""
-        Current datetime: {datetime.datetime.now().isoformat()}
+        Current datetime: {datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat()}
         """
         
         response = self.openai_client.chat.completions.create(
@@ -172,7 +169,7 @@ class MCPClient:
                 
                 # Check if this plan requires any tools
                 no_tools_needed = False
-                if "plan" not in plan_json or not plan_json["plan"] or plan_json.get("no_tools_needed", False):
+                if "plan" not in plan_json or not plan_json["plan"] or plan_json.get("no_skills_needed", False):
                     no_tools_needed = True
                 elif plan_json.get("plan_name", "").lower() == "null_plan":
                     no_tools_needed = True
@@ -181,7 +178,7 @@ class MCPClient:
                 plan_id = str(uuid4())
                 
                 # Use timezone-aware datetime
-                current_time = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                current_time = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat()
                 
                 # Create the plan via API
                 async with httpx.AsyncClient() as client:
@@ -203,10 +200,11 @@ class MCPClient:
                                     "type": "plan_created",
                                     "content": f"Plan **{plan_name}** has been created",
                                     "plan_id": plan_id,
-                                    "task_id": None
+                                    "task_id": None,
+                                    "skills": []
                                 }
                             ],
-                            "no_tools_needed": no_tools_needed  # Add this flag to the request
+                            "no_skills_needed": no_tools_needed  # Add this flag to the request
                         },
                         headers={"Content-Type": "application/json"}
                     )
@@ -237,7 +235,7 @@ class MCPClient:
                     await self.socket_client.send_message(
                         {
                             "id": str(uuid4()),
-                            "created_at": datetime.datetime.now().isoformat(),
+                            "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(),
                             "sender": sender_data,
                             "content": plan_created_message,
                             "avatar": sender_data.get("avatar", None),
@@ -273,7 +271,7 @@ class MCPClient:
                                 "plan_id": plan_id,
                                 "status": "success",
                                 "progress": 100,
-                                "completed_at": datetime.datetime.now().isoformat()
+                                "completed_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat()
                             },
                             headers={"Content-Type": "application/json"}
                         )
@@ -327,14 +325,14 @@ class MCPClient:
                     "task_explanation": task_explanation,
                     "expected_result": expected_result,
                     "mcp_server": step_assignee_name,
-                    "tool": {},  # Initialize with empty JSON object instead of assignee info
+                    "skills": {},  # Initialize with empty JSON object instead of assignee info
                     "status": "not_started"  # Initialize task status to not_started
                 }
                 
                 tasks.append(task)
         
         # If no valid tasks were created from steps, create a default task
-        if not tasks and plan_json.get("no_tools_needed", False):
+        if not tasks and plan_json.get("no_skills_needed", False):
             # No tasks needed, return empty list to trigger auto-completion
             return []
         elif not tasks and plan_json.get("plan_name", "").lower() == "null_plan":
@@ -347,7 +345,7 @@ class MCPClient:
                 "task_name": "Execute request",
                 "task_explanation": plan_json.get("plan_overview", "Process the user request"),
                 "expected_result": "Complete the requested task",
-                "tool": {},  # Initialize with empty JSON object
+                "skills": {},  # Initialize with empty JSON object
                 "status": "not_started"  # Initialize task status to not_started
             }
             
@@ -390,25 +388,25 @@ class MCPClient:
         # Convert tool_calls to a format suitable for the database
         try:
             # For Pydantic v2
-            tool_data = [tool_call.model_dump() for tool_call in tool_calls]
+            skills_data = [tool_call.model_dump() for tool_call in tool_calls]
         except AttributeError:
             # Fallback for Pydantic v1
-            tool_data = [tool_call.dict() for tool_call in tool_calls]
+            skills_data = [tool_call.dict() for tool_call in tool_calls]
         
-        # Update the task with the tool information
+        # Update the task with the skills information
         async with httpx.AsyncClient() as client:
             try:
-                # First update the task with the tool information
+                # First update the task with the skills information
                 update_url = f"{client_url}/api/plan/update_task"
                 
                 # Ensure the data is properly serializable by using json.dumps/loads
                 # This ensures we have valid JSON that PostgreSQL can accept
-                json_string = json.dumps(tool_data)
+                json_string = json.dumps(skills_data)
                 validated_json = json.loads(json_string)
                 
                 update_payload = {
                     "task_id": task_id,
-                    "tool": validated_json,
+                    "skills": validated_json,
                     "status": "pending"  # Optionally update status
                 }
                 
@@ -435,7 +433,7 @@ class MCPClient:
                         "room_id": mcp_request.plan.room_id,
                         "message": f"Task {task_id} has been created",
                         "sender": mcp_request.plan.assignee,
-                        "created_at": datetime.datetime.now().isoformat(),
+                        "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(),
                         "updating_plan": mcp_request.plan.id
                     }
                 )
@@ -449,25 +447,25 @@ class MCPClient:
         task = mcp_request.task
         plan_size = len(mcp_request.plan.context.plan["plan"])
         step_number = task.step_number
-        tools = task.tool
+        skills = task.skills
         session = self.servers[task.mcp_server]
         logger.info(f"Plan size: {plan_size}")
         client_url = os.environ.get("CLIENT_URL", "")
         
         results = {}
         tool_call_ct = defaultdict(int)
-        for tool in tools:
+        for skill in skills:
             resp = None
-            tool_name = tool['tool_name']
+            skill_name = skill['tool_name']
             try:
-                args = tool['args']
+                args = skill['args']
                 args = {k: arg["value"] for k, arg in args.items()}
-                resp = await session.call_tool(tool_name, args)
+                resp = await session.call_tool(skill_name, args)
             except Exception as e:
-                logger.error(f"Error calling tool {tool_name}: {e}")
+                logger.error(f"Error calling skill {skill_name}: {e}")
                 continue
-            results[f"{tool_name}_{tool_call_ct[tool_name]}"] = resp.content[0].text
-            tool_call_ct[tool_name] += 1
+            results[f"{skill_name}_{tool_call_ct[skill_name]}"] = resp.content[0].text
+            tool_call_ct[skill_name] += 1
         
         # update the task with logs and change status to success
         async with httpx.AsyncClient() as client:
@@ -512,7 +510,7 @@ class MCPClient:
                 "room_id": mcp_request.plan.room_id,
                 "message": f"Task {task.task_id} has been executed",
                 "sender": mcp_request.plan.assignee,
-                "created_at": datetime.datetime.now().isoformat(),
+                "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(),
                 "updating_plan": mcp_request.plan.id
             }
         )
@@ -529,8 +527,8 @@ class MCPClient:
         for step in range(1, step_number):
             step_log = plan.logs[str(step)]
             step_log_str = ""
-            for tool, result in step_log.items():
-                step_log_str += f"Tool: {tool}\nResult: {result}\n"
+            for skill, result in step_log.items():
+                step_log_str += f"Skill: {skill}\nResult: {result}\n"
             background += f"Step {step}: {step_log_str}\n"
 
         return background
@@ -573,39 +571,6 @@ class MCPClient:
                 
         return server_information
 
-    # New method to process the creation queue
-    async def process_creation_tasks(self):
-        while True:
-            plan_request = await self.plan_queue.get()
-            try:
-                await self.create_plan(plan_request)
-            except Exception as e:
-                logger.error(f"Error creating task: {e}")
-            finally:
-                self.plan_queue.task_done()
-
-    async def process_mcp_requests(self):
-        """Process direct MCP requests from the request queue"""
-        while True:
-            mcp_request = await self.request_queue.get()
-            try:
-                await self.create_mcp_request(mcp_request)
-            except Exception as e:
-                logger.error(f"Error processing MCP request: {e}")
-            finally:
-                self.request_queue.task_done()
-
-    async def process_tasks(self):
-        while True:
-            task = await self.task_queue.get()
-            logger.info(f"Processing task: {task}")
-            try:
-                await self.execute_mcp_request(task)
-            except Exception as e:
-                logger.error(f"Error creating task: {e}")
-            finally:
-                self.task_queue.task_done()
-
     def load_server_description(self, server: str) -> str:
         with open(server, 'r') as file:
             return file.read()
@@ -633,12 +598,14 @@ class MCPClient:
         
         return "\n" + "\n".join(descriptions)
 
-    def format_conversation(self, messages):
+    def format_conversation(self, messages, show_username = False):
         formatted_text = "CONVERSATION START\n\n"
         for message in messages:
             # Determine the role based on sender field if available, otherwise use the role field
             if 'sender' in message:
                 role = "assistant" if message['sender'] == "agent" else "user"
+                if show_username:
+                    role += f" ({message['sender']})"
             else:
                 role = message.get('role', 'user')
             
@@ -730,7 +697,7 @@ class MCPClient:
                             "plan_id": plan_id,
                             "status": status,
                             "progress": progress,
-                            "completed_at": datetime.datetime.now().isoformat()
+                            "completed_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat()
                         },
                         headers={"Content-Type": "application/json"}
                     )
@@ -738,34 +705,215 @@ class MCPClient:
         except Exception as e:
             logger.error(f"Error checking and updating plan status: {e}")
 
-
     async def cleanup(self):
         for server in self.servers:
             await self.exit_stack[server].aclose()
 
-    async def process_admin_messages(self):
-        logger.info("Processing admin messages")
-        """Process administrative messages from the admin queue"""
-        while True:
-            admin_message = await self.admin_queue.get()
-            room_id = admin_message.room_id
-            owner_message = admin_message.owner_message
-            client_url = os.environ.get("CLIENT_URL", "")
+    async def process_admin_message(self, admin_message):
+        """Process a single administrative message directly"""
+        logger.info("Processing admin message")
+        room_id = admin_message.room_id
+        owner_message = admin_message.owner_message
+        owner_id = admin_message.owner_id
+        mcp_tools = self.mcp_tools_dict["onlysaid_admin"]
+        trust = admin_message.trust
+        logger.info(f"MCP tools: {mcp_tools}")
+        client_url = os.environ.get("CLIENT_URL", "")
+        try:
             try:
-                try:
-                    async with httpx.AsyncClient() as client:
-                        response = await client.post(
-                            f"{client_url}/api/chat/get_messages", 
-                            json={"roomId": room_id, "limit": 100},
-                            headers={"Content-Type": "application/json"}
-                        )
-                        response.raise_for_status()
-                        messages = response.json()
-                        logger.info(f"Messages: {messages}")
-                except Exception as e:
-                    logger.error(f"Error fetching messages: {e}")
-                    messages = []
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(
+                        f"{client_url}/api/chat/get_messages", 
+                        json={"roomId": room_id, "limit": 100},
+                        headers={"Content-Type": "application/json"}
+                    )
+                    response.raise_for_status()
+                    messages = response.json()
+                    logger.info(f"Messages: {messages}")
             except Exception as e:
-                logger.error(f"Error processing admin message: {e}")
-            finally:
-                self.admin_queue.task_done()
+                logger.error(f"Error fetching messages: {e}")
+                messages = []
+            
+            try:
+                room_users = await self.get_room_users(room_id)
+            except Exception as e:
+                logger.error(f"Error getting room users: {e}")
+                room_users = []
+            
+            formatted_conversation = self.format_conversation(messages, show_username=True)
+            formatted_users = self.format_room_users_readable(room_users)
+            
+
+            tool_calls = self.openai_client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": ONLYSAID_ADMIN_PROMPT
+                    },
+                    {
+                        "role": "user",
+                        "content": ONLYSAID_ADMIN_PROMPT_TEMPLATE.format(
+                            conversation_history=formatted_conversation,
+                            chatroom_id=room_id,
+                            chatroom_participants=formatted_users,
+                            owner_message=owner_message,
+                        )
+                    }
+                ],
+                tools=mcp_tools,
+                tool_choice="required"
+            )
+            tool_calls = parse_mcp_tools(tool_calls, "onlysaid_admin", self.mcp_tools_dict)
+            logger.info(f"Tool calls: {tool_calls}")
+            
+            try:
+                # For Pydantic v2
+                actions = [tool_call.model_dump() for tool_call in tool_calls]
+            except AttributeError:
+                # Fallback for Pydantic v1
+                actions = [tool_call.dict() for tool_call in tool_calls]
+                
+            if actions[0]["tool_name"] == "idle":
+                raise Exception("Idle tool called")
+        
+            action = actions[0]
+            logger.info(f"Action: {action} {type(action)}")
+            plan_id = action["args"]["plan_id"]["value"]
+            # Add more conditions for other tool types as needed
+            
+            # TODO: if trust, call the tool directly & do follow ups.
+            # if not TRUST, ask user for confirmation
+            if not trust:
+                planned_log = {
+                    "id": str(uuid4()),
+                    "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(),
+                    "type": "ask_for_plan_approval",
+                    "content": f"{actions}",
+                    "plan_id": None,
+                    "task_id": None,
+                    "skills": actions  # Send the actual array instead of string representation
+                }
+                
+                async with httpx.AsyncClient() as client:
+                    response = await client.put(
+                        f"{client_url}/api/plan/update_plan",
+                        json={"plan_id": plan_id, "logs": planned_log},
+                        headers={"Content-Type": "application/json"}
+                    )
+                    response.raise_for_status()
+                
+                    user_response = await client.get(
+                        f"{client_url}/api/user/get_user_by_id?user_id={owner_id}",
+                        headers={"Content-Type": "application/json"}
+                    )
+                    user_response.raise_for_status()
+                    user_data = user_response.json()
+                    
+                    sender_data = user_data["user"]
+                    # TODO: remove this after testing
+                    sender_data["sender"] = "admin"
+                    sender_data["email"] = "agent@agent.com"
+                    sender_data["username"] = "admin"
+                    sender_data["avatar"] = ""
+                        
+                    await self.socket_client.send_message(
+                        {
+                            "id": str(uuid4()),
+                            "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(),
+                            "sender": sender_data,
+                            "content": f"Plan {plan_id} has been created",
+                            "avatar": sender_data.get("avatar", None),
+                            "room_id": room_id,
+                            "mentions": []
+                        }
+                    )
+            
+        except Exception as e:
+            logger.error(f"Error processing admin message: {e}")
+
+    async def get_room_users(self, room_id, limit=50, offset=0, search='', role=''):
+        """
+        Get all users in a specific room
+        
+        Args:
+            room_id (str): The ID of the room to get users from
+            limit (int, optional): Maximum number of users to return. Defaults to 50.
+            offset (int, optional): Pagination offset. Defaults to 0.
+            search (str, optional): Search term for filtering users. Defaults to ''.
+            role (str, optional): Filter users by role. Defaults to ''.
+            
+        Returns:
+            dict: Response containing users and pagination info
+        """
+        client_url = os.environ.get("CLIENT_URL", "")
+        url = f"{client_url}/api/user/get_users"
+        payload = {
+            "room_id": room_id,
+            "limit": limit,
+            "offset": offset,
+            "search": search,
+            "role": role
+        }
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(url, json=payload)
+                if response.status_code != 200:
+                    error_text = response.json()
+                    raise Exception(f"Failed to get room users: {error_text}")
+                
+                return response.json()
+        except Exception as e:
+            logger.error(f"Error getting room users: {e}")
+            return []
+
+    def format_room_users(self, room_users_response):
+        """
+        Format room users response into a simplified list of user_id and username pairs
+        
+        Args:
+            room_users_response (dict): The response from get_room_users API
+            
+        Returns:
+            str: A string representation of the list of users in format [{user_id, username}]
+        """
+        if not room_users_response or 'users' not in room_users_response:
+            return "[]"
+        
+        users = room_users_response['users']
+        formatted_users = []
+        
+        for user in users:
+            formatted_users.append({
+                'user_id': user['user_id'],
+                'username': user['username']
+            })
+        
+        return str(formatted_users)
+
+    def format_room_users_readable(self, room_users_response):
+        """
+        Format room users response into a human-readable string
+        
+        Args:
+            room_users_response (dict): The response from get_room_users API
+            
+        Returns:
+            str: A human-readable string listing the users in the room
+        """
+        if not room_users_response or 'users' not in room_users_response:
+            return "No users found in this room."
+        
+        users = room_users_response['users']
+        if not users:
+            return "No users found in this room."
+        
+        user_strings = []
+        for user in users:
+            user_strings.append(f"• {user['username']} (ID: {user['user_id']})")
+        
+        total = room_users_response.get('pagination', {}).get('total', len(users))
+        
+        result = f"Room participants ({total}):\n" + "\n".join(user_strings)
+        return result

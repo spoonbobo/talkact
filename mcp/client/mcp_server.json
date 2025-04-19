@@ -24,6 +24,11 @@
             "description": "/servers/description/graph_plotter.md",
             "path": "/servers/graph_plotter.py",
             "metadata": {}
+        },
+        "onlysaid_admin": {
+            "description": "/servers/description/onlysaid_admin.md",
+            "path": "/servers/onlysaid_admin.py",
+            "metadata": {}
         }
     }
 }

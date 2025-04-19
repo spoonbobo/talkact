@@ -15,18 +15,18 @@ async def mcp_create_plan(request: Request, plan_request: MCPPlanRequest):
     plan_request.client_host = client_host
     mcp_client = request.app.state.mcp_client
     
-    # Add to the creation queue instead of directly calling create_task
-    await mcp_client.plan_queue.put(plan_request)
-    return PlainTextResponse(content="Plan creation request enqueued", status_code=202)
+    # Call create_plan directly instead of using a queue
+    await mcp_client.create_plan(plan_request)
+    return PlainTextResponse(content="Plan creation request processed", status_code=200)
 
 @router.post("/api/ask_admin")
 async def ask_admin(request: Request, owner_message: OwnerMessage):
     client_url = os.environ.get("CLIENT_URL")
     mcp_client = request.app.state.mcp_client
-    await mcp_client.admin_queue.put(owner_message)
-    return PlainTextResponse(content="MCP request enqueued", status_code=202)
-
-
+    
+    # Process admin message directly instead of using a queue
+    await mcp_client.process_admin_message(owner_message)
+    return PlainTextResponse(content="MCP request processed", status_code=200)
 
 @router.get("/api/get_servers")
 async def get_servers(request: Request):

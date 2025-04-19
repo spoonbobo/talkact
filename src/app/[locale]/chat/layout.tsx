@@ -42,6 +42,7 @@ import { IChatRoom } from "@/types/chat";
 import { Log } from "@/types/plan";
 import PlanLogSection from "@/components/plans/plan_log_section";
 import { getStatusColorScheme } from "@/components/ui/StatusBadge";
+import PlanLogModal from "@/components/plans/plan_log_modal";
 
 const MotionBox = motion(Box);
 
@@ -71,6 +72,8 @@ const SimplifiedPlanSection = ({
     const [isLoadingPlans, setIsLoadingPlans] = useState(false);
     const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
     const [logsByPlan, setLogsByPlan] = useState<Record<string, Log[]>>({});
+    const [selectedLog, setSelectedLog] = useState<Log | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     // Create collection for plans
     const plansCollection = useMemo(() => {
@@ -208,6 +211,16 @@ const SimplifiedPlanSection = ({
         // Default to 'running' if no status is provided
         const status = plan.status || 'running';
         return getStatusColorScheme(status);
+    };
+
+    const handleLogClick = (log: Log) => {
+        console.log("Log clicked in SimplifiedPlanSection:", log);
+        setSelectedLog(log);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
     };
 
     return (
@@ -395,6 +408,7 @@ const SimplifiedPlanSection = ({
                                                 logs={allLogs}
                                                 colors={colors}
                                                 t={t}
+                                                onLogClick={handleLogClick}
                                             />
                                         </Box>
                                     )}
@@ -429,6 +443,14 @@ const SimplifiedPlanSection = ({
                     </Box>
                 )}
             </VStack>
+
+            {/* Render the modal */}
+            <PlanLogModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                log={selectedLog}
+                colors={colors}
+            />
         </MotionBox>
     );
 };

@@ -34,13 +34,13 @@ export async function POST(request: Request) {
             }, { status: 400 });
         }
 
-        // Check if this is a no-tools plan that should be auto-completed
-        const noToolsNeeded = body.no_tools_needed === true;
+        // Check if this is a no-skills plan that should be auto-completed
+        const noSkillsNeeded = body.no_skills_needed === true;
 
-        // Set status and progress based on whether tools are needed
-        const status = noToolsNeeded ? 'success' : 'pending';
-        const progress = noToolsNeeded ? 100 : 0;
-        const completed_at = noToolsNeeded ? new Date() : null;
+        // Set status and progress based on whether skills are needed
+        const status = noSkillsNeeded ? 'success' : 'pending';
+        const progress = noSkillsNeeded ? 100 : 0;
+        const completed_at = noSkillsNeeded ? new Date() : null;
 
         console.log('completed_at', completed_at)
 

@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS task (
     task_explanation TEXT NOT NULL, -- from the "explanation" field in your JSON
     expected_result TEXT, -- from the "expected_result" field in your JSON
     mcp_server TEXT,
-    tool JSONB,
+    skills JSONB,
     status TEXT, -- pending/running/success/failure
     result TEXT,
     logs JSONB
