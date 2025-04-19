@@ -8,6 +8,10 @@ import {
     Input,
     Portal,
     Stack,
+    CheckboxCard,
+    CheckboxGroup,
+    Flex,
+    Text
 } from '@chakra-ui/react';
 import axios from 'axios';
 import { toaster } from "@/components/ui/toaster"
@@ -27,6 +31,7 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
     const [roomName, setRoomName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<{ roomName?: string }>({});
+    const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
     const roomNameInputRef = useRef<HTMLInputElement>(null);
     const t = useTranslations("Chat");
     const dispatch = useDispatch();
@@ -74,12 +79,42 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
             // Update the Redux state to match the database
             dispatch(updateActiveRooms({ roomId, action: "add" }));
 
-            if (currentUser) {
-                await axios.put("/api/chat/update_room", {
-                    roomId: roomId,
-                    active_users: [currentUser.user_id]
-                });
+            // Initialize active users with current user
+            let activeUsers = currentUser ? [currentUser.user_id] : [];
+
+            // Add agents if selected
+            if (selectedAgents.length > 0) {
+                try {
+                    for (const agentType of selectedAgents) {
+                        let agentId;
+
+                        if (agentType === 'standard') {
+                            agentId = '00000000-0000-0000-0000-000000000000'; // Agent user_id from seed
+                        } else if (agentType === 'deepseek') {
+                            agentId = '11111111-1111-1111-1111-111111111111'
+                        }
+
+                        if (agentId) {
+                            activeUsers.push(agentId);
+
+                            // Update agent's active_rooms
+                            await axios.post("/api/user/update_user", {
+                                roomId,
+                                action: "add",
+                                userId: agentId
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error adding agents to room:", error);
+                }
             }
+
+            // Update the room with all active users
+            await axios.put("/api/chat/update_room", {
+                roomId: roomId,
+                active_users: activeUsers
+            });
 
             const roomsResponse = await axios.get("/api/chat/get_rooms");
             dispatch(setRooms(roomsResponse.data));
@@ -105,8 +140,22 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
     const handleClose = () => {
         setRoomName('');
         setErrors({});
+        setSelectedAgents([]);
         onClose();
     };
+
+    const agentOptions = [
+        {
+            value: "standard",
+            title: "Standard Agent",
+            description: "Add a standard AI assistant to this room"
+        },
+        {
+            value: "deepseek",
+            title: "DeepSeek Agent",
+            description: "Add a DeepSeek AI assistant to this room"
+        },
+    ];
 
     return (
         <Dialog.Root open={isOpen} onOpenChange={handleClose} initialFocusEl={() => roomNameInputRef.current}>
@@ -135,6 +184,31 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
                                     />
                                     {errors.roomName && <Field.ErrorText>{errors.roomName}</Field.ErrorText>}
                                 </Field.Root>
+
+                                <CheckboxGroup
+                                    value={selectedAgents}
+                                    onChange={(values: any) => setSelectedAgents(values as string[])}
+                                >
+                                    <Text textStyle="sm" fontWeight="medium" color={textColorStrong} mb={2}>
+                                        Add AI Assistants
+                                    </Text>
+                                    <Flex gap="2" flexWrap="wrap">
+                                        {agentOptions.map((item) => (
+                                            <CheckboxCard.Root key={item.value} value={item.value}>
+                                                <CheckboxCard.HiddenInput />
+                                                <CheckboxCard.Control>
+                                                    <CheckboxCard.Content>
+                                                        <CheckboxCard.Label>{item.title}</CheckboxCard.Label>
+                                                        <CheckboxCard.Description>
+                                                            {item.description}
+                                                        </CheckboxCard.Description>
+                                                    </CheckboxCard.Content>
+                                                    <CheckboxCard.Indicator />
+                                                </CheckboxCard.Control>
+                                            </CheckboxCard.Root>
+                                        ))}
+                                    </Flex>
+                                </CheckboxGroup>
                             </Stack>
                         </Dialog.Body>
 

@@ -61,6 +61,7 @@ interface TaskKanbanProps {
     hideViewToggle?: boolean;
     className?: string;
     onTaskClick?: (task: ITask) => void;
+    isAIManaged?: boolean | undefined;
 }
 
 // Draggable task item component
@@ -566,7 +567,8 @@ const TaskKanban = ({
     tasks = [],
     hideViewToggle = false,
     className = "",
-    onTaskClick
+    onTaskClick,
+    isAIManaged = true
 }: TaskKanbanProps) => {
     const t = useTranslations("Plans");
     const colors = usePlansColors();
@@ -775,13 +777,28 @@ const TaskKanban = ({
 
     return (
         <>
+            {isAIManaged && (
+                <Box
+                    p={4}
+                    mb={4}
+                    borderRadius="md"
+                    bg={`${colors.accentColor}15`}
+                    borderWidth="1px"
+                    borderColor={colors.accentColor}
+                >
+                    <Text color={colors.textColorHeading} fontWeight="medium">
+                        {t("drag_and_drop_disabled_message")}
+                    </Text>
+                </Box>
+            )}
+
             <DndContext
                 sensors={sensors}
                 collisionDetection={rectIntersection}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDragEnd={handleDragEnd}
-                onDragCancel={handleDragCancel}
+                onDragStart={isAIManaged ? undefined : handleDragStart}
+                onDragOver={isAIManaged ? undefined : handleDragOver}
+                onDragEnd={isAIManaged ? undefined : handleDragEnd}
+                onDragCancel={isAIManaged ? undefined : handleDragCancel}
                 measuring={{
                     droppable: {
                         strategy: MeasuringStrategy.Always

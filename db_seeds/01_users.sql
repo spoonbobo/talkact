@@ -19,3 +19,4 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 INSERT INTO users (user_id, username, email, role, settings) VALUES ('00000000-0000-0000-0000-000000000000', 'agent', 'agent@agent.com', 'agent', '{"theme": "light"}');
+INSERT INTO users (user_id, username, email, role, settings) VALUES ('11111111-1111-1111-1111-111111111111', 'deepseek', 'deepseek@llm.com', 'user', '{"theme": "light"}');
