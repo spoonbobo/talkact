@@ -41,8 +41,6 @@ export async function GET(request: Request) {
             args: parsedArgs
         };
 
-        console.log("Formatted skill:", formattedSkill);
-
         return NextResponse.json({
             skill: formattedSkill
         }, { status: 200 });

@@ -4,6 +4,7 @@ import json
 import os
 from uuid import uuid4
 import asyncio
+import traceback
 load_dotenv()
 
 import uvicorn
@@ -22,17 +23,35 @@ async def lifespan(app: FastAPI):
     mcp_servers = json.load(open(os.getenv("MCP_SERVERS_JSON", ""))) or {}
     mcp_servers = mcp_servers["mcpServers"]
 
+    # Create socket client
     socket_client = SocketClient(os.getenv("SOCKET_SERVER_URL") or "", str(uuid4()))
-    await socket_client.connect()
-    mcp_client = MCPClient(mcp_servers, socket_client)
-    await mcp_client.connect_to_servers()
-    logger.info("Connected to MCP client")
-
-    app.state.mcp_client = mcp_client
-    app.state.socket_client = socket_client
     
-    yield
-    await socket_client.disconnect()
+    try:
+        # Connect to socket server
+        await socket_client.connect()
+        
+        # Create MCP client and connect to servers
+        mcp_client = MCPClient(mcp_servers, socket_client)
+        await mcp_client.connect_to_servers()
+        logger.info("Connected to MCP client")
+
+        # Store clients in app state
+        app.state.mcp_client = mcp_client
+        app.state.socket_client = socket_client
+        
+        yield
+    except Exception as e:
+        logger.error(f"Error during startup: {e}")
+        logger.error(traceback.format_exc())
+        raise
+    finally:
+        # Ensure proper cleanup on shutdown
+        logger.info("Shutting down MCP client")
+        try:
+            await socket_client.disconnect()
+            logger.info("Socket client disconnected")
+        except Exception as e:
+            logger.error(f"Error during socket client shutdown: {e}")
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(mcp_router)
@@ -53,5 +72,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=34430,
         reload=True,
-        workers=4
+        workers=1  # Reduce to 1 worker to avoid multiple socket connections
     )

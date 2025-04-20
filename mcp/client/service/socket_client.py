@@ -66,7 +66,7 @@ class SocketClient:
         """
         self.server_url = server_url
         self.user_id = user_id
-        self.sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=0) # type: ignore
+        self.sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=0, logger=False) # type: ignore
         self.connected = False
         self.message_handlers = []
         self.notification_handlers = []
@@ -74,6 +74,7 @@ class SocketClient:
         self.reconnect_task = None
         self.joined_rooms = set()  # Track joined rooms for reconnection
         self.pending_messages = []  # Store messages that need to be sent after reconnection
+        self._shutdown_requested = False  # Flag to indicate graceful shutdown
         
         # Set up event handlers
         self._setup_event_handlers()
@@ -134,7 +135,7 @@ class SocketClient:
     
     async def _reconnect_loop(self):
         """Periodically attempt to reconnect until successful."""
-        while not self.connected:
+        while not self.connected and not self._shutdown_requested:
             logger.info(f"Attempting to reconnect in {self.reconnect_interval} seconds...")
             await asyncio.sleep(self.reconnect_interval)
             try:
@@ -147,13 +148,14 @@ class SocketClient:
     
     async def connect(self):
         """Connect to the socket server with authentication."""
-        if not self.connected:
+        if not self.connected and not self._shutdown_requested:
             try:
                 # Connect with authentication data
                 await self.sio.connect(
                     self.server_url,
                     auth={"user": {"id": self.user_id}},
-                    wait_timeout=10  # Add timeout parameter
+                    wait_timeout=10,  # Add timeout parameter
+                    transports=['websocket']  # Prefer websocket transport
                 )
                 logger.info(f"Connected to socket server as user {self.user_id}")
             except Exception as e:
@@ -163,14 +165,21 @@ class SocketClient:
     
     async def disconnect(self):
         """Disconnect from the socket server."""
-        if self.connected:
-            # Cancel any reconnect task if it's running
-            if self.reconnect_task and not self.reconnect_task.done():
-                self.reconnect_task.cancel()
-                self.reconnect_task = None
-            
-            await self.sio.disconnect()
-            logger.info("Disconnected from socket server")
+        self._shutdown_requested = True  # Mark as shutdown requested
+        
+        # Cancel any reconnect task if it's running
+        if self.reconnect_task and not self.reconnect_task.done():
+            self.reconnect_task.cancel()
+            self.reconnect_task = None
+        
+        if self.connected or self.sio.connected:
+            try:
+                await self.sio.disconnect()
+                logger.info("Disconnected from socket server")
+            except Exception as e:
+                logger.error(f"Error during disconnect: {e}")
+        
+        self.connected = False
     
     async def check_connection(self):
         """Check connection status and reconnect if necessary."""
@@ -185,7 +194,7 @@ class SocketClient:
                 # Recreate the client if it's been closed
                 if getattr(self.sio, '_closed', False):
                     logger.info("Socket client was closed. Creating a new client instance.")
-                    self.sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=0)
+                    self.sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=0) # type: ignore
                     self._setup_event_handlers()
                 
                 self.reconnect_task = asyncio.create_task(self._reconnect_loop())
@@ -243,6 +252,10 @@ class SocketClient:
         Args:
             message_data: Message data including room_id and content
         """
+        if self._shutdown_requested:
+            logger.warning("Shutdown requested, not sending message")
+            return
+            
         if not self.connected:
             # Store the message to be sent after reconnection
             logger.info(f"Not connected. Storing message to room {message_data.get('room_id')} for later delivery")
@@ -252,12 +265,21 @@ class SocketClient:
         # Check if client is closed before sending
         if getattr(self.sio, '_closed', False):
             logger.warning("Socket client is closed. Attempting to recreate and reconnect.")
-            self.sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=0)
+            self.sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=0, logger=False) # type: ignore
             self._setup_event_handlers()
             await self.connect()
-            
-        await self.sio.emit("message", message_data)
-        logger.info(f"Sent message to room {message_data.get('room_id')}")
+        
+        try:
+            await self.sio.emit("message", message_data)
+            logger.info(f"Sent message to room {message_data.get('room_id')}")
+        except Exception as e:
+            logger.error(f"Error sending message: {e}")
+            if "packet queue is empty" in str(e):
+                logger.warning("Packet queue empty error detected. Attempting to reconnect...")
+                self.connected = False
+                await self.check_connection()
+                raise ConnectionError("Socket connection was in an invalid state")
+            raise
     
     @with_retry_and_reconnect(max_retries=3, retry_delay=1)
     async def send_notification(self, notification_data: Dict[str, Any]):

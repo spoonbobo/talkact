@@ -428,6 +428,14 @@ const SimplifiedPlanSection = ({
         return log.id && formattedContents[log.id] ? formattedContents[log.id] : "";
     }, [formattedContents]);
 
+    const handleApprove = (planId: string) => {
+        console.log("Approve plan:", planId);
+    };
+
+    const handleDeny = (planId: string) => {
+        console.log("Deny plan:", planId);
+    };
+
     return (
         <MotionBox
             layout
@@ -658,6 +666,8 @@ const SimplifiedPlanSection = ({
                 taskDetails={taskDetails}
                 isLoadingTask={isLoadingTask}
                 colors={colors}
+                onApprove={handleApprove}
+                onDeny={handleDeny}
                 formattedContent={selectedLog && selectedLog.id ? formattedContents[selectedLog.id] || "" : ""}
             />
         </MotionBox>
