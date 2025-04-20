@@ -2,7 +2,7 @@
 
 ## Features
 
-- Complete any tasks with your team with only natural language
+- Complete any tasks with your team with only natural language without any setup
 - All-in-one A2A/MCP stack with highly configurable and extensible client & servers
 - Toggle the `trust` mode to adjust control over agents
 - Intelligent planning and execution system with full natural-langugage support
