@@ -17,6 +17,11 @@ import {
     Textarea,
     Flex,
     Icon,
+    Spinner,
+    IconButton,
+    HStack,
+    Heading,
+    Skeleton,
 } from '@chakra-ui/react';
 import { useParams } from "next/navigation";
 import NextLink from "next/link";
@@ -24,6 +29,8 @@ import SkillInfo from './skill_info';
 import { toaster } from "@/components/ui/toaster"
 import { FaTools } from "react-icons/fa";
 import { useColorModeValue } from "@/components/ui/color-mode";
+import { FiChevronUp, FiChevronDown } from "react-icons/fi";
+import { usePlansColors } from "@/utils/colors";
 
 interface PlanLog {
     id: string;
@@ -35,6 +42,7 @@ interface PlanLog {
     task_id?: string;
     plan_id?: string;
     planNavId?: string;
+    planOverview?: string;
     skills?: any[];
 }
 
@@ -46,6 +54,11 @@ interface PlanLogModalProps {
     onApprove?: (planId: string) => void;
     onDeny?: (planId: string) => void;
     onSkillUpdated?: () => void;
+    taskDetails?: any;
+    isLoadingTask?: boolean;
+    formattedContent?: string;
+    planData?: any;
+    isLoadingPlan?: boolean;
 }
 
 export default function PlanLogModal({
@@ -55,182 +68,236 @@ export default function PlanLogModal({
     colors,
     onApprove,
     onDeny,
-    onSkillUpdated
+    onSkillUpdated,
+    taskDetails,
+    isLoadingTask = false,
+    formattedContent,
+    planData,
+    isLoadingPlan = false
 }: PlanLogModalProps) {
-    const t = useTranslations('Plans');
+    const t = useTranslations("Plans");
     const params = useParams();
     const locale = params.locale as string || 'en';
+
+    // Use the plans colors hook for consistent styling
+    const plansColors = usePlansColors();
+
+    // Use the colors from props or fall back to the plans colors
+    const textColorHeading = colors?.textColorHeading || plansColors.textColorHeading;
+    const textColorStrong = colors?.textColorStrong || plansColors.textColorHeading;
+    const textColor = colors?.textColor || plansColors.textColor;
+    const textColorMuted = colors?.textColorMuted || plansColors.textColorMuted;
+    const borderColor = colors?.borderColor || plansColors.borderColor;
+    const accentColor = colors?.accentColor || plansColors.accentColor;
+    const cardBg = colors?.cardBg || plansColors.cardBg;
+    const inputBg = colors?.inputBg || plansColors.inputBg;
+    const approvalBoxBg = useColorModeValue("orange.50", "orange.900");
+    const approvalBoxBorder = useColorModeValue("orange.200", "orange.700");
+    const approvalTextColor = textColorHeading;
+    const approvalMutedColor = textColor;
+    const contentBoxBg = colors?.bgSubtle || plansColors.bgSubtle;
+    const placeholderColor = textColorMuted;
+    const taskDescriptionBg = plansColors.subtleSelectedItemBg;
+    const buttonBgColor = plansColors.buttonBgColor;
+    const buttonHoverBgColor = plansColors.buttonHoverBgColor;
+    const selectedItemBg = plansColors.selectedItemBg;
+    const focusRingColor = plansColors.focusRingColor;
+
+    const isConfirmation = log?.type === "approval_requested";
+
+    // State hooks
     const [editingSkill, setEditingSkill] = useState<any>(null);
     const [skillName, setSkillName] = useState('');
     const [skillExplanation, setSkillExplanation] = useState('');
     const [toolParams, setToolParams] = useState<Record<string, any>>({});
     const [paramTypes, setParamTypes] = useState<Record<string, string>>({});
-    const [errors, setErrors] = useState<Record<string, string>>({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [tasks, setTasks] = useState<any[]>([]);
-    const [isLoadingTasks, setIsLoadingTasks] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [errors, setErrors] = useState<{ skillName?: string; skillExplanation?: string }>({});
+    const [fetchedSkills, setFetchedSkills] = useState<Record<string, any>>({});
+    const [isLoadingSkillDetails, setIsLoadingSkillDetails] = useState(false);
+    const [expandedSkills, setExpandedSkills] = useState<Set<string>>(new Set());
 
+    // Ref hooks
     const skillNameInputRef = useRef<HTMLInputElement>(null);
 
-    // Color mode values
-    const bgColor = useColorModeValue("white", "gray.800");
-    const textColor = useColorModeValue("gray.700", "gray.200");
-    const textColorStrong = useColorModeValue("gray.800", "white");
-    const textColorMuted = useColorModeValue("gray.500", "gray.400");
-    const borderColor = useColorModeValue("gray.200", "gray.700");
-    const headerBg = useColorModeValue("gray.50", "gray.900");
-    const inputBg = useColorModeValue("white", "gray.700");
-    const inputBorder = useColorModeValue("gray.300", "gray.600");
-    const inputPlaceholderColor = useColorModeValue("gray.400", "gray.500");
-    const inputFocusBorderColor = useColorModeValue("blue.500", "blue.300");
-    const contentBoxBg = useColorModeValue("gray.50", "gray.700");
-    const contentBoxBorder = useColorModeValue("gray.200", "gray.600");
-    const skillBoxBg = useColorModeValue("blue.50", "blue.900");
-    const skillBoxBorder = useColorModeValue("blue.200", "blue.700");
-    const editButtonBg = useColorModeValue("gray.100", "gray.700");
-    const editButtonColor = useColorModeValue("gray.700", "gray.200");
-    const editButtonHoverBg = useColorModeValue("gray.200", "gray.600");
-    const approvalBg = useColorModeValue("green.50", "green.900");
-    const approvalBorder = useColorModeValue("green.200", "green.700");
-    const approvalTextColor = useColorModeValue("green.800", "green.200");
-    const approvalMutedColor = useColorModeValue("green.600", "green.400");
-    const approvalButtonBg = useColorModeValue("green.500", "green.600");
-    const approvalButtonHoverBg = useColorModeValue("green.600", "green.500");
-    const denyButtonBg = useColorModeValue("red.500", "red.600");
-    const denyButtonHoverBg = useColorModeValue("red.600", "red.500");
-
-    // Determine if this is a confirmation log
-    const isConfirmation = log?.type === "ask_for_plan_approval";
-
-    // Focus the skill name input when editing
+    // Effect hooks
     useEffect(() => {
-        if (editingSkill && skillNameInputRef.current) {
-            skillNameInputRef.current.focus();
+        if (isOpen && log) {
+            console.log("Log type:", log.type);
+            console.log("Is confirmation:", isConfirmation);
+            console.log("Has plan_id:", !!log.plan_id);
         }
-    }, [editingSkill]);
+    }, [isOpen, log, isConfirmation]);
 
-    // Fetch tasks when log changes and has a task_id
+    // Parse the plan_id from the content if it's a confirmation log
     useEffect(() => {
-        if (log?.task_id) {
-            fetchTaskById(log.task_id);
-        } else if (log?.plan_id) {
-            fetchTasksByPlanId(log.plan_id);
-        }
-    }, [log]);
-
-    // Function to fetch a task by ID
-    const fetchTaskById = async (taskId: string) => {
-        setIsLoadingTasks(true);
-        try {
-            const response = await fetch(`/api/plan/get_task?taskId=${taskId}`);
-            if (response.ok) {
-                const data = await response.json();
-                setTasks(Array.isArray(data) ? data : [data]);
-            } else {
-                console.error("Failed to fetch task:", await response.text());
-                setTasks([]);
-            }
-        } catch (error) {
-            console.error("Error fetching task:", error);
-            setTasks([]);
-        } finally {
-            setIsLoadingTasks(false);
-        }
-    };
-
-    // Function to fetch tasks by plan ID
-    const fetchTasksByPlanId = async (planId: string) => {
-        setIsLoadingTasks(true);
-        try {
-            const response = await fetch(`/api/plan/get_tasks?planId=${planId}`);
-            if (response.ok) {
-                const data = await response.json();
-                setTasks(data);
-            } else {
-                console.error("Failed to fetch tasks:", await response.text());
-                setTasks([]);
-            }
-        } catch (error) {
-            console.error("Error fetching tasks:", error);
-            setTasks([]);
-        } finally {
-            setIsLoadingTasks(false);
-        }
-    };
-
-    // Format the content for display
-    const getFormattedContent = () => {
-        if (!log) return "";
-
-        // For approval logs, try to parse and format the content
-        if (log.type === "ask_for_plan_approval") {
+        if (isOpen && log && isConfirmation && !log.plan_id) {
             try {
-                // Replace single quotes with double quotes to make it valid JSON
-                const jsonString = log.content.replace(/'/g, '"').replace(/None/g, 'null');
-                const contentData = JSON.parse(jsonString);
+                // Try to parse the content as JSON
+                const contentData = JSON.parse(log.content);
                 if (Array.isArray(contentData) && contentData.length > 0) {
-                    return JSON.stringify(contentData, null, 2);
+                    const toolData = contentData[0];
+                    if (toolData.name === 'approve_plan' && toolData.args?.plan_id?.value) {
+                        // Set the plan_id from the parsed content
+                        log.plan_id = toolData.args.plan_id.value;
+                        console.log("Extracted plan_id:", log.plan_id);
+                    }
                 }
             } catch (error) {
-                console.error("Error parsing content:", error);
+                console.error("Error parsing log content:", error);
             }
         }
+    }, [isOpen, log, isConfirmation]);
 
-        return log.content;
-    };
+    // Update the useEffect to better understand the structure
+    useEffect(() => {
+        if (isOpen && log) {
+            console.log("Log data:", log);
+            console.log("Task details:", taskDetails);
+            if (taskDetails?.skills) {
+                // Don't use Object.keys on an array, just log the array directly
+                console.log("Task details skills array:", taskDetails.skills);
+                console.log("Is skills an array?", Array.isArray(taskDetails.skills));
+                console.log("Skills content:", taskDetails.skills);
 
-    // Get plan details from the content
-    const getPlanDetailsFromContent = () => {
-        if (!log || !isConfirmation) return null;
-
-        try {
-            // Replace single quotes with double quotes and Python None with JSON null
-            const jsonString = log.content
-                .replace(/'/g, '"')
-                .replace(/None/g, 'null');
-
-            const contentData = JSON.parse(jsonString);
-            if (Array.isArray(contentData) && contentData.length > 0) {
-                const skillData = contentData[0];
-                const skillName = skillData.skill_name || skillData.tool_name;
-                if ((skillName === 'approve_plan') && skillData.args?.plan_id?.value) {
-                    return {
-                        planId: skillData.args.plan_id.value,
-                        skillName: skillName,
-                        server: skillData.mcp_server,
-                        description: skillData.description?.trim() || t("no_description_available")
-                    };
+                // Try to access the first skill ID directly
+                if (Array.isArray(taskDetails.skills) && taskDetails.skills.length > 0) {
+                    console.log("First skill ID:", taskDetails.skills[0]);
                 }
             }
-        } catch (error) {
-            console.error("Error parsing plan details:", error);
         }
+    }, [isOpen, log, taskDetails]);
 
-        return null;
+    // Add effect to fetch skill details when task details are available
+    useEffect(() => {
+        if (taskDetails?.skills && Array.isArray(taskDetails.skills) && taskDetails.skills.length > 0) {
+            const fetchSkillDetails = async () => {
+                setIsLoadingSkillDetails(true);
+                const skillsData: Record<string, any> = {};
+
+                for (const skillId of taskDetails.skills) {
+                    try {
+                        const response = await fetch(`/api/skill/get_skill?id=${skillId}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            skillsData[skillId] = data.skill;
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching skill ${skillId}:`, error);
+                    }
+                }
+
+                setFetchedSkills(skillsData);
+                setIsLoadingSkillDetails(false);
+            };
+
+            fetchSkillDetails();
+        }
+    }, [taskDetails]);
+
+    const getShortId = (id: string): string => {
+        return id.length > 8 ? id.substring(0, 8) : id;
     };
 
-    const planDetails = getPlanDetailsFromContent();
+    const handleCloseModal = () => {
+        onClose();
+    };
 
+    const handleApprove = () => {
+        console.log("Handling approve", log?.plan_id, onApprove);
+        if (log?.plan_id && onApprove) {
+            // Show the skills that will be used for this plan
+            if (taskDetails?.skills && Object.keys(fetchedSkills).length > 0) {
+                const skillsList = Object.values(fetchedSkills)
+                    .map(skill => `${skill.name || skill.tool_name}: ${skill.description || 'No description'}`)
+                    .join('\n• ');
+
+                console.log("Skills list:", skillsList);
+            }
+
+            // Call the onApprove function
+            onApprove(log.plan_id);
+            onClose();
+        }
+    };
+
+    const handleDeny = () => {
+        if (log?.plan_id && onDeny) {
+            onDeny(log.plan_id);
+            onClose();
+        }
+    };
+
+
+    // Handle edit skill - update to properly handle skill array
     const handleEditSkill = (skill: any) => {
+        console.log("Editing skill:", skill);
+
+        // If skill is an array of skill IDs, we need to fetch the first skill
+        if (Array.isArray(skill) && skill.length > 0) {
+            const fetchSkillDetails = async () => {
+                try {
+                    const response = await fetch(`/api/skill/get_skill?id=${skill[0]}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log("Fetched skill details:", data.skill);
+                        initializeSkillForm(data.skill);
+                    }
+                } catch (error) {
+                    console.error("Error fetching skill details:", error);
+                }
+            };
+
+            fetchSkillDetails();
+            return;
+        }
+
+        // Otherwise, initialize with the provided skill object
+        initializeSkillForm(skill);
+    };
+
+    // Helper to initialize the skill form
+    const initializeSkillForm = (skill: any, skillId?: string) => {
+        console.log("Initializing skill form with:", skill);
+
+        if (skillId) {
+            skill.id = skillId; // Ensure the ID is set
+        }
+
         setEditingSkill(skill);
 
         // Initialize form values
-        setSkillName(skill.name || skill.skill_name || skill.tool_name || '');
+        setSkillName(skill.name || skill.tool_name || '');
         setSkillExplanation(skill.description || '');
 
-        // Initialize skill parameters
+        // Initialize skill parameters with proper type detection for new format
         const newSkillParams: Record<string, any> = {};
         const newParamTypes: Record<string, string> = {};
 
         if (skill.args) {
+            console.log("Skill args:", skill.args);
+
             Object.entries(skill.args).forEach(([key, value]) => {
-                // Check if the value is in the augmented format
+                // Check if the value is in the new enhanced format with type information
                 if (value && typeof value === 'object' && 'value' in value && 'type' in value) {
+                    console.log(`Parameter ${key} has explicit type:`, value.type);
                     newSkillParams[key] = value.value;
                     newParamTypes[key] = value.type as string;
                 } else {
+                    // Handle the old format or direct values
                     newSkillParams[key] = value;
-                    newParamTypes[key] = 'unknown';
+
+                    if (value === null) {
+                        newParamTypes[key] = 'null';
+                    } else if (Array.isArray(value)) {
+                        newParamTypes[key] = 'array';
+                    } else if (typeof value === 'object') {
+                        newParamTypes[key] = 'object';
+                    } else {
+                        newParamTypes[key] = typeof value;
+                    }
+
+                    console.log(`Parameter ${key} inferred type:`, newParamTypes[key]);
                 }
             });
         }
@@ -239,110 +306,89 @@ export default function PlanLogModal({
         setParamTypes(newParamTypes);
     };
 
+    const handleCancelEdit = () => {
+        setEditingSkill(null);
+        setSkillName('');
+        setSkillExplanation('');
+        setToolParams({});
+        setParamTypes({});
+        setErrors({});
+    };
+
+    const validateForm = () => {
+        const newErrors: { skillName?: string; skillExplanation?: string } = {};
+
+        if (!skillName) {
+            newErrors.skillName = t('name_required');
+        }
+
+        if (!skillExplanation) {
+            newErrors.skillExplanation = t('skill_explanation_required');
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSaveSkill = async () => {
-        // Validate form
-        const newErrors: Record<string, string> = {};
-        if (!skillName.trim()) {
-            newErrors.skillName = t("skill_name_required");
-        }
-        if (!skillExplanation.trim()) {
-            newErrors.skillExplanation = t("skill_explanation_required");
-        }
-
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
-            return;
-        }
-
-        setIsSubmitting(true);
+        setIsLoading(true);
 
         try {
-            // Create updated skill object
-            const updatedSkill = {
-                ...editingSkill,
-                name: skillName.trim(),
-                skill_name: skillName.trim(),
-                tool_name: skillName.trim(),
-                description: skillExplanation.trim(),
-                args: {}
-            };
+            // Format the args back to the enhanced structure
+            const enhancedArgs: Record<string, any> = {};
 
-            // Format parameters based on their types
             Object.entries(toolParams).forEach(([key, value]) => {
-                const paramType = paramTypes[key] || 'unknown';
-
-                // Format value based on type
-                let formattedValue: any = value;
-                if (paramType === 'number') {
-                    formattedValue = Number(value);
-                } else if (paramType === 'boolean') {
-                    formattedValue = value === 'true' || value === true;
-                } else if (paramType === 'object' || paramType === 'array') {
-                    try {
-                        formattedValue = JSON.parse(value);
-                    } catch (e) {
-                        formattedValue = value;
-                    }
-                }
-
-                // Use the augmented format
-                updatedSkill.args[key] = {
-                    value: formattedValue,
-                    type: paramType
+                enhancedArgs[key] = {
+                    value: value,
+                    type: paramTypes[key] || 'unknown',
+                    title: key,
+                    description: ''
                 };
             });
 
-            // Update the task with the new skill
-            if (log?.task_id) {
-                const response = await fetch(`/api/plan/update_task`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        task_id: log.task_id,
-                        skills: updatedSkill
-                    }),
-                });
+            const updatedSkill = {
+                ...editingSkill,
+                name: skillName,
+                description: skillExplanation,
+                args: enhancedArgs
+            };
 
-                if (!response.ok) {
-                    throw new Error(`Failed to update task: ${response.statusText}`);
-                }
+            console.log("Saving updated skill:", updatedSkill);
 
-                // Show success message
-                // toaster.toast({
-                //     title: t("skill_updated"),
-                //     description: t("skill_updated_description"),
-                //     variant: "success",
-                // });
+            // Make API call to update the skill
+            const response = await fetch('/api/skill/update_skill', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    skillId: editingSkill.id,
+                    skill: updatedSkill
+                }),
+            });
 
-                // Reset form and close edit mode
-                setEditingSkill(null);
-                setErrors({});
-
-                // Refresh tasks
-                if (log.task_id) {
-                    fetchTaskById(log.task_id);
-                } else if (log.plan_id) {
-                    fetchTasksByPlanId(log.plan_id);
-                }
-
-                // Notify parent component
-                if (onSkillUpdated) {
-                    onSkillUpdated();
-                }
-            } else {
-                throw new Error("No task ID available for update");
+            if (!response.ok) {
+                throw new Error(`Failed to update skill: ${response.statusText}`);
             }
+
+            const result = await response.json();
+            console.log("Skill update result:", result);
+
+            // Update the local state with the updated skill
+            if (taskDetails && taskDetails.skills) {
+                const updatedSkills = { ...fetchedSkills };
+                updatedSkills[editingSkill.id] = updatedSkill;
+                setFetchedSkills(updatedSkills);
+            }
+
+            // Show success message
+
+            // Reset editing state
+            setEditingSkill(null);
         } catch (error) {
             console.error("Error updating skill:", error);
-            // toaster.toast({
-            //     title: t("error"),
-            //     description: t("skill_update_error"),
-            //     variant: "destructive",
-            // });
         } finally {
-            setIsSubmitting(false);
+            setIsLoading(false);
         }
     };
 
@@ -354,278 +400,417 @@ export default function PlanLogModal({
         }));
     };
 
-    // Render the skill edit form
-    const renderSkillEditForm = () => {
-        if (!editingSkill) return null;
+    // Toggle skill expansion
+    const toggleSkillExpansion = (skillId: string) => {
+        setExpandedSkills(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(skillId)) {
+                newSet.delete(skillId);
+            } else {
+                newSet.add(skillId);
+            }
+            return newSet;
+        });
+    };
+
+    // Render the task details section with skills
+    const renderTaskDetails = () => {
+        if (!taskDetails) return null;
+
+        // Ensure skills is properly handled as an array
+        const skillsArray = taskDetails.skills ?
+            (Array.isArray(taskDetails.skills) ? taskDetails.skills : []) : [];
+
+        // Create a task object with the fetched skills for SkillInfo component
+        const taskWithSkills = {
+            ...taskDetails,
+            skills: Object.values(fetchedSkills)
+        };
 
         return (
-            <Stack gap={4}>
-                <Field.Root invalid={!!errors.skillName}>
-                    <Field.Label color={textColorStrong}>{t("skill_name")}</Field.Label>
-                    <Input
-                        color={textColor}
-                        bg={inputBg}
-                        ref={skillNameInputRef}
-                        type="text"
-                        value={skillName}
-                        onChange={(e) => setSkillName(e.target.value)}
-                        placeholder={t("enter_skill_name")}
-                        required
-                        _placeholder={{ color: inputPlaceholderColor }}
-                        _focus={{ borderColor: inputFocusBorderColor }}
-                    />
-                    {errors.skillName && <Field.ErrorText>{errors.skillName}</Field.ErrorText>}
-                </Field.Root>
+            <Box>
+                <Text fontWeight="semibold" color={textColorStrong} mb={1}>
+                    {t("task_details")}
+                </Text>
+                <Box
+                    p={3}
+                    borderRadius="md"
+                    bg={contentBoxBg}
+                    border="1px"
+                    borderColor={borderColor}
+                >
+                    <Stack gap={3}>
+                        {taskDetails.task_name && (
+                            <Text fontWeight="semibold" color={textColorStrong}>
+                                {taskDetails.task_name}
+                            </Text>
+                        )}
 
-                <Field.Root invalid={!!errors.skillExplanation}>
-                    <Field.Label color={textColorStrong}>{t("skill_explanation")}</Field.Label>
-                    <Textarea
-                        color={textColor}
-                        bg={inputBg}
-                        value={skillExplanation}
-                        onChange={(e) => setSkillExplanation(e.target.value)}
-                        placeholder={t("enter_skill_explanation")}
-                        required
-                        _placeholder={{ color: inputPlaceholderColor }}
-                        _focus={{ borderColor: inputFocusBorderColor }}
-                        rows={4}
-                    />
-                    {errors.skillExplanation && <Field.ErrorText>{errors.skillExplanation}</Field.ErrorText>}
-                </Field.Root>
+                        {taskDetails.task_explanation && (
+                            <Text
+                                color={textColor}
+                                whiteSpace="pre-wrap"
+                                p={2}
+                                bg={taskDescriptionBg}
+                                borderRadius="md"
+                            >
+                                {taskDetails.task_explanation}
+                            </Text>
+                        )}
 
-                {editingSkill.args && Object.keys(editingSkill.args).length > 0 && (
-                    <Box mt={2}>
-                        <Text fontSize="xs" fontWeight="bold" color={textColorMuted} mb={1}>
-                            {t("parameters")}:
-                        </Text>
-                        <Stack gap={2}>
-                            {Object.entries(editingSkill.args).map(([key, value]) => {
-                                // Determine if value is in the augmented format
-                                const isAugmented = value && typeof value === 'object' && 'value' in value && 'type' in value;
-                                const paramValue = isAugmented ? (value as any).value : value;
-                                const paramType = isAugmented ? (value as any).type : 'unknown';
+                        {/* Expected Result */}
+                        {taskDetails.expected_result && (
+                            <Box>
+                                <Text fontSize="sm" fontWeight="semibold" color={textColorStrong}>
+                                    {t("expected_result")}:
+                                </Text>
+                                <Text fontSize="sm" color={textColor}>
+                                    {taskDetails.expected_result}
+                                </Text>
+                            </Box>
+                        )}
 
-                                // Format the display value based on type
-                                let displayValue = paramValue;
-                                if (typeof paramValue === 'object') {
-                                    displayValue = JSON.stringify(paramValue);
-                                }
+                        {/* Skills Section */}
+                        {skillsArray.length > 0 && (
+                            <Box>
+                                <Flex justify="space-between" align="center" mb={2}>
+                                    <Text fontSize="sm" fontWeight="semibold" color={textColorStrong}>
+                                        {t("skills")}:
+                                    </Text>
+                                    <Button
+                                        size="xs"
+                                        colorScheme="blue"
+                                        onClick={() => handleEditSkill(skillsArray)}
+                                    >
+                                        {t("edit")}
+                                    </Button>
+                                </Flex>
 
-                                return (
-                                    <Field.Root key={key}>
-                                        <Field.Label color={textColorStrong} fontSize="xs">
-                                            {key}
-                                            {paramType !== 'unknown' && (
-                                                <Badge ml={1} fontSize="2xs" colorScheme="blue">
-                                                    {paramType}
-                                                </Badge>
-                                            )}
-                                        </Field.Label>
-                                        <Input
-                                            color={textColor}
-                                            bg={inputBg}
-                                            size="sm"
-                                            value={toolParams[key] !== undefined ? toolParams[key] : displayValue}
-                                            onChange={(e) => handleParamChange(key, e.target.value)}
-                                            _placeholder={{ color: inputPlaceholderColor }}
-                                            _focus={{ borderColor: inputFocusBorderColor }}
-                                        />
-                                    </Field.Root>
-                                );
-                            })}
-                        </Stack>
-                    </Box>
-                )}
-            </Stack>
+                                {isLoadingSkillDetails ? (
+                                    <Flex justify="center" py={4}>
+                                        <Spinner size="md" color={accentColor} />
+                                    </Flex>
+                                ) : Object.keys(fetchedSkills).length > 0 ? (
+                                    <SkillInfo
+                                        task={taskWithSkills}
+                                        colors={colors || {
+                                            textColorHeading,
+                                            textColorStrong,
+                                            textColor,
+                                            textColorMuted,
+                                            borderColor,
+                                            accentColor,
+                                            cardBg,
+                                            bgSubtle: contentBoxBg
+                                        }}
+                                        t={t}
+                                        showDetails={true}
+                                    />
+                                ) : (
+                                    <Text color={textColorMuted}>{t("no_skills_found")}</Text>
+                                )}
+                            </Box>
+                        )}
+
+                        {/* Task Status and Timestamps */}
+                        <Flex direction="column" gap={1} fontSize="sm" color={textColorMuted}>
+                            <Text>
+                                {t("status")}: {taskDetails.status || t("not_started")}
+                            </Text>
+                            {taskDetails.created_at && (
+                                <Text>
+                                    {t("created")}: {new Date(taskDetails.created_at).toLocaleString()}
+                                </Text>
+                            )}
+                            {taskDetails.completed_at && (
+                                <Text>
+                                    {t("completed")}: {new Date(taskDetails.completed_at).toLocaleString()}
+                                </Text>
+                            )}
+                        </Flex>
+                    </Stack>
+                </Box>
+            </Box>
         );
     };
 
+    // Update the Plan Overview section to use the planOverview from the log if available
+    const getPlanOverview = () => {
+        // First try to use planOverview directly from the log
+        if (log?.planOverview) {
+            return log.planOverview;
+        }
+
+        // Fall back to planData if available
+        if (planData?.plan_overview) {
+            return planData.plan_overview;
+        }
+
+        return null;
+    };
+
     return (
-        <Dialog.Root open={isOpen} onOpenChange={onClose}>
+        <Dialog.Root open={isOpen} onOpenChange={handleCloseModal} initialFocusEl={() => editingSkill ? skillNameInputRef.current : null}>
             <Portal>
+                <Dialog.Backdrop />
                 <Dialog.Positioner>
                     <Dialog.Content
-                        bg={bgColor}
+                        maxWidth="800px"
+                        width="90vw"
+                        maxHeight="calc(100vh - 80px)"
+                        overflow="hidden"
+                        bg={cardBg}
                         borderColor={borderColor}
-                        maxWidth="600px"
-                        width="90%"
+                        boxShadow={plansColors.cardShadow}
                     >
-                        <Dialog.Header bg={headerBg} borderBottomWidth="1px" borderBottomColor={borderColor}>
-                            <Dialog.Title color={textColorStrong}>
-                                {editingSkill ? t("edit_skill") : t("log_details")}
+                        <Dialog.Header borderBottomColor={borderColor}>
+                            <Dialog.Title color={textColorHeading}>
+                                {editingSkill ? t("edit_skill") : (log?.planName || t("plan_log_details"))}
                             </Dialog.Title>
                             <Dialog.CloseTrigger />
                         </Dialog.Header>
 
-                        <Dialog.Body>
-                            {editingSkill ? (
-                                renderSkillEditForm()
+                        <Dialog.Body overflowY="auto" maxHeight="calc(100vh - 200px)">
+                            {isLoadingTask ? (
+                                <Flex justify="center" align="center" py={8}>
+                                    <Spinner size="lg" color={accentColor} />
+                                </Flex>
+                            ) : editingSkill ? (
+                                <Stack gap={4}>
+                                    <Field.Root invalid={!!errors.skillName}>
+                                        <Field.Label color={textColorStrong}>{t("name")}</Field.Label>
+                                        <Input
+                                            color={textColor}
+                                            bg={inputBg}
+                                            borderColor={plansColors.inputBorder}
+                                            _focus={{ borderColor: plansColors.inputBorder, boxShadow: `0 0 0 1px ${focusRingColor}` }}
+                                            ref={skillNameInputRef}
+                                            type="text"
+                                            value={skillName}
+                                            onChange={(e) => setSkillName(e.target.value)}
+                                            placeholder={t("enter_name")}
+                                            required
+                                            _placeholder={{ color: placeholderColor }}
+                                        />
+                                        {errors.skillName && <Field.ErrorText>{errors.skillName}</Field.ErrorText>}
+                                    </Field.Root>
+
+                                    <Field.Root invalid={!!errors.skillExplanation}>
+                                        <Field.Label color={textColorStrong}>{t("skill_explanation")}</Field.Label>
+                                        <Textarea
+                                            color={textColor}
+                                            bg={inputBg}
+                                            borderColor={plansColors.inputBorder}
+                                            _focus={{ borderColor: plansColors.inputBorder, boxShadow: `0 0 0 1px ${focusRingColor}` }}
+                                            value={skillExplanation}
+                                            onChange={(e) => setSkillExplanation(e.target.value)}
+                                            placeholder={t("enter_skill_explanation")}
+                                            required
+                                            _placeholder={{ color: placeholderColor }}
+                                            rows={4}
+                                        />
+                                        {errors.skillExplanation && <Field.ErrorText>{errors.skillExplanation}</Field.ErrorText>}
+                                    </Field.Root>
+
+                                    {editingSkill.args && Object.keys(editingSkill.args).length > 0 && (
+                                        <Box mt={2}>
+                                            <Text fontSize="sm" fontWeight="medium" color={textColorStrong} mb={2}>
+                                                {t("parameters")}
+                                            </Text>
+                                            <Stack gap={2}>
+                                                {Object.entries(editingSkill.args).map(([key, value]) => {
+                                                    // Extract value and type if in augmented format
+                                                    const isAugmented = value && typeof value === 'object' && 'value' in value && 'type' in value;
+                                                    const displayValue = isAugmented ? value.value : value;
+                                                    const paramType = isAugmented ? value.type as string : 'unknown';
+
+                                                    // Check if this is an array type
+                                                    const isArray = paramType === 'array';
+
+                                                    // Check if this is the mcp_server parameter
+                                                    const isMcpServer = key === 'mcp_server';
+
+                                                    return (
+                                                        <Field.Root key={key}>
+                                                            <Flex justifyContent="space-between" alignItems="center" mb={1}>
+                                                                <Field.Label fontSize="sm" color={textColorStrong}>
+                                                                    {isMcpServer ? "skill (server)" : key}
+                                                                </Field.Label>
+                                                                <Badge size="sm" colorScheme="blue">{paramType}</Badge>
+                                                            </Flex>
+                                                            {isArray ? (
+                                                                <>
+                                                                    <Textarea
+                                                                        size="sm"
+                                                                        value={Array.isArray(toolParams[key])
+                                                                            ? JSON.stringify(toolParams[key], null, 2)
+                                                                            : toolParams[key] || '[]'}
+                                                                        onChange={(e) => {
+                                                                            try {
+                                                                                // Try to parse as JSON array
+                                                                                const parsedValue = JSON.parse(e.target.value);
+                                                                                handleParamChange(key, parsedValue);
+                                                                            } catch (err) {
+                                                                                // If not valid JSON, just store as string
+                                                                                handleParamChange(key, e.target.value);
+                                                                            }
+                                                                        }}
+                                                                        color={textColor}
+                                                                        bg={inputBg}
+                                                                        borderColor={plansColors.inputBorder}
+                                                                        _focus={{ borderColor: plansColors.inputBorder, boxShadow: `0 0 0 1px ${focusRingColor}` }}
+                                                                        placeholder='Enter array values as JSON: ["item1", "item2"]'
+                                                                        rows={3}
+                                                                    />
+                                                                    <Text fontSize="xs" color={textColorMuted} mt={1}>
+                                                                        {t("enter_array_as_json")}
+                                                                    </Text>
+                                                                </>
+                                                            ) : (
+                                                                <Input
+                                                                    size="sm"
+                                                                    value={toolParams[key] || ''}
+                                                                    onChange={(e) => handleParamChange(key, e.target.value)}
+                                                                    color={textColor}
+                                                                    bg={inputBg}
+                                                                    borderColor={plansColors.inputBorder}
+                                                                    _focus={{ borderColor: plansColors.inputBorder, boxShadow: `0 0 0 1px ${focusRingColor}` }}
+                                                                    _placeholder={{ color: useColorModeValue("gray.500", "gray.400") }}
+                                                                />
+                                                            )}
+                                                        </Field.Root>
+                                                    );
+                                                })}
+                                            </Stack>
+                                        </Box>
+                                    )}
+                                </Stack>
                             ) : (
                                 log ? (
                                     <Stack gap={4}>
-                                        {/* Log Type */}
-                                        <Box>
-                                            <Text fontWeight="medium" color={textColorStrong} mb={1}>
-                                                {t("log_type")}
-                                            </Text>
-                                            <Badge colorScheme={
-                                                log.type === "plan_created" ? "green" :
-                                                    log.type === "plan_completed" ? "blue" :
-                                                        log.type === "plan_failed" ? "red" :
-                                                            log.type === "ask_for_plan_approval" ? "yellow" :
-                                                                "gray"
-                                            }>
-                                                {t(log.type)}
+                                        {/* Log Header */}
+                                        <Flex justify="space-between" align="center">
+                                            <Badge
+                                                colorScheme={log.type === 'approval_requested' ? 'orange' : 'blue'}
+                                                px={2}
+                                                py={1}
+                                                borderRadius="md"
+                                            >
+                                                {log.type === 'approval_requested' ? t("approval_requested") : t(log.type || "log")}
                                             </Badge>
-                                        </Box>
+                                            {log.created_at && (
+                                                <Text fontSize="sm" color={textColorMuted}>
+                                                    {new Date(log.created_at).toLocaleString()}
+                                                </Text>
+                                            )}
+                                        </Flex>
 
-                                        {/* Timestamp */}
-                                        <Box>
-                                            <Text fontWeight="medium" color={textColorStrong} mb={1}>
-                                                {t("timestamp")}
-                                            </Text>
-                                            <Text fontSize="sm" color={textColor}>
-                                                {new Date(log.created_at).toLocaleString(locale)}
-                                            </Text>
-                                        </Box>
-
-                                        {/* Plan Approval Section */}
-                                        {isConfirmation && planDetails && (
+                                        {/* Plan Info with Link */}
+                                        {log.planName && (
                                             <Box>
-                                                <Text fontWeight="medium" color={textColorStrong} mb={2}>
-                                                    {t("plan_approval")}
+                                                <Text fontWeight="semibold" color={textColorStrong} mb={1}>
+                                                    {t("plan")}
                                                 </Text>
                                                 <Box
-                                                    p={4}
-                                                    borderRadius="md"
-                                                    bg={approvalBg}
-                                                    border="1px"
-                                                    borderColor={approvalBorder}
-                                                >
-                                                    <Stack gap={2}>
-                                                        <Box>
-                                                            <Text fontSize="xs" color={approvalMutedColor} fontWeight="medium">
-                                                                {t("plan_id")}:
-                                                            </Text>
-                                                            <Text fontSize="sm" color={approvalTextColor} fontFamily="monospace">
-                                                                {planDetails.planId}
-                                                            </Text>
-                                                        </Box>
-
-                                                        {planDetails.server && (
-                                                            <Box>
-                                                                <Text fontSize="xs" color={approvalMutedColor} fontWeight="medium">
-                                                                    {t("server")}:
-                                                                </Text>
-                                                                <Text fontSize="sm" color={approvalTextColor}>
-                                                                    {planDetails.server}
-                                                                </Text>
-                                                            </Box>
-                                                        )}
-
-                                                        <Box>
-                                                            <Text fontSize="xs" color={approvalMutedColor} fontWeight="medium">
-                                                                {t("description")}:
-                                                            </Text>
-                                                            <Text fontSize="sm" color={approvalTextColor} whiteSpace="pre-wrap">
-                                                                {planDetails.description}
-                                                            </Text>
-                                                        </Box>
-
-                                                        <Text fontSize="sm" color={approvalTextColor} mt={2}>
-                                                            {t("approve_plan_message")}
-                                                        </Text>
-                                                    </Stack>
-                                                </Box>
-                                            </Box>
-                                        )}
-
-                                        {/* Tasks Section */}
-                                        {isLoadingTasks ? (
-                                            <Box textAlign="center" py={4}>
-                                                <Text fontSize="sm" color={textColorMuted}>{t("loading_tasks")}</Text>
-                                            </Box>
-                                        ) : tasks.length > 0 ? (
-                                            <Box>
-                                                <Text fontWeight="medium" color={textColorStrong} mb={2}>
-                                                    {t("tasks")}
-                                                </Text>
-                                                <Box
-                                                    p={4}
-                                                    borderRadius="md"
-                                                    bg={skillBoxBg}
-                                                    border="1px"
-                                                    borderColor={skillBoxBorder}
-                                                >
-                                                    <Stack gap={3}>
-                                                        {tasks.map((task, index) => (
-                                                            <Box key={index} position="relative">
-                                                                <SkillInfo
-                                                                    task={task}
-                                                                    colors={colors}
-                                                                    t={t}
-                                                                    showDetails={true}
-                                                                />
-                                                                {task.skills && (
-                                                                    <Button
-                                                                        size="xs"
-                                                                        position="absolute"
-                                                                        top={2}
-                                                                        right={2}
-                                                                        onClick={() => handleEditSkill(task.skills)}
-                                                                        bg={editButtonBg}
-                                                                        color={editButtonColor}
-                                                                        _hover={{ bg: editButtonHoverBg }}
-                                                                    >
-                                                                        {t("edit")}
-                                                                    </Button>
-                                                                )}
-                                                            </Box>
-                                                        ))}
-                                                    </Stack>
-                                                </Box>
-                                            </Box>
-                                        ) : null}
-
-                                        {/* Content (only show if not a confirmation or if we couldn't parse details) */}
-                                        {(!isConfirmation || !planDetails) && (
-                                            <Box>
-                                                <Text fontWeight="medium" color={textColorStrong} mb={2}>
-                                                    {t("content")}
-                                                </Text>
-                                                <Box
-                                                    p={4}
+                                                    p={3}
                                                     borderRadius="md"
                                                     bg={contentBoxBg}
                                                     border="1px"
-                                                    borderColor={contentBoxBorder}
+                                                    borderColor={borderColor}
                                                 >
-                                                    <Text
-                                                        color={textColor}
-                                                        whiteSpace="pre-wrap"
-                                                        fontSize="sm"
-                                                    >
-                                                        {getFormattedContent()}
-                                                    </Text>
+                                                    <Flex justify="space-between" align="center">
+                                                        <Text fontWeight="semibold" color={textColorStrong}>
+                                                            {log.planName}
+                                                        </Text>
+                                                        <Flex gap={2} align="center">
+                                                            {log.planShortId && (
+                                                                <Badge
+                                                                    size="sm"
+                                                                    colorScheme="blue"
+                                                                    variant="outline"
+                                                                    fontFamily="monospace"
+                                                                >
+                                                                    {log.planShortId}
+                                                                </Badge>
+                                                            )}
+                                                            {log.plan_id && (
+                                                                <Link
+                                                                    as={NextLink}
+                                                                    href={`/${locale}/plans/${log.plan_id}`}
+                                                                    _hover={{ textDecoration: 'none' }}
+                                                                >
+                                                                    <Badge
+                                                                        colorScheme="orange"
+                                                                        fontSize="sm"
+                                                                        cursor="pointer"
+                                                                        _hover={{ bg: 'orange.200' }}
+                                                                    >
+                                                                        {t("open_plan")}
+                                                                    </Badge>
+                                                                </Link>
+                                                            )}
+                                                        </Flex>
+                                                    </Flex>
                                                 </Box>
                                             </Box>
                                         )}
 
-                                        {/* Related Task */}
+                                        {/* Plan Overview */}
+                                        <Box>
+                                            <Text fontWeight="semibold" color={textColorStrong} mb={1}>
+                                                {t("plan_overview")}
+                                            </Text>
+                                            <Box
+                                                p={3}
+                                                borderRadius="md"
+                                                bg={contentBoxBg}
+                                                border="1px"
+                                                borderColor={borderColor}
+                                            >
+                                                {isLoadingPlan ? (
+                                                    <Spinner size="sm" color={accentColor} />
+                                                ) : getPlanOverview() ? (
+                                                    <Text color={textColor} whiteSpace="pre-wrap">
+                                                        {getPlanOverview()}
+                                                    </Text>
+                                                ) : (
+                                                    <Text color={textColorMuted}>
+                                                        {t("no_plan_overview_available")}
+                                                    </Text>
+                                                )}
+                                            </Box>
+                                        </Box>
+
+
+                                        {/* Task ID if available */}
                                         {log.task_id && (
                                             <Box>
-                                                <Text fontWeight="medium" color={textColorStrong} mb={1}>
-                                                    {t("related_task")}
+                                                <Text fontWeight="semibold" color={textColorStrong} mb={1}>
+                                                    {t("task_id")}
                                                 </Text>
-                                                <Badge
-                                                    colorScheme="purple"
-                                                    fontSize="sm"
-                                                    fontFamily="monospace"
+                                                <Box
+                                                    p={3}
+                                                    borderRadius="md"
+                                                    bg={contentBoxBg}
+                                                    border="1px"
+                                                    borderColor={borderColor}
                                                 >
-                                                    {log.task_id}
-                                                </Badge>
+                                                    <Badge
+                                                        size="sm"
+                                                        colorScheme="purple"
+                                                        variant="outline"
+                                                        fontFamily="monospace"
+                                                    >
+                                                        {log.task_id}
+                                                    </Badge>
+                                                </Box>
                                             </Box>
                                         )}
+
+                                        {/* Task Details Section */}
+                                        {renderTaskDetails()}
+
+
                                     </Stack>
                                 ) : (
                                     <Text color={textColorMuted}>{t("no_log_selected")}</Text>
@@ -633,53 +818,71 @@ export default function PlanLogModal({
                             )}
                         </Dialog.Body>
 
-                        <Dialog.Footer borderTopWidth="1px" borderTopColor={borderColor}>
+                        <Dialog.Footer borderTopColor={borderColor}>
                             {editingSkill ? (
-                                <Flex justify="space-between" width="100%">
+                                <Stack direction="row" gap={4} width="100%">
                                     <Button
+                                        onClick={handleCancelEdit}
                                         variant="outline"
-                                        onClick={() => {
-                                            setEditingSkill(null);
-                                            setErrors({});
-                                        }}
+                                        flex="1"
+                                        borderColor={borderColor}
+                                        color={textColor}
+                                        _hover={{ bg: buttonHoverBgColor }}
                                     >
                                         {t("cancel")}
                                     </Button>
                                     <Button
-                                        colorScheme="blue"
                                         onClick={handleSaveSkill}
-                                        loading={isSubmitting}
+                                        colorScheme="blue"
+                                        flex="1"
+                                        loading={isLoading}
+                                        bg={plansColors.blueBgColor}
+                                        _hover={{ bg: plansColors.blueHoverBgColor }}
                                     >
-                                        {t("save_changes")}
+                                        {t("save")}
                                     </Button>
-                                </Flex>
-                            ) : (
-                                <Flex justify="space-between" width="100%">
-                                    <Button variant="outline" onClick={onClose}>
+                                </Stack>
+                            ) : isConfirmation ? (
+                                <Stack direction="row" gap={4} width="100%">
+                                    <Button
+                                        onClick={handleDeny}
+                                        colorScheme="red"
+                                        variant="outline"
+                                        flex="1"
+                                        borderColor={plansColors.redBgColor}
+                                        color={plansColors.redBgColor}
+                                        _hover={{ bg: buttonHoverBgColor }}
+                                    >
+                                        {t("deny")}
+                                    </Button>
+                                    <Button
+                                        onClick={handleApprove}
+                                        colorScheme="green"
+                                        flex="1"
+                                        bg={plansColors.greenBgColor}
+                                        _hover={{ bg: plansColors.greenHoverBgColor }}
+                                    >
+                                        {t("approve")}
+                                    </Button>
+                                    <Button
+                                        onClick={onClose}
+                                        variant="ghost"
+                                        ml={2}
+                                        color={textColor}
+                                        _hover={{ bg: buttonHoverBgColor }}
+                                    >
                                         {t("close")}
                                     </Button>
-
-                                    {isConfirmation && planDetails && onApprove && onDeny && (
-                                        <Flex gap={2}>
-                                            <Button
-                                                colorScheme="red"
-                                                bg={denyButtonBg}
-                                                _hover={{ bg: denyButtonHoverBg }}
-                                                onClick={() => onDeny(planDetails.planId)}
-                                            >
-                                                {t("deny")}
-                                            </Button>
-                                            <Button
-                                                colorScheme="green"
-                                                bg={approvalButtonBg}
-                                                _hover={{ bg: approvalButtonHoverBg }}
-                                                onClick={() => onApprove(planDetails.planId)}
-                                            >
-                                                {t("approve")}
-                                            </Button>
-                                        </Flex>
-                                    )}
-                                </Flex>
+                                </Stack>
+                            ) : (
+                                <Button
+                                    onClick={onClose}
+                                    colorScheme="blue"
+                                    bg={plansColors.blueBgColor}
+                                    _hover={{ bg: plansColors.blueHoverBgColor }}
+                                >
+                                    {t("close")}
+                                </Button>
                             )}
                         </Dialog.Footer>
                     </Dialog.Content>

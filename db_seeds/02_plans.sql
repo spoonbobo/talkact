@@ -43,3 +43,14 @@ CREATE TABLE IF NOT EXISTS plan_log (
     task_id UUID,
     content TEXT
 );
+
+CREATE TABLE IF NOT EXISTS skill (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    name TEXT,
+    mcp_server TEXT,
+    description TEXT,
+    type TEXT,
+    args JSONB
+);

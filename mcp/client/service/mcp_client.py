@@ -17,13 +17,15 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.types import Tool as mcp_tool
 from mcp.client.stdio import stdio_client
 
-from schemas.mcp import MCPPlanRequest, Task, MCPTaskRequest, PlanData
+from schemas.mcp import MCPPlanRequest, MCPTaskRequest, PlanData
 from schemas.mcp import MCPTool, MCPServer
 from prompts.plan_create import PLAN_SYSTEM_PROMPT, PLAN_CREATE_PROMPT
 from prompts.mcp_reqeust import MCP_REQUEST_SYSTEM_PROMPT, MCP_REQUEST_PROMPT
 from prompts.onlysaid_admin_prompt import ONLYSAID_ADMIN_PROMPT, ONLYSAID_ADMIN_PROMPT_TEMPLATE
 from utils.mcp import parse_mcp_tools
 from service.socket_client import SocketClient
+from messages.plan_create import format_plan_created_message
+
 class MCPClient:
     """
     A MCP client manager that contains connections to mcp servers
@@ -98,9 +100,9 @@ class MCPClient:
         }
 
     async def create_plan(
-        self, 
-        plan_request: MCPPlanRequest, 
-    ) -> None:
+    self, 
+    plan_request: MCPPlanRequest, 
+) -> None:
         client_url = os.environ.get("CLIENT_URL", "")
 
         async with httpx.AsyncClient() as client:
@@ -213,6 +215,17 @@ class MCPClient:
                     log_response.raise_for_status()
                     log_data = log_response.json()
                     
+                    # Update the plan with the log ID
+                    update_response = await client.put(  # Changed from post to put to match the API
+                        f"{client_url}/api/plan/update_plan",
+                        json={
+                            "plan_id": plan_data["plan"]["id"],  # Changed from id to plan_id
+                            "logs": [log_data["log"]["id"]]  # Changed from log_ids to logs
+                        },
+                        headers={"Content-Type": "application/json"}
+                    )
+                    update_response.raise_for_status()
+                    
                     # Fetch user information from the API
                     user_response = await client.get(
                         f"{client_url}/api/user/get_user_by_id?id={plan_request.assignee}",
@@ -225,15 +238,10 @@ class MCPClient:
                     sender_data = user_data["user"]
                     
                     # Compose a natural language, markdown-supported message for plan creation
-                    plan_created_message = (
-                        f"✅ **A new plan has been created!**\n\n"
-                        f"| **Detail** | **Value** |\n"
-                        f"|------------|----------|\n"
-                        f"| **Plan Name** | `{plan_name}` |\n"
-                        f"| **Plan ID** | `{plan_data['plan']['id']}` |\n\n"
-                        f"**Plan Overview:**\n{plan_overview}\n\n"
-                        f"You can now review this plan or assign tasks to team members. "
-                        f"Refer to the Plan ID above for future reference."
+                    plan_created_message = format_plan_created_message(
+                        plan_name=plan_name,
+                        plan_id=plan_data['plan']['id'],
+                        plan_overview=plan_overview
                     )
 
                     await self.socket_client.send_message(
@@ -249,7 +257,7 @@ class MCPClient:
                     )
                                         
                     # Then create tasks associated with this plan
-                    tasks = self.create_tasks(
+                    tasks = await self.create_tasks(
                         plan_json, 
                         plan_id
                     )
@@ -284,7 +292,8 @@ class MCPClient:
         else:
             logger.error("Failed to extract valid JSON plan from response")
 
-    def create_tasks(self, data, plan_id: str) -> List[dict]:
+
+    async def create_tasks(self, data, plan_id: str) -> List[dict]:
         """
         Create complete task objects from either a plan JSON or a list of actions.
         
@@ -297,6 +306,7 @@ class MCPClient:
         """
         logger.info(f"Creating tasks from data type: {type(data)}")
         tasks = []
+        client_url = os.environ.get("CLIENT_URL", "")
         
         # Check if data is a list (actions list)
         if isinstance(data, list):
@@ -305,20 +315,92 @@ class MCPClient:
             for i, action in enumerate(data):
                 try:
                     # Extract action details
-                    tool_name = action.get("tool_name", f"Action {i+1}")
+                    tool_name = action.get("name", f"Action {i+1}")
                     args = action.get("args", {})
+                    mcp_server = action.get("mcp_server", "onlysaid_admin")
                     
                     # Format args for display
                     args_str = json.dumps(args, indent=2)
                     
+                    # Create a skill record for this action
+                    skill_ids = []
+                    try:
+                        async with httpx.AsyncClient() as client:
+                            # Get the proper tool description from the mcp_tools_dict
+                            tool_description = self.get_tool_description(tool_name, mcp_server)
+                            
+                            skill_payload = {
+                                "name": tool_name,
+                                "mcp_server": mcp_server,
+                                "description": tool_description,
+                                "type": "function",
+                                "args": args
+                            }
+                            
+                            skill_response = await client.post(
+                                f"{client_url}/api/skill/create_skill",
+                                json=skill_payload,
+                                headers={"Content-Type": "application/json"}
+                            )
+                            skill_response.raise_for_status()
+                            skill_id = skill_response.json()["skill"]["id"]
+                            skill_ids.append(skill_id)
+                    except Exception as e:
+                        logger.error(f"Error creating skill record for action {i}: {e}")
+                    
+                    # Try to fetch the plan data to get task descriptions
+                    task_name = f"Execute {tool_name}"
+                    task_explanation = None
+                    expected_result = None
+                    
+                    # If this action has a plan_id in its args, try to fetch the plan data
+                    plan_id_from_action = None
+                    if isinstance(args, dict) and "plan_id" in args:
+                        if isinstance(args["plan_id"], dict) and "value" in args["plan_id"]:
+                            plan_id_from_action = args["plan_id"]["value"]
+                        else:
+                            plan_id_from_action = args["plan_id"]
+                    
+                    if plan_id_from_action:
+                        try:
+                            async with httpx.AsyncClient() as client:
+                                plan_response = await client.get(
+                                    f"{client_url}/api/plan/get_plan_by_id?id={plan_id_from_action}",
+                                    headers={"Content-Type": "application/json"}
+                                )
+                                plan_response.raise_for_status()
+                                plan_data = plan_response.json()
+                                logger.info(f"Plan data: {plan_data}")
+                                
+                                if "context" in plan_data and "plan" in plan_data["context"]:
+                                    plan_context = plan_data["context"]["plan"]
+                                    # Find the step that corresponds to this action's index
+                                    step_key = f"step_{i+1}"
+                                    if "plan" in plan_context and step_key in plan_context["plan"]:
+                                        step = plan_context["plan"][step_key]
+                                        # Use the name, explanation and expected_result from the plan
+                                        if "name" in step:
+                                            task_name = step["name"]
+                                        if "explanation" in step:
+                                            task_explanation = step["explanation"]
+                                        if "expected_result" in step:
+                                            expected_result = step["expected_result"]
+                        except Exception as e:
+                            logger.error(f"Error fetching plan data for action {i}: {e}")
+                            raise ValueError(f"Failed to fetch plan data for action {i}: {e}")
+                    
+                    # If we couldn't get explanation/result from plan, raise an error
+                    if task_explanation is None or expected_result is None:
+                        raise ValueError(f"Missing explanation or expected result for action {i}")
+                    
                     # Create the task
                     task = {
                         "step_number": i + 1,  # 1-based step number
-                        "task_name": f"Execute {tool_name}",
-                        "task_explanation": f"Execute {tool_name} with arguments:\n{args_str}",
-                        "expected_result": f"Successfully execute {tool_name}",
-                        "mcp_server": action.get("mcp_server", "onlysaid_admin"),
-                        "skills": action,  # Store the entire action object
+                        "task_name": task_name,
+                        "task_explanation": task_explanation,
+                        "expected_result": expected_result,
+                        "mcp_server": mcp_server,
+                        "skills": skill_ids,  # Store skill IDs instead of the entire action object
                         "status": "not_started",  # Initialize task status to not_started
                         "plan_id": plan_id  # Associate with the parent plan
                     }
@@ -356,6 +438,9 @@ class MCPClient:
                         task_explanation = step.get("explanation", "")
                         expected_result = step.get("expected_result", "")
                         
+                        # For plan steps, we just initialize an empty array for skills
+                        # No need to create skill records for plan steps
+                        
                         # Create the task matching the expected format in create_tasks API
                         task = {
                             "step_number": i + 1,  # 1-based step number
@@ -363,7 +448,7 @@ class MCPClient:
                             "task_explanation": task_explanation,
                             "expected_result": expected_result,
                             "mcp_server": step_assignee_name,
-                            "skills": {},  # Initialize with empty JSON object instead of assignee info
+                            "skills": [],  # Initialize with empty array for skill IDs
                             "status": "not_started",  # Initialize task status to not_started
                             "plan_id": plan_id  # Associate with the parent plan
                         }
@@ -384,19 +469,19 @@ class MCPClient:
                 logger.info("Null plan detected, returning empty task list")
                 return []
             elif not tasks:
-                # Create a default task
+                # Create a minimal task with an empty skills array
                 task = {
                     "step_number": 1,
                     "task_name": "Execute request",
-                    "task_explanation": data.get("plan_overview", "Process the user request"),
-                    "expected_result": "Complete the requested task",
-                    "skills": {},  # Initialize with empty JSON object
+                    "task_explanation": "",  # No default explanation
+                    "expected_result": "",   # No default expected result
+                    "skills": [],  # Initialize with empty array for skill IDs
                     "status": "not_started",  # Initialize task status to not_started
                     "plan_id": plan_id  # Associate with the parent plan
                 }
                 
                 tasks.append(task)
-                logger.info(f"Created default task: {task['task_name']}")
+                logger.info(f"Created minimal task: {task['task_name']}")
         else:
             logger.error(f"Unsupported data type for create_tasks: {type(data)}")
         
@@ -870,71 +955,75 @@ class MCPClient:
             if not actions:
                 logger.warning("No actions returned from parse_mcp_tools")
                 return
+        
+            logger.info(f"Actions: {actions}")
                 
-            if actions[0]["tool_name"] == "idle":
+            if actions[0]["name"] == "idle":
                 return
         
             logger.info(f"Actions structure: {actions}")
-            logger.info(f"First action: {actions[0]}")
-            logger.info(f"First action args: {actions[0]['args']}")
-
-            # Extract plan_id from the action arguments
-            # Handle different possible structures of the action arguments
-            try:
-                if isinstance(actions[0]["args"], dict):
-                    logger.info(f"Args is a dictionary with keys: {actions[0]['args'].keys()}")
-                    # If args is a dictionary with direct values
-                    if "plan_id" in actions[0]["args"]:
-                        logger.info(f"plan_id in args: {actions[0]['args']['plan_id']}")
-                        if isinstance(actions[0]["args"]["plan_id"], dict) and "value" in actions[0]["args"]["plan_id"]:
-                            plan_id = actions[0]["args"]["plan_id"]["value"]
-                            logger.info(f"Extracted plan_id from value: {plan_id}")
+            
+            # Create a mapping of actions to their plan_ids
+            action_plan_map = {}
+            for i, action in enumerate(actions):
+                logger.info(f"Processing action {i}: {action}")
+                logger.info(f"Action args: {action['args']}")
+                
+                # Extract plan_id for this specific action
+                try:
+                    if isinstance(action["args"], dict):
+                        logger.info(f"Args is a dictionary with keys: {action['args'].keys()}")
+                        # If args is a dictionary with direct values
+                        if "plan_id" in action["args"]:
+                            logger.info(f"plan_id in args: {action['args']['plan_id']}")
+                            if isinstance(action["args"]["plan_id"], dict) and "value" in action["args"]["plan_id"]:
+                                action_plan_id = action["args"]["plan_id"]["value"]
+                                logger.info(f"Extracted plan_id from value: {action_plan_id}")
+                            else:
+                                action_plan_id = action["args"]["plan_id"]
+                                logger.info(f"Using plan_id directly: {action_plan_id}")
                         else:
-                            plan_id = actions[0]["args"]["plan_id"]
-                            logger.info(f"Using plan_id directly: {plan_id}")
+                            # Generate a new plan_id if none exists
+                            action_plan_id = str(uuid4())
+                            logger.info(f"Generated new plan_id (no plan_id in args): {action_plan_id}")
                     else:
-                        # Generate a new plan_id if none exists
-                        plan_id = str(uuid4())
-                        logger.info(f"Generated new plan_id (no plan_id in args): {plan_id}")
-                else:
-                    # Generate a new plan_id if args is not a dictionary
-                    plan_id = str(uuid4())
-                    logger.info(f"Generated new plan_id (args not a dict): {plan_id}")
-            except Exception as e:
-                logger.error(f"Error extracting plan_id: {e}")
-                logger.error(f"Actions data type: {type(actions)}")
-                logger.error(f"First action data type: {type(actions[0]) if actions else 'No actions'}")
-                plan_id = str(uuid4())
-                logger.info(f"Generated fallback plan_id after error: {plan_id}")
-
-            logger.info(f"Final plan_id: {plan_id}")
-
-            # Use the self.create_tasks method to create tasks from actions
-            try:
-                logger.info(f"Calling create_tasks with actions: {actions} and plan_id: {plan_id}")
-                tasks = self.create_tasks(actions, plan_id)
-                logger.info(f"Created tasks: {tasks}")
-            except Exception as e:
-                logger.error(f"Error creating tasks: {e}")
-                tasks = []
+                        # Generate a new plan_id if args is not a dictionary
+                        action_plan_id = str(uuid4())
+                        logger.info(f"Generated new plan_id (args not a dict): {action_plan_id}")
+                except Exception as e:
+                    logger.error(f"Error extracting plan_id for action {i}: {e}")
+                    action_plan_id = str(uuid4())
+                    logger.info(f"Generated fallback plan_id after error: {action_plan_id}")
+                
+                action_plan_map[i] = action_plan_id
+                logger.info(f"Action {i} mapped to plan_id: {action_plan_id}")
+            
+            # Group actions by plan_id
+            plan_actions = {}
+            for i, action in enumerate(actions):
+                plan_id = action_plan_map[i]
+                if plan_id not in plan_actions:
+                    plan_actions[plan_id] = []
+                plan_actions[plan_id].append(action)
+            
+            # Process each plan separately
+            for plan_id, plan_specific_actions in plan_actions.items():
+                logger.info(f"Processing plan {plan_id} with {len(plan_specific_actions)} actions")
+                
+                # Use the self.create_tasks method to create tasks from actions
+                try:
+                    logger.info(f"Calling create_tasks with actions for plan {plan_id}")
+                    tasks = await self.create_tasks(plan_specific_actions, plan_id)
+                    logger.info(f"Created tasks for plan {plan_id}: {tasks}")
+                except Exception as e:
+                    logger.error(f"Error creating tasks for plan {plan_id}: {e}")
+                    tasks = []
             
             # TODO: if trust, call the tool directly & do follow ups.
             # if not TRUST, ask user for confirmation
             if not trust:
-                # Create the planned log with both plan_id and task_id
-                planned_log = {
-                    "id": str(uuid4()),
-                    "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(),
-                    "type": "ask_for_plan_approval",
-                    "content": f"Action requested: {actions[0]['tool_name']}",
-                    "plan_id": plan_id,
-                    "task_id": tasks[0]["id"] if tasks else None,  # Use id instead of task_id
-                }
-                
-                logger.info(f"Created planned_log: {planned_log}")
-            
                 async with httpx.AsyncClient() as client:
-                    # First create the tasks
+                    # Create the tasks directly from the actions
                     if tasks:
                         logger.info(f"Creating tasks via API: {tasks}")
                         task_response = await client.post(
@@ -946,61 +1035,38 @@ class MCPClient:
                             headers={"Content-Type": "application/json"}
                         )
                         task_response.raise_for_status()
-                        logger.info(f"Tasks created successfully")
+                        tasks_data = task_response.json()
+                        logger.info(f"Tasks created successfully: {tasks_data}")
                     
-                    # Then update the plan with the log
-                    logger.info(f"Updating plan with log: {planned_log}")
-                    response = await client.put(
-                        f"{client_url}/api/plan/update_plan",
-                        json={"plan_id": plan_id, "logs": planned_log},
-                        headers={"Content-Type": "application/json"}
-                    )
-                    response.raise_for_status()
-                    logger.info(f"Plan updated successfully")
-                
-                    # Create approval_requested log using the create_plan_log API
-                    log_response = await client.post(
-                        f"{client_url}/api/plan/create_plan_log",
-                        json={
-                            "type": "approval_requested",
-                            "plan_id": plan_id,
-                            "task_id": tasks[0]["id"] if tasks else None,  # Use id instead of task_id
-                            "content": f"Approval requested for action: {actions[0]['tool_name']}"
-                        },
-                        headers={"Content-Type": "application/json"}
-                    )
-                    log_response.raise_for_status()
-                    logger.info(f"Successfully created approval_requested log")
+                    # Create a notification log for each task
+                    for i, task in enumerate(tasks):
+                        task_id = tasks_data["tasks"][i]["id"] if "tasks" in tasks_data and i < len(tasks_data["tasks"]) else None
+                        log_response = await client.post(
+                            f"{client_url}/api/plan/create_plan_log",
+                            json={
+                                "type": "approval_requested",
+                                "plan_id": plan_id,
+                                "task_id": task_id,
+                                "content": f"Task created for action: {actions[i]['name'] if i < len(actions) else actions[0]['tool_name']}"
+                            },
+                            headers={"Content-Type": "application/json"}
+                        )
+                        log_response.raise_for_status()
+                        logger.info(f"Successfully created task_created log for task {task_id}")
                 
                     user_response = await client.get(
-                        f"{client_url}/api/user/get_user_by_id?user_id={owner_id}",
+                        f"{client_url}/api/user/get_user_by_id?id={owner_id}",
                         headers={"Content-Type": "application/json"}
                     )
+                    
                     user_response.raise_for_status()
-                    user_data = user_response.json()
-                    
-                    sender_data = user_data["user"]
-                    # TODO: remove this after testing
-                    sender_data["sender"] = "admin"
-                    sender_data["email"] = "agent@agent.com"
-                    sender_data["username"] = "admin"
-                    sender_data["avatar"] = ""
-                    
-                    message_content = f"Action '{actions[0]['tool_name']}' requires approval for plan {plan_id}"
-                    logger.info(f"Sending message: {message_content}")
-                    await self.socket_client.send_message(
-                        {
-                            "id": str(uuid4()),
-                            "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(),
-                            "sender": sender_data,
-                            "content": message_content,
-                            "avatar": sender_data.get("avatar", None),
-                            "room_id": room_id,
-                            "mentions": []
-                        }
-                    )
-                    logger.info(f"Message sent successfully")
+                    logger.info(f"User response: {user_response.json()}")
+                    return
             
+            # If we get here, it means trust=True, so we should execute the actions directly
+            # This section would implement the direct execution flow
+            # TODO: Implement direct execution for trusted actions
+
         except Exception as e:
             logger.error(f"Error processing admin message: {e}")
 
@@ -1058,7 +1124,7 @@ class MCPClient:
         
         for user in users:
             formatted_users.append({
-                'user_id': user['user_id'],
+                'user_id': user['id'],
                 'username': user['username']
             })
         
@@ -1083,9 +1149,43 @@ class MCPClient:
         
         user_strings = []
         for user in users:
-            user_strings.append(f"• {user['username']} (ID: {user['user_id']})")
+            user_strings.append(f"• {user['username']} (ID: {user['id']})")
         
         total = room_users_response.get('pagination', {}).get('total', len(users))
         
         result = f"Room participants ({total}):\n" + "\n".join(user_strings)
         return result
+
+    def get_tool_description(self, tool_name, mcp_server):
+        """
+        Get the description for a tool from the mcp_tools_dict.
+        
+        Args:
+            tool_name: The name of the tool
+            mcp_server: The MCP server name
+            
+        Returns:
+            str: The tool description, or a default if not found
+        """
+        # Default description
+        tool_description = f"Tool call for {tool_name}"
+        
+        # Try to find a better description from the tools dictionary
+        if mcp_server in self.mcp_tools_dict:
+            for tool in self.mcp_tools_dict[mcp_server]:
+                # Handle OpenAI function calling format
+                if isinstance(tool, dict) and 'function' in tool:
+                    if tool['function']['name'] == tool_name:
+                        tool_description = tool['function']['description']
+                        break
+                # Handle direct tool objects
+                elif hasattr(tool, 'function'):
+                    if tool.function.name == tool_name:
+                        tool_description = tool.function.description
+                        break
+                # Handle MCP tool format
+                elif hasattr(tool, 'name') and tool.name == tool_name:
+                    tool_description = tool.description
+                    break
+        
+        return tool_description

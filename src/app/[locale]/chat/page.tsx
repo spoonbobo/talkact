@@ -682,12 +682,6 @@ const ChatPageContent = () => {
         payload: { message: newMessage }
       });
 
-      // console.log("Message dispatched to Redux");
-      // await axios.post("/api/mcp/ask_admin", {
-      //   room_id: selectedRoomId,
-      //   owner_id: currentUser?.id || '',
-      //   owner_message: newMessage.content
-      // });
 
       // Use a longer timeout to ensure the user's message is fully rendered
       // before starting any AI processing
@@ -730,6 +724,12 @@ const ChatPageContent = () => {
 
       // Also dispatch the event as a backup method
       window.dispatchEvent(new CustomEvent('scrollToBottom'));
+      console.log("Message dispatched to Redux");
+      await axios.post("/api/mcp/ask_admin", {
+        room_id: selectedRoomId,
+        owner_id: currentUser?.id || '',
+        owner_message: newMessage.content
+      });
     }
   }, [dispatch, selectedRoomId, setMessageInput, triggerAgentAPI, triggerDeepseekAPI, messagesEndRef]);
 

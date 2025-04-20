@@ -2,7 +2,9 @@ import { User } from "./user";
 import { IMessage } from "./chat";
 
 export interface ISkill {
-    skill_name?: string;
+    name?: string;
+    created_at?: Date;
+    updated_at?: Date;
     mcp_server?: string;
     description?: string;
     type?: string;

@@ -33,24 +33,6 @@ export default function SkillInfo({ task, colors, t, showDetails = false }: Task
             <Box>
                 {skillData && (
                     <Box>
-                        <Flex align="center" mb={2}>
-                            {task.mcp_server && (
-                                <Flex
-                                    align="center"
-                                    fontSize="xs"
-                                    color={colors.textColorMuted}
-                                    bg={`${colors.accentColor}10`}
-                                    p={2}
-                                    borderRadius="md"
-                                    width="fit-content"
-                                    mr={3}
-                                >
-                                    <Icon as={FiServer} mr={1} />
-                                    {t("server")}: {task.mcp_server}
-                                </Flex>
-                            )}
-                        </Flex>
-
                         {Array.isArray(skillData) ? (
                             // Handle array of skill calls with improved styling
                             <VStack align="flex-start" gap={2}>
@@ -69,7 +51,12 @@ export default function SkillInfo({ task, colors, t, showDetails = false }: Task
                                             <HStack gap={2}>
                                                 <Icon as={FaTools} color="blue.500" />
                                                 <Text fontWeight="semibold" fontSize="sm" color={colors.textColorHeading}>
-                                                    {skillCall.skill_name || skillCall.tool_name || t("not_specified")}
+                                                    {skillCall.name || skillCall.tool_name || t("not_specified")}
+                                                    {task.mcp_server && (
+                                                        <Badge ml={2} colorScheme="blue" variant="subtle">
+                                                            {task.mcp_server}
+                                                        </Badge>
+                                                    )}
                                                 </Text>
                                             </HStack>
                                         </Flex>
@@ -89,9 +76,6 @@ export default function SkillInfo({ task, colors, t, showDetails = false }: Task
                                                 borderWidth="1px"
                                                 borderColor={colors.borderColor}
                                             >
-                                                <Text fontSize="xs" fontWeight="bold" color={colors.textColorMuted} mb={1}>
-                                                    {t("parameters")}:
-                                                </Text>
                                                 <Table.Root size="sm" variant="line" colorScheme="blue">
                                                     <Table.Header bg={colors.bgSubtle} position="sticky" top={0} zIndex={1}>
                                                         <Table.Row>
@@ -148,7 +132,7 @@ export default function SkillInfo({ task, colors, t, showDetails = false }: Task
                                     <HStack gap={2}>
                                         <Icon as={FaTools} color="blue.500" />
                                         <Text fontWeight="semibold" fontSize="sm" color={colors.textColorHeading}>
-                                            {skillData.skill_name || skillData.tool_name || t("not_specified")}
+                                            {skillData.name || skillData.tool_name || t("not_specified")}
                                         </Text>
                                     </HStack>
                                 </Flex>
@@ -214,7 +198,7 @@ export default function SkillInfo({ task, colors, t, showDetails = false }: Task
                     </Box>
                 )}
 
-                {/* Show server info alone if no skills */}
+                {/* Remove the standalone server info section since it's now embedded in the skill header */}
                 {!skillData && task.mcp_server && (
                     <Flex
                         align="center"

@@ -39,10 +39,6 @@ class MCPPlanRequest(BaseModel):
     assignee: str
     client_host: str | None = None
 
-class Skill(BaseModel):
-    tool_name: str
-    mcp_server: str
-    args: Dict[str, Any]
 
 class TaskData(BaseModel):
     id: str
@@ -97,12 +93,14 @@ class MCPTaskRequest(BaseModel):
     task: TaskData
     plan: PlanData
 
-class SkillCallInfo(BaseModel):
-    tool_name: str
+class Skill(BaseModel):
+    name: str
+    created_at: str
+    updated_at: str
     mcp_server: str
+    description: str
+    type: str
     args: Dict[str, Any]
-    description: Optional[str] = None
-    tool_type: Optional[str] = None
 
 class Task(BaseModel):
     id: str
@@ -117,4 +115,4 @@ class Task(BaseModel):
     task_summarization: str
     result: str = ""
     context: List[Dict[str, Any]] = []
-    skills_called: List[SkillCallInfo] = []
+    skills: List[Skill] = []

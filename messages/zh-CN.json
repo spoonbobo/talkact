@@ -225,7 +225,9 @@
     "loading_tasks": "加载任务中...",
     "add_ai_assistants": "邀请AI智能体",
     "add_standard_ai_assistant": "邀请标准AI智能体",
-    "add_deepseek_ai_assistant": "邀请DeepSeek AI智能体"
+    "add_deepseek_ai_assistant": "邀请DeepSeek AI智能体",
+    "unknown": "未知",
+    "log_type_plan_created": "计划已创建"
   },
   "Plans": {
     "plans": "计划",
@@ -329,7 +331,10 @@
     "approval_needed_for_plan": "计划 {planId} 在服务器 {server} 上需要批准",
     "no_description_available": "没有可用描述",
     "open_plan": "打开计划",
-    "log_details": "日志详情"
+    "log_details": "日志详情",
+    "log_type": "日志类型",
+    "unknown": "未知",
+    "log_type_plan_created": "计划已创建"
   },
   "Learn": {
     "learn": "学习",

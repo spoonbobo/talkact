@@ -33,26 +33,20 @@ export async function POST(request: Request) {
             }, { status: 404 });
         }
 
-        // Prepare tasks data - ensure skills is properly stringified
+        // Prepare tasks data - ensure skills is properly handled
         const tasksData = tasks.map((task, index) => {
-            // Make sure skills is a JSON string
+            // Handle skills field - can be array of skill IDs or object
             let skillsJson = null;
-            if (task.skills) {
-                // If assigner/assignee/reviewer were included in the skills, keep them there
-                const skillsData = typeof task.skills === 'string' ? JSON.parse(task.skills) : task.skills;
 
-                // Store assignee/assigner/reviewer in the skills object if they were provided
-                if (task.assignee) {
-                    skillsData.assignee = task.assignee;
-                }
-                if (task.assigner) {
-                    skillsData.assigner = task.assigner;
-                }
-                if (task.reviewer) {
-                    skillsData.reviewer = task.reviewer;
-                }
-
-                skillsJson = JSON.stringify(skillsData);
+            if (Array.isArray(task.skills)) {
+                // If skills is an array of skill IDs, store it as JSON
+                skillsJson = JSON.stringify(task.skills);
+            } else if (task.skills && typeof task.skills === 'object') {
+                // If skills is an object, stringify it
+                skillsJson = JSON.stringify(task.skills);
+            } else if (task.skills) {
+                // If skills is already a string, use it directly
+                skillsJson = typeof task.skills === 'string' ? task.skills : JSON.stringify(task.skills);
             } else if (task.assignee || task.assigner || task.reviewer) {
                 // If no skills was provided but assignee/assigner/reviewer were, create a skills object for them
                 skillsJson = JSON.stringify({
@@ -74,9 +68,9 @@ export async function POST(request: Request) {
                 task_explanation: task.task_explanation,
                 expected_result: task.expected_result || '',
                 skills: skillsJson,
-                status: 'not_started', // Initial status
-                result: '',
-                logs: JSON.stringify({})
+                status: task.status || 'not_started', // Use provided status or default to not_started
+                result: task.result || '',
+                logs: JSON.stringify(task.logs || {})
             };
         });
 

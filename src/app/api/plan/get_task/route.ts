@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
         // Fetch the specific task by task_id
         const task = await db('task')
-            .where('task_id', taskId)
+            .where('id', taskId)
             .first();
 
         if (!task) {

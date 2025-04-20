@@ -302,7 +302,6 @@ export const ChatInput = React.memo(({
                 archived_rooms: currentUser?.archived_rooms || [],
                 avatar: currentUser?.avatar || '',
                 role: currentUser?.role || 'user',
-                id: currentUser?.id,
                 settings: currentUser?.settings || {}
             },
             content,
