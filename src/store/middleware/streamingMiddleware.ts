@@ -16,7 +16,6 @@ const defaultAssistantSettings: UserSettings = {
 
 const assistantSender: User = {
     id: 'assistant-id',
-    id: 'assistant-id',
     username: 'AI Assistant',
     email: '',
     created_at: new Date().toISOString(),

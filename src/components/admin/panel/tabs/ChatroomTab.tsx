@@ -20,7 +20,6 @@ interface ChatRoom {
 // Define the User interface for active users
 interface User {
     id: string;
-    id: string;
     username: string;
     email: string;
     avatar?: string;

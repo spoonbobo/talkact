@@ -37,14 +37,14 @@ export function TaskInfoModal({ isOpen, onClose, task, colors }: TaskInfoModalPr
     const borderColor = colors?.borderColor || "gray.200";
     const accentColor = colors?.accentColor || "blue.500";
 
-    // Function to render tool information
+    // Function to render skills information
     const renderToolInfo = () => {
-        if (!task || !task.tool) return null;
+        if (!task || !task.skills) return null;
 
-        if (Array.isArray(task.tool)) {
+        if (Array.isArray(task.skills)) {
             return (
                 <Stack gap={3} mt={2}>
-                    {task.tool.map((toolCall, idx) => (
+                    {task.skills.map((toolCall, idx) => (
                         <Box
                             key={idx}
                             p={3}
@@ -63,7 +63,7 @@ export function TaskInfoModal({ isOpen, onClose, task, colors }: TaskInfoModalPr
                                 </Flex>
                             </Flex>
 
-                            {/* Add tool description */}
+                            {/* Add skills description */}
                             {toolCall.description && (
                                 <Text fontSize="sm" color={textColor} mb={2}>
                                     {toolCall.description}
@@ -102,7 +102,7 @@ export function TaskInfoModal({ isOpen, onClose, task, colors }: TaskInfoModalPr
                 </Stack>
             );
         } else {
-            // Handle single tool object
+            // Handle single skills object
             return (
                 <Box
                     p={3}
@@ -117,25 +117,25 @@ export function TaskInfoModal({ isOpen, onClose, task, colors }: TaskInfoModalPr
                         <Flex gap={2} alignItems="center">
                             <Icon as={FaTools} color={accentColor} />
                             <Text fontWeight="medium" color={textColorStrong}>
-                                {task.tool.tool_name || t("not_specified")}
+                                {task.skills.tool_name || t("not_specified")}
                             </Text>
                         </Flex>
                     </Flex>
 
-                    {/* Add tool description */}
-                    {task.tool.description && (
+                    {/* Add skills description */}
+                    {task.skills.description && (
                         <Text fontSize="sm" color={textColor} mb={2}>
-                            {task.tool.description}
+                            {task.skills.description}
                         </Text>
                     )}
 
-                    {task.tool.args && Object.keys(task.tool.args).length > 0 && (
+                    {task.skills.args && Object.keys(task.skills.args).length > 0 && (
                         <Box mt={2}>
                             <Text fontSize="xs" fontWeight="bold" color={textColorMuted} mb={1}>
                                 {t("args")}:
                             </Text>
                             <Stack gap={1}>
-                                {Object.entries(task.tool.args).map(([key, value]) => {
+                                {Object.entries(task.skills.args).map(([key, value]) => {
                                     // Extract value and type if in augmented format
                                     const isAugmented = value && typeof value === 'object' && 'value' in value && 'type' in value;
                                     const displayValue = isAugmented ? value.value : value;
@@ -277,7 +277,7 @@ export function TaskInfoModal({ isOpen, onClose, task, colors }: TaskInfoModalPr
                                     )}
 
                                     {/* Tool Information */}
-                                    {task.tool && (
+                                    {task.skills && (
                                         <>
                                             <Separator my={2} />
                                             <Text fontWeight="medium" color={textColorStrong}>{t("tools")}</Text>

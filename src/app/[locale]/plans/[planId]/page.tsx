@@ -142,15 +142,15 @@ export default function PlanDetailsPage() {
                     '.viewToggleButtons': {
                         display: 'none !important'
                     },
-                    // Add styling for selected tasks in calendar view
-                    '.fc-event.selected-task': {
+                    // Add styling for selected tasks in calendar view - use proper FullCalendar class names
+                    '.fc .fc-event.selected-task': {
                         borderWidth: '2px',
                         boxShadow: '0 0 0 1px rgba(66, 153, 225, 0.5)',
                         transform: 'scale(1.02)',
                         transition: 'all 0.2s ease-in-out'
                     },
                     // Improve task popup/tooltip styling
-                    '.fc-popover': {
+                    '.fc .fc-popover': {
                         borderRadius: '8px',
                         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                         border: `1px solid ${colors.borderColor}`,
@@ -159,10 +159,41 @@ export default function PlanDetailsPage() {
                         zIndex: 1000
                     },
                     // Ensure calendar events have proper spacing and alignment
-                    '.fc-event-main': {
+                    '.fc .fc-event-main': {
                         padding: '2px 4px',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis'
+                    },
+                    // Add additional styling to improve calendar appearance
+                    '.fc': {
+                        height: '100%',
+                        '--fc-border-color': colors.borderColor,
+                        '--fc-button-text-color': colors.textColor,
+                        '--fc-button-bg-color': colors.cardBg,
+                        '--fc-button-border-color': colors.borderColor,
+                        '--fc-button-hover-bg-color': colors.hoverBg,
+                        '--fc-button-hover-border-color': colors.accentColor,
+                        '--fc-button-active-bg-color': `${colors.accentColor}20`,
+                        '--fc-button-active-border-color': colors.accentColor,
+                        '--fc-event-bg-color': colors.accentColor,
+                        '--fc-event-border-color': colors.accentColor,
+                        '--fc-today-bg-color': `${colors.accentColor}10`
+                    },
+                    '.fc .fc-toolbar': {
+                        padding: '8px',
+                        marginBottom: '8px'
+                    },
+                    '.fc .fc-toolbar-title': {
+                        fontSize: '1.2rem',
+                        color: colors.textColorHeading
+                    },
+                    '.fc .fc-col-header-cell': {
+                        padding: '8px 4px',
+                        backgroundColor: `${colors.cardBg}`,
+                        borderColor: colors.borderColor
+                    },
+                    '.fc .fc-daygrid-day': {
+                        minHeight: '100px'
                     }
                 }}
             >

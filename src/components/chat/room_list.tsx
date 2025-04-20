@@ -76,7 +76,9 @@ export const ChatRoomList = ({
 
                 // Create a map of id to user object
                 const userMap = users.reduce((acc: Record<string, User>, user: User) => {
-                    acc[user.id] = user;
+                    if (user && user.id) {
+                        acc[user.id] = user;
+                    }
                     return acc;
                 }, {});
 
@@ -156,7 +158,7 @@ export const ChatRoomList = ({
                                     {room.name}
                                 </Text>
                                 <AvatarGroup gap="0" size="xs">
-                                    {(roomUsers[room.id] || []).slice(0, 3).map((user, idx) => (
+                                    {(roomUsers[room.id] || []).slice(0, 3).map((user: User, idx: number) => (
                                         <Avatar.Root key={idx}>
                                             <Avatar.Fallback name={user.username} />
                                             <Avatar.Image src={user.avatar} />
