@@ -8,7 +8,7 @@ export async function PUT(request: Request) {
 
         // Extract all possible fields from the request body
         const {
-            task_id,
+            id,
             plan_id,
             task_name,
             task_explanation,
@@ -42,9 +42,9 @@ export async function PUT(request: Request) {
         }
 
         // Validate required fields for single task update
-        if (!task_id) {
+        if (!id) {
             return NextResponse.json({
-                error: 'Missing required field: task_id'
+                error: 'Missing required field: id'
             }, { status: 400 });
         }
 
@@ -71,7 +71,7 @@ export async function PUT(request: Request) {
         }
 
         // Check if task exists
-        const task = await db('task').where('task_id', task_id).first();
+        const task = await db('task').where('id', id).first();
         if (!task) {
             return NextResponse.json({
                 error: 'Task not found'
@@ -125,8 +125,8 @@ export async function PUT(request: Request) {
 
                 // We'll handle the update separately for the skills field
                 await db.raw(
-                    `UPDATE task SET skills = ?::jsonb WHERE task_id = ?`,
-                    [skillsJson, task_id]
+                    `UPDATE task SET skills = ?::jsonb WHERE id = ?`,
+                    [skillsJson, id]
                 );
 
                 // Remove skills from updateData since we've handled it separately
@@ -144,7 +144,7 @@ export async function PUT(request: Request) {
         if (logs !== undefined) {
             try {
                 // Get the current logs from the database
-                const currentTask = await db('task').where('task_id', task_id).first('logs');
+                const currentTask = await db('task').where('id', id).first('logs');
                 let currentLogs = {};
 
                 // Parse current logs if they exist
@@ -172,8 +172,8 @@ export async function PUT(request: Request) {
 
                 // Update logs in the database
                 await db.raw(
-                    `UPDATE task SET logs = ?::jsonb WHERE task_id = ?`,
-                    [logsJson, task_id]
+                    `UPDATE task SET logs = ?::jsonb WHERE id = ?`,
+                    [logsJson, id]
                 );
 
                 // Remove logs from updateData since we've handled it separately
@@ -189,7 +189,7 @@ export async function PUT(request: Request) {
 
         // Update task in database
         const updatedTask = await db('task')
-            .where('task_id', task_id)
+            .where('id', id)
             .update(updateData)
             .returning('*');
 

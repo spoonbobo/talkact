@@ -172,6 +172,10 @@ services:
       - ./mcp/client:/app
       - ./mcp/servers:/servers
       - ./mcp/agent_home:/agent_home
+      - ./mcp/client/utils:/servers/utils
+      - ./mcp/client/schemas:/servers/schemas
+      - ./mcp/client/prompts:/servers/prompts
+      - ./mcp/client/messages:/servers/messages
       - .env:/servers/.env
     environment:
       - MCP_SERVERS_JSON=/app/mcp_server.json

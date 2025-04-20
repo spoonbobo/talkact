@@ -8,16 +8,20 @@ export async function POST(request: Request) {
         const body = await request.json();
 
         // Extract data from the request body
-        const { type, plan_id, task_id, content } = body;
+        const { type, plan_id, task_id, skill_id, content } = body;
+
+        console.log('Received body:', body);
 
         // Validate required fields
         if (!type) {
+            console.error('Missing required field: type');
             return NextResponse.json({
                 error: 'Missing required field: type'
             }, { status: 400 });
         }
 
         if (!content) {
+            console.error('Missing required field: content');
             return NextResponse.json({
                 error: 'Missing required field: content'
             }, { status: 400 });
@@ -25,6 +29,7 @@ export async function POST(request: Request) {
 
         // At least one of plan_id or task_id should be provided
         if (!plan_id && !task_id) {
+            console.error('At least one of plan_id or task_id must be provided');
             return NextResponse.json({
                 error: 'At least one of plan_id or task_id must be provided'
             }, { status: 400 });
@@ -40,6 +45,7 @@ export async function POST(request: Request) {
             type,
             plan_id: plan_id || null,
             task_id: task_id || null,
+            skill_id: skill_id || null,
             content
         };
 

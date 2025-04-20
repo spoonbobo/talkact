@@ -195,6 +195,32 @@ def prepare_background_information(plan: PlanData, step_number: int):
 
     return background
 
+def prepare_background_information_from_dict(plan_dict: dict, step_number: int):
+    background = ""
+    
+    # Extract conversations from the context
+    if "context" in plan_dict and "conversations" in plan_dict["context"]:
+        conversations = plan_dict["context"]["conversations"]
+        background += "Conversations:\n"
+
+        for message in reversed(conversations):
+            if "created_at" in message:
+                background += f"[{message['created_at']}] {message['role']}: {message['content']}\n"
+    
+    # Extract logs from previous steps
+    if "logs" in plan_dict:
+        logs = plan_dict["logs"]
+        for step in range(1, step_number):
+            step_key = str(step)
+            if step_key in logs:
+                step_log = logs[step_key]
+                step_log_str = ""
+                for skill, result in step_log.items():
+                    step_log_str += f"Skill: {skill}\nResult: {result}\n"
+                background += f"Step {step}: {step_log_str}\n"
+
+    return background
+
 def load_server_description(server: str) -> str:
     with open(server, 'r') as file:
         return file.read()

@@ -13,7 +13,8 @@ import {
     createListCollection,
     Card,
     Stack,
-    Progress
+    Progress,
+    Badge
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaComments } from "react-icons/fa";
@@ -39,10 +40,11 @@ import Loading from "@/components/loading";
 import { useSession } from "next-auth/react";
 import { CreateRoomModal } from "@/components/chat/create_room_modal";
 import { IChatRoom } from "@/types/chat";
-import { Log } from "@/types/plan";
+import { Log, PlanLog } from "@/types/plan";
 import PlanLogSection from "@/components/plans/plan_log_section";
 import { getStatusColorScheme } from "@/components/ui/StatusBadge";
 import PlanLogModal from "@/components/plans/plan_log_modal";
+import { PlanStatus } from "@/types/plan";
 
 const MotionBox = motion(Box);
 
@@ -67,7 +69,8 @@ const SimplifiedPlanSection = ({
         name: string,
         progress?: number,
         logs?: Log[],
-        plan_overview?: string
+        plan_overview?: string,
+        status: string
     }>>([]);
     const [isLoadingPlans, setIsLoadingPlans] = useState(false);
     const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
@@ -102,13 +105,22 @@ const SimplifiedPlanSection = ({
             setIsLoadingPlans(true);
             try {
                 const response = await axios.get(`/api/plan/get_plans?roomId=${currentRoom.id}`);
-                setPlans(response.data.map((plan: any) => ({
-                    id: plan.id,
-                    name: plan.plan_name || `Plan ${plan.id}`,
-                    progress: plan.progress,
-                    logs: plan.logs || [],
-                    plan_overview: plan.plan_overview
-                })));
+                console.log("Fetched plans raw data:", response.data);
+
+                const processedPlans = response.data.map((plan: any) => {
+                    console.log(`Plan ${plan.id} status:`, plan.status);
+                    return {
+                        id: plan.id,
+                        name: plan.plan_name || `Plan ${plan.id}`,
+                        progress: plan.progress,
+                        logs: plan.logs || [],
+                        plan_overview: plan.plan_overview,
+                        status: plan.status
+                    };
+                });
+
+                console.log("Processed plans:", processedPlans);
+                setPlans(processedPlans);
             } catch (error) {
                 console.error("Error fetching plans:", error);
             } finally {
@@ -139,7 +151,6 @@ const SimplifiedPlanSection = ({
                     if (response.ok) {
                         const logData = await response.json();
                         // Add plan information to each log
-                        console.log("PLANNNNNNNN", plan);
                         const formattedLogs = Array.isArray(logData)
                             ? logData.map((log: any) => ({
                                 ...log,
@@ -372,7 +383,6 @@ const SimplifiedPlanSection = ({
 
             for (const log of allLogs) {
                 if (log.id) {
-                    console.log("Processing log:", log.id, log.type);
                     contents[log.id] = await getFormattedContent(log);
                 }
             }
@@ -428,12 +438,139 @@ const SimplifiedPlanSection = ({
         return log.id && formattedContents[log.id] ? formattedContents[log.id] : "";
     }, [formattedContents]);
 
-    const handleApprove = (planId: string) => {
-        console.log("Approve plan:", planId);
+    const handleApprove = async (log: PlanLog) => {
+        // First update the log type to approved
+        const logUpdateResponse = await fetch('/api/plan/update_plan_log', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                logId: log.id,
+                type: 'approved'
+            }),
+        });
+
+        if (!logUpdateResponse.ok) {
+            const errorData = await logUpdateResponse.json();
+            console.error('Failed to update log status:', errorData);
+            // Continue with plan approval anyway
+        }
+
+        // Update plan status to running
+        const updateResponse = await fetch('/api/plan/update_plan', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                plan_id: log.plan_id,
+                status: 'running'
+            }),
+        });
+
+        if (!updateResponse.ok) {
+            const errorData = await updateResponse.json();
+            console.error('Failed to approve plan:', errorData);
+            return;
+        }
+
+        await fetch('/api/mcp/perform', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ log_id: log.id }),
+        });
+
+        console.log('Plan approved successfully');
     };
 
-    const handleDeny = (planId: string) => {
-        console.log("Deny plan:", planId);
+    const handleDeny = async (log: PlanLog) => {
+        try {
+            // First update the log type to denied
+            const logUpdateResponse = await fetch('/api/plan/update_plan_log', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    logId: log.id,
+                    type: 'denied'
+                }),
+            });
+
+            if (!logUpdateResponse.ok) {
+                const errorData = await logUpdateResponse.json();
+                console.error('Failed to update log status:', errorData);
+                // Continue with plan termination anyway
+            }
+
+            // Update the plan status to terminated
+            const updateResponse = await fetch('/api/plan/update_plan', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    plan_id: log.plan_id,
+                    status: 'terminated'
+                }),
+            });
+
+            if (!updateResponse.ok) {
+                const errorData = await updateResponse.json();
+                console.error('Failed to terminate plan:', errorData);
+                return;
+            }
+
+            console.log('Plan terminated successfully');
+
+            // Then create a log entry for the termination with string content
+            const logResponse = await fetch('/api/plan/create_plan_log', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    type: 'plan_terminated',
+                    plan_id: log.plan_id,
+                    content: `Plan was manually terminated by user. Original log ID: ${log.id || 'unknown'}`
+                }),
+            });
+
+            if (!logResponse.ok) {
+                console.error('Failed to create termination log:', await logResponse.json());
+            } else {
+                console.log('Termination log created successfully');
+            }
+
+            // Reload the plans after termination
+            const fetchPlans = async () => {
+                if (!currentRoom) return;
+
+                setIsLoadingPlans(true);
+                try {
+                    const response = await axios.get(`/api/plan/get_plans?roomId=${currentRoom.id}`);
+                    setPlans(response.data.map((plan: any) => ({
+                        id: plan.id,
+                        name: plan.plan_name || `Plan ${plan.id}`,
+                        progress: plan.progress,
+                        logs: plan.logs || [],
+                        plan_overview: plan.plan_overview,
+                        status: plan.status
+                    })));
+                } catch (error) {
+                    console.error("Error fetching plans:", error);
+                } finally {
+                    setIsLoadingPlans(false);
+                }
+            };
+
+            fetchPlans();
+        } catch (error) {
+            console.error('Error terminating plan:', error);
+        }
     };
 
     return (
@@ -543,13 +680,27 @@ const SimplifiedPlanSection = ({
                                                                             [{getShortId(fullPlan?.id)}]
                                                                         </Text>
                                                                     </Box>
-                                                                    {typeof fullPlan?.progress === "number" && (
-                                                                        <Box minW="40px" textAlign="right">
+                                                                    <Flex minW="80px" textAlign="right" align="center" justify="flex-end">
+                                                                        {fullPlan?.status && (
+                                                                            <Text
+                                                                                as="span"
+                                                                                fontSize="xs"
+                                                                                px={1}
+                                                                                py={0.5}
+                                                                                borderRadius="sm"
+                                                                                bg={getStatusColor(fullPlan.status as PlanStatus)}
+                                                                                color="white"
+                                                                                mr={2}
+                                                                            >
+                                                                                {fullPlan.status}
+                                                                            </Text>
+                                                                        )}
+                                                                        {typeof fullPlan?.progress === "number" && (
                                                                             <Text as="span" color="gray.400" fontSize="xs">
                                                                                 {fullPlan.progress}%
                                                                             </Text>
-                                                                        </Box>
-                                                                    )}
+                                                                        )}
+                                                                    </Flex>
                                                                 </Flex>
                                                                 <Select.ItemIndicator />
                                                             </Select.Item>
@@ -564,6 +715,7 @@ const SimplifiedPlanSection = ({
                                             {plans
                                                 .filter(plan => selectedPlans.includes(plan.id))
                                                 .map((plan) => {
+                                                    console.log(`Rendering selected plan: ${plan.name}, status:`, plan.status);
                                                     const colorScheme = getColorForPlan(plan);
                                                     return (
                                                         <Flex
@@ -586,18 +738,30 @@ const SimplifiedPlanSection = ({
                                                                 </Text>
                                                             </Text>
 
-                                                            {/* Progress bar */}
-                                                            <Progress.Root
-                                                                width="40%"
-                                                                defaultValue={plan.progress ?? 0}
-                                                                colorScheme={colorScheme}
-                                                                variant="outline"
-                                                                size="sm"
-                                                            >
-                                                                <Progress.Track>
-                                                                    <Progress.Range />
-                                                                </Progress.Track>
-                                                            </Progress.Root>
+                                                            {/* Progress bar or TERMINATED label */}
+                                                            {plan.status === 'terminated' ? (
+                                                                <Text
+                                                                    width="40%"
+                                                                    fontSize="xs"
+                                                                    fontWeight="bold"
+                                                                    color="orange.500"
+                                                                    textAlign="center"
+                                                                >
+                                                                    TERMINATED
+                                                                </Text>
+                                                            ) : (
+                                                                <Progress.Root
+                                                                    width="40%"
+                                                                    defaultValue={plan.progress ?? 0}
+                                                                    colorScheme={colorScheme}
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                >
+                                                                    <Progress.Track>
+                                                                        <Progress.Range />
+                                                                    </Progress.Track>
+                                                                </Progress.Root>
+                                                            )}
 
                                                             {/* Percentage */}
                                                             <Text
@@ -606,7 +770,9 @@ const SimplifiedPlanSection = ({
                                                                 color={colors.textColor}
                                                                 textAlign="right"
                                                             >
-                                                                {typeof plan.progress === "number" ? `${plan.progress}%` : "0%"}
+                                                                {plan.status === 'terminated' ?
+                                                                    "" :
+                                                                    (typeof plan.progress === "number" ? `${plan.progress}%` : "0%")}
                                                             </Text>
                                                         </Flex>
                                                     );
@@ -672,6 +838,75 @@ const SimplifiedPlanSection = ({
             />
         </MotionBox>
     );
+};
+
+// Add this custom StatusBadge component
+const StatusBadge = ({ status }: { status: string }) => {
+    // Get background color based on status
+    console.log("Status:", status);
+    const getBackgroundColor = () => {
+        switch (status) {
+            case 'pending': return '#718096'; // gray
+            case 'running': return '#3182CE'; // blue
+            case 'success': return '#38A169'; // green
+            case 'failure': return '#E53E3E'; // red
+            case 'terminated': return '#DD6B20'; // orange
+            default: return '#718096'; // gray
+        }
+    };
+
+    // Get text based on status (with Chinese translation)
+    const getStatusText = () => {
+        switch (status) {
+            case 'pending': return '待处理'; // Pending
+            case 'running': return '运行中'; // Running
+            case 'success': return '成功'; // Success
+            case 'failure': return '失败'; // Failure
+            case 'terminated': return '已终止'; // Terminated
+            default: return status;
+        }
+    };
+
+    return (
+        <div
+            style={{
+                display: 'inline-block',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                fontSize: '0.7rem',
+                backgroundColor: getBackgroundColor(),
+                color: 'white',
+                marginRight: '8px',
+                fontWeight: 'bold'
+            }}
+        >
+            {getStatusText()}
+        </div>
+    );
+};
+
+// Helper function to get color based on scheme
+const getColorForScheme = (scheme: string) => {
+    switch (scheme) {
+        case 'green': return '#38A169';
+        case 'red': return '#E53E3E';
+        case 'blue': return '#3182CE';
+        case 'orange': return '#DD6B20';
+        case 'gray': return '#718096';
+        default: return '#718096';
+    }
+};
+
+// Add this function near your other utility functions
+const getStatusColor = (status: PlanStatus): string => {
+    switch (status) {
+        case 'pending': return 'gray.500';
+        case 'running': return 'blue.500';
+        case 'success': return 'green.500';
+        case 'failure': return 'red.500';
+        case 'terminated': return 'orange.500';
+        default: return 'gray.500';
+    }
 };
 
 export default function ChatLayout({

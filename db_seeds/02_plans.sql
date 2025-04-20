@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS plan_log (
     type TEXT,
     plan_id UUID,
     task_id UUID,
+    skill_id UUID,
     content TEXT
 );
 

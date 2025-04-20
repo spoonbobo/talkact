@@ -202,7 +202,18 @@
     "latest_skills": "最新のスキル",
     "delete": "削除",
     "delete_message": "メッセージを削除",
-    "delete_message_confirmation": "このメッセージを削除してもよろしいですか？"
+    "delete_message_confirmation": "このメッセージを削除してもよろしいですか？",
+    "log_type_approval_requested": "承認リクエスト",
+    "log_type_plan_created": "プラン作成済み",
+    "log_type_skill_executed": "スキル実行済み",
+    "log_type_performing_skill": "スキル実行中",
+    "log_type_skill_started": "スキル開始",
+    "log_type_plan_terminated": "プラン終了",
+    "plan_was_created": "プランが作成されました",
+    "add_standard_ai_assistant": "標準AIアシスタントを追加",
+    "add_deepseek_ai_assistant": "DeepseekAIアシスタントを追加",
+    "add_ai_assistants": "AIアシスタントを追加",
+    "skills": "スキル"
   },
   "Plans": {
     "plans": "プラン",
@@ -295,7 +306,14 @@
     "deny": "拒否",
     "approve": "承認",
     "plan_log_details": "プランログの詳細",
-    "no_log_selected": "ログが選択されていません"
+    "no_log_selected": "ログが選択されていません",
+    "open_plan": "プランを開く",
+    "plan": "プラン",
+    "approval_requested": "承認リクエスト",
+    "plan_created": "プラン作成済み",
+    "task_id": "タスクID",
+    "skill_executed": "スキル実行済み",
+    "plan_completed": "プラン完了"
   },
   "Learn": {
     "learn": "学ぶ",

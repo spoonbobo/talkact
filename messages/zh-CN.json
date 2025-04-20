@@ -224,10 +224,15 @@
     "total_logs": "总日志",
     "loading_tasks": "加载任务中...",
     "add_ai_assistants": "邀请AI智能体",
-    "add_standard_ai_assistant": "邀请标准AI智能体",
+    "add_standard_ai_assistant": "邀请Onlysaid AI智能体",
     "add_deepseek_ai_assistant": "邀请DeepSeek AI智能体",
     "unknown": "未知",
-    "log_type_plan_created": "计划已创建"
+    "log_type_plan_created": "计划已创建",
+    "log_type_approval_requested": "请求批准",
+    "log_type_plan_terminated": "计划已终止",
+    "plan_was_created": "计划已创建",
+    "log_type_performing_skill": "执行技能中",
+    "log_type_skill_executed": "技能已执行"
   },
   "Plans": {
     "plans": "计划",

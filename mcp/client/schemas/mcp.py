@@ -85,6 +85,7 @@ class PlanLog(BaseModel):
     id: str
     plan_id: str
     task_id: str
+    skill_id: str
     created_at: str
     type: str
     content: str
@@ -92,6 +93,9 @@ class PlanLog(BaseModel):
 class MCPTaskRequest(BaseModel):
     task: TaskData
     plan: PlanData
+
+class PerformSkillRequest(BaseModel):
+    log_id: str
 
 class Skill(BaseModel):
     name: str
@@ -116,3 +120,7 @@ class Task(BaseModel):
     result: str = ""
     context: List[Dict[str, Any]] = []
     skills: List[Skill] = []
+
+class AgentMessage(BaseModel):
+    content: str
+    room_id: str

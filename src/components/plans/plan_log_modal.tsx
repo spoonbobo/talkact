@@ -31,28 +31,17 @@ import { FaTools } from "react-icons/fa";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { FiChevronUp, FiChevronDown } from "react-icons/fi";
 import { usePlansColors } from "@/utils/colors";
+import { PlanLog } from "@/types/plan";
 
-interface PlanLog {
-    id: string;
-    created_at: Date | string;
-    type: string;
-    content: string;
-    planName?: string;
-    planShortId?: string;
-    task_id?: string;
-    plan_id?: string;
-    planNavId?: string;
-    planOverview?: string;
-    skills?: any[];
-}
 
 interface PlanLogModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onCloseComplete?: () => void;
     log: PlanLog | null;
     colors?: any;
-    onApprove?: (planId: string) => void;
-    onDeny?: (planId: string) => void;
+    onApprove?: (log: PlanLog) => void;
+    onDeny?: (log: PlanLog) => void;
     onSkillUpdated?: () => void;
     taskDetails?: any;
     isLoadingTask?: boolean;
@@ -64,6 +53,7 @@ interface PlanLogModalProps {
 export default function PlanLogModal({
     isOpen,
     onClose,
+    onCloseComplete,
     log,
     colors,
     onApprove,
@@ -91,6 +81,8 @@ export default function PlanLogModal({
     const accentColor = colors?.accentColor || plansColors.accentColor;
     const cardBg = colors?.cardBg || plansColors.cardBg;
     const inputBg = colors?.inputBg || plansColors.inputBg;
+
+    // Move all color mode value hooks to the top level
     const approvalBoxBg = useColorModeValue("orange.50", "orange.900");
     const approvalBoxBorder = useColorModeValue("orange.200", "orange.700");
     const approvalTextColor = textColorHeading;
@@ -102,6 +94,11 @@ export default function PlanLogModal({
     const buttonHoverBgColor = plansColors.buttonHoverBgColor;
     const selectedItemBg = plansColors.selectedItemBg;
     const focusRingColor = plansColors.focusRingColor;
+    const codeBackgroundColor = useColorModeValue('gray.100', 'gray.700');
+
+    // For gradient backgrounds in CSS
+    const gradientStartColor = useColorModeValue('rgba(66, 153, 225, 0.1)', 'rgba(66, 153, 225, 0.05)');
+    const inputPlaceholderColor = useColorModeValue("gray.500", "gray.400");
 
     const isConfirmation = log?.type === "approval_requested";
 
@@ -206,24 +203,14 @@ export default function PlanLogModal({
     const handleApprove = () => {
         console.log("Handling approve", log?.plan_id, onApprove);
         if (log?.plan_id && onApprove) {
-            // Show the skills that will be used for this plan
-            if (taskDetails?.skills && Object.keys(fetchedSkills).length > 0) {
-                const skillsList = Object.values(fetchedSkills)
-                    .map(skill => `${skill.name || skill.tool_name}: ${skill.description || 'No description'}`)
-                    .join('\n• ');
-
-                console.log("Skills list:", skillsList);
-            }
-
-            // Call the onApprove function
-            onApprove(log.plan_id);
+            onApprove(log);
             onClose();
         }
     };
 
     const handleDeny = () => {
         if (log?.plan_id && onDeny) {
-            onDeny(log.plan_id);
+            onDeny(log);
             onClose();
         }
     };
@@ -546,11 +533,18 @@ export default function PlanLogModal({
             return planData.plan_overview;
         }
 
+        if (log?.content) {
+            return log.content;
+        }
+
         return null;
     };
 
     return (
-        <Dialog.Root open={isOpen} onOpenChange={handleCloseModal} initialFocusEl={() => editingSkill ? skillNameInputRef.current : null}>
+        <Dialog.Root
+            open={isOpen}
+            onOpenChange={handleCloseModal}
+            initialFocusEl={() => editingSkill ? skillNameInputRef.current : null}>
             <Portal>
                 <Dialog.Backdrop />
                 <Dialog.Positioner>
@@ -675,7 +669,7 @@ export default function PlanLogModal({
                                                                     bg={inputBg}
                                                                     borderColor={plansColors.inputBorder}
                                                                     _focus={{ borderColor: plansColors.inputBorder, boxShadow: `0 0 0 1px ${focusRingColor}` }}
-                                                                    _placeholder={{ color: useColorModeValue("gray.500", "gray.400") }}
+                                                                    _placeholder={{ color: inputPlaceholderColor }}
                                                                 />
                                                             )}
                                                         </Field.Root>
@@ -766,13 +760,73 @@ export default function PlanLogModal({
                                                 bg={contentBoxBg}
                                                 border="1px"
                                                 borderColor={borderColor}
+                                                boxShadow="sm"
+                                                transition="all 0.2s"
+                                                _hover={{ boxShadow: "md" }}
                                             >
                                                 {isLoadingPlan ? (
                                                     <Spinner size="sm" color={accentColor} />
                                                 ) : getPlanOverview() ? (
-                                                    <Text color={textColor} whiteSpace="pre-wrap">
-                                                        {getPlanOverview()}
-                                                    </Text>
+                                                    <Text
+                                                        color={textColor}
+                                                        whiteSpace="pre-wrap"
+                                                        css={{
+                                                            lineHeight: "1.6",
+                                                            fontSize: "0.95rem",
+                                                            fontFamily: "system-ui, sans-serif",
+                                                            '& strong, & b': { color: textColorStrong, fontWeight: "600" },
+                                                            '& ul, & ol': { paddingLeft: '1.5rem', marginY: '0.5rem' },
+                                                            '& li': { marginY: '0.25rem' },
+                                                            '& code': {
+                                                                bg: codeBackgroundColor,
+                                                                px: 1,
+                                                                py: 0.5,
+                                                                borderRadius: 'sm',
+                                                                fontSize: '0.9em',
+                                                                fontFamily: 'monospace'
+                                                            },
+                                                            '& pre': {
+                                                                bg: codeBackgroundColor,
+                                                                p: 2,
+                                                                borderRadius: 'md',
+                                                                overflowX: 'auto',
+                                                                my: 2
+                                                            },
+                                                            '& p': { marginY: '0.5rem' },
+                                                            '& a': { color: accentColor, textDecoration: 'underline', _hover: { opacity: 0.8 } },
+                                                            '& *:has(span[data-special="true"])': {
+                                                                display: 'inline-block',
+                                                                position: 'relative',
+                                                                padding: '0.25rem 0.5rem',
+                                                                margin: '0.25rem 0',
+                                                                borderLeft: `3px solid ${accentColor}`,
+                                                                background: `linear-gradient(to right, ${gradientStartColor}, transparent)`,
+                                                                borderRadius: '0.25rem',
+                                                                fontStyle: 'italic',
+                                                                animation: 'pulse-glow 2s infinite',
+                                                            },
+                                                            '@keyframes pulse-glow': {
+                                                                '0%': {
+                                                                    boxShadow: '0 0 3px rgba(66, 153, 225, 0.2)',
+                                                                    transform: 'scale(1)'
+                                                                },
+                                                                '50%': {
+                                                                    boxShadow: '0 0 12px rgba(66, 153, 225, 0.6), 0 0 20px rgba(66, 153, 225, 0.3)',
+                                                                    transform: 'scale(1.02)'
+                                                                },
+                                                                '100%': {
+                                                                    boxShadow: '0 0 3px rgba(66, 153, 225, 0.2)',
+                                                                    transform: 'scale(1)'
+                                                                }
+                                                            }
+                                                        }}
+                                                        dangerouslySetInnerHTML={{
+                                                            __html: getPlanOverview()?.replace(
+                                                                /\|Onvl([^|]*)\|/g,
+                                                                '<span data-special="true" style="font-weight:bold;color:' + accentColor + ';background-color:rgba(66, 153, 225, 0.15);padding:3px 6px;border-radius:4px;border:1px solid ' + accentColor + ';">✨ $1 ✨</span>'
+                                                            ) || ''
+                                                        }}
+                                                    />
                                                 ) : (
                                                     <Text color={textColorMuted}>
                                                         {t("no_plan_overview_available")}

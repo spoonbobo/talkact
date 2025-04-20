@@ -83,5 +83,21 @@ export class Log {
     type: string;
     plan_id?: string;
     task_id?: string;
+    skill_id?: string;
     content: string;
 }
+
+export interface PlanLog {
+    id: string;
+    created_at: Date | string;
+    type: string;
+    content: string;
+    planName?: string;
+    planShortId?: string;
+    task_id?: string;
+    plan_id?: string;
+    planNavId?: string;
+    planOverview?: string;
+    skills?: any[];
+}
+

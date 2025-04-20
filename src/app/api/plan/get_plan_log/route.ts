@@ -7,12 +7,13 @@ export async function GET(request: Request) {
         const url = new URL(request.url);
         const planId = url.searchParams.get('planId');
         const logId = url.searchParams.get('logId');
-        const logIds = url.searchParams.get('logIds'); // Add support for multiple log IDs
+        const logIds = url.searchParams.get('logIds');
+        const skillId = url.searchParams.get('skillId'); // Add support for skill_id
 
         // Validate that at least one parameter is provided
-        if (!planId && !logId && !logIds) {
+        if (!planId && !logId && !logIds && !skillId) {
             return NextResponse.json({
-                error: 'Either planId, logId, or logIds must be provided'
+                error: 'Either planId, logId, logIds, or skillId must be provided'
             }, { status: 400 });
         }
 
@@ -35,6 +36,12 @@ export async function GET(request: Request) {
             const logIdArray = logIds.split(',');
             logs = await db('plan_log')
                 .whereIn('id', logIdArray)
+                .orderBy('created_at', 'desc');
+        }
+        // If skillId is provided, fetch all logs for that skill
+        else if (skillId) {
+            logs = await db('plan_log')
+                .where('skill_id', skillId)
                 .orderBy('created_at', 'desc');
         }
         // If planId is provided, fetch all logs for that plan

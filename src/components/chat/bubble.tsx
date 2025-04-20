@@ -3,7 +3,7 @@
 import { Box, Text, Menu, Portal, Group } from "@chakra-ui/react";
 import { IMessage } from "@/types/chat";
 import ReactMarkdown from "react-markdown";
-import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
+import { useEffect, useState, useMemo, useRef, useLayoutEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import React from "react";
 import { useChatPageColors, useCodeSyntaxHighlightColors } from "@/utils/colors";
@@ -17,6 +17,11 @@ import { DeleteMessageModal } from "@/components/chat/delete_message.modal";
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import PlanLogModal from '../plans/plan_log_modal';
+import axios from 'axios';
+import { toaster } from "@/components/ui/toaster";
+import { useRouter, usePathname } from 'next/navigation';
+import { useLocale } from 'next-intl';
 
 // Define the cn function directly
 function cn(...inputs: ClassValue[]) {
@@ -294,6 +299,64 @@ export const ChatBubble = React.memo(({
   // Add state for delete modal
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
+  // Add these state variables
+  const [logModalOpen, setLogModalOpen] = useState(false);
+  const [logId, setLogId] = useState<string | null>(null);
+  const [logData, setLogData] = useState<any>(null);
+  const [isLoadingLog, setIsLoadingLog] = useState(false);
+  const [planData, setPlanData] = useState<any>(null);
+  const [isLoadingPlan, setIsLoadingPlan] = useState(false);
+
+  const locale = useLocale();
+  const router = useRouter();
+
+  // Add this function to handle log link clicks with data fetching
+  const handleLogLinkClick = useCallback(async (id: string) => {
+    try {
+      setIsLoadingLog(true);
+      setLogId(id);
+      // Use the correct API endpoint path
+      const response = await axios.get(`/api/plan/get_plan_log?logId=${id}`);
+
+      if (response.data) {
+        const logData = response.data;
+        setLogData(logData);
+
+        // If the log has a plan_id, fetch the plan data as well
+        if (logData.plan_id) {
+          setIsLoadingPlan(true);
+          try {
+            // Use the correct API endpoint for fetching plan data
+            const planResponse = await axios.get(`/api/plan/get_plan_by_id?id=${logData.plan_id}`);
+            if (planResponse.data) {
+              setPlanData(planResponse.data);
+            }
+          } catch (planError) {
+            console.error("Error fetching plan data:", planError);
+          } finally {
+            setIsLoadingPlan(false);
+          }
+        }
+
+        setLogModalOpen(true);
+      } else {
+
+      }
+    } catch (error) {
+      console.error("Error fetching log data:", error);
+
+    } finally {
+      setIsLoadingLog(false);
+    }
+  }, []);
+
+  // Add function to navigate to plan page
+  const handleOpenPlan = useCallback((planId: string) => {
+    if (planId) {
+      router.push(`/${locale}/plans/${planId}`);
+    }
+  }, [router, locale]);
+
   // Pre-process the message content
   const processedContent = useMemo(() => {
     if (!message.content) return "";
@@ -349,6 +412,12 @@ export const ChatBubble = React.memo(({
         '<span style="color: #ff6b6b; font-style: italic; font-size: 0.9em; display: block; margin-top: 8px;">$1</span>'
       );
     }
+
+    // Add this button-like styling with multiple colors
+    content = content.replace(
+      /\|Only([^|]*)\|/g,
+      '<span style="display:inline-block;font-weight:bold;color:#ffffff;background:linear-gradient(90deg,#ff69b4,#3182ce,#48d1cc);padding:4px 10px;margin:2px 0;border-radius:6px;box-shadow:0 2px 5px rgba(0,0,0,0.2),0 0 10px rgba(49,130,206,0.4);cursor:pointer;transition:all 0.2s ease;text-shadow:0 1px 2px rgba(0,0,0,0.3);position:relative;overflow:hidden;">✨ $1 ✨</span>'
+    );
 
     return content;
   }, [message.content]);
@@ -416,6 +485,22 @@ export const ChatBubble = React.memo(({
 
   // Use a ref to track the last content length to optimize updates
   const lastContentLengthRef = useRef(0);
+
+  // Add a handler for closing the modal
+  const handleCloseModal = () => {
+    // Simply close the modal
+    setLogModalOpen(false);
+    // Data clearing will be handled by onCloseComplete
+  };
+
+  let displayContent = processedContent;
+  if (displayContent) {
+    displayContent = displayContent.replace(
+      /vOnlysaid:LOG_ID:([^:]*):diasylnOv/g,
+      '<span style="display:inline-block;font-weight:bold;color:#ffffff;background:linear-gradient(90deg,#ff69b4,#3182ce,#48d1cc);padding:4px 10px;margin:2px 0;border-radius:6px;box-shadow:0 2px 5px rgba(0,0,0,0.2),0 0 10px rgba(49,130,206,0.4);cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,0.3);">✨ Log: $1 ✨</span>'
+    );
+    console.log("Applied styling to special format");
+  }
 
   return (
     <>
@@ -539,18 +624,53 @@ export const ChatBubble = React.memo(({
                               onMouseOut={(e) => { e.currentTarget.style.opacity = '1'; }}
                             />
                           ),
-                          p: ({ node, ...props }) => (
-                            <p
-                              style={{
-                                margin: '0.5em 0',
-                                padding: 0,
-                                maxWidth: '100%',
-                                overflowWrap: 'break-word',
-                                wordBreak: 'break-word',
-                              }}
-                              {...props}
-                            />
-                          ),
+                          p: ({ node, ...props }) => {
+                            // Check if this paragraph contains our special log ID format
+                            const content = props.children?.toString() || '';
+
+                            // Look for the exact format in the content
+                            if (content.includes('vOnlysaid:LOG_ID:')) {
+                              // Extract the log ID using a more precise approach
+                              const startMarker = 'vOnlysaid:LOG_ID:';
+                              const endMarker = ':diasylnOv';
+
+                              const startIndex = content.indexOf(startMarker) + startMarker.length;
+                              const endIndex = content.indexOf(endMarker, startIndex);
+
+                              if (startIndex > 0 && endIndex > startIndex) {
+                                const extractedLogId = content.substring(startIndex, endIndex);
+
+                                return (
+                                  <p style={{ margin: '0.5em 0' }}>
+                                    <a
+                                      href="#"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        handleLogLinkClick(extractedLogId);
+                                      }}
+                                      style={{
+                                        color: isUser ? 'rgba(255,255,255,0.9)' : 'blue',
+                                        textDecoration: 'underline',
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                      }}
+                                    >
+                                      {isLoadingLog && extractedLogId === logId ? (
+                                        <>Loading log...</>
+                                      ) : (
+                                        <>View Log: {extractedLogId.substring(0, 8)}...</>
+                                      )}
+                                    </a>
+                                  </p>
+                                );
+                              }
+                            }
+
+                            // Default rendering for normal paragraphs
+                            return <p style={{ margin: '0.5em 0' }} {...props} />;
+                          },
                           ul: ({ node, ...props }) => (
                             <ul
                               style={{
@@ -724,17 +844,67 @@ export const ChatBubble = React.memo(({
                               {...props}
                             />
                           ),
-                          td: ({ node, ...props }) => (
-                            <td
-                              style={{
-                                padding: '0.5em 0.75em',
-                                borderRight: `1px solid ${isUser
-                                  ? 'rgba(255,255,255,0.1)'
-                                  : 'rgba(0,0,0,0.05)'}`
-                              }}
-                              {...props}
-                            />
-                          ),
+                          td: ({ node, ...props }) => {
+                            // Check if this is a log ID cell with the special format
+                            const content = props.children?.toString() || '';
+
+                            // Look for the exact format in the content
+                            if (content.includes('vOnlysaid:LOG_ID:')) {
+                              // Extract the log ID using a more precise approach
+                              const startMarker = 'vOnlysaid:LOG_ID:';
+                              const endMarker = ':diasylnOv';
+
+                              const startIndex = content.indexOf(startMarker) + startMarker.length;
+                              const endIndex = content.indexOf(endMarker, startIndex);
+
+                              if (startIndex > 0 && endIndex > startIndex) {
+                                const extractedLogId = content.substring(startIndex, endIndex);
+
+                                return (
+                                  <td
+                                    style={{
+                                      padding: '0.5em 0.75em',
+                                      borderRight: `1px solid ${isUser
+                                        ? 'rgba(255,255,255,0.1)'
+                                        : 'rgba(0,0,0,0.05)'}`
+                                    }}
+                                  >
+                                    <a
+                                      href="#"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        handleLogLinkClick(extractedLogId);
+                                      }}
+                                      style={{
+                                        color: isUser ? 'rgba(255,255,255,0.9)' : 'blue',
+                                        textDecoration: 'underline',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      {isLoadingLog && extractedLogId === logId ? (
+                                        <>Loading...</>
+                                      ) : (
+                                        <>View Log</>
+                                      )}
+                                    </a>
+                                  </td>
+                                );
+                              }
+                            }
+
+                            // Default rendering for normal td cells
+                            return (
+                              <td
+                                style={{
+                                  padding: '0.5em 0.75em',
+                                  borderRight: `1px solid ${isUser
+                                    ? 'rgba(255,255,255,0.1)'
+                                    : 'rgba(0,0,0,0.05)'}`
+                                }}
+                                {...props}
+                              />
+                            );
+                          },
                           img: ({ node, ...props }) => (
                             <img
                               style={{
@@ -751,7 +921,7 @@ export const ChatBubble = React.memo(({
                           pre: ({ children }: any) => <>{children}</>,
                         }}
                       >
-                        {message.content}
+                        {processedContent}
                       </ReactMarkdown>
                     ) : (
                       <Text color={colors.textColorSecondary} fontStyle="italic">
@@ -848,7 +1018,30 @@ export const ChatBubble = React.memo(({
         </Portal>
       </Menu.Root>
 
-      {/* Add the delete message modal */}
+      {/* Add the PlanLogModal with proper data */}
+      {(logModalOpen || logData) && (
+        <PlanLogModal
+          isOpen={logModalOpen}
+          onClose={handleCloseModal}
+          onCloseComplete={() => {
+            // Clear data only after the closing animation is complete
+            setLogData(null);
+            setPlanData(null);
+          }}
+          log={{
+            ...logData,
+            // Add additional properties that PlanLogModal might expect
+            planName: planData?.plan_name || '',
+            planShortId: planData?.id ? planData.id.split('-')[0] : '',
+          }}
+          planData={planData}
+          isLoadingTask={isLoadingLog || isLoadingPlan}
+          onApprove={() => { setLogModalOpen(false) }}
+          onDeny={() => { setLogModalOpen(false) }}
+        />
+      )}
+
+      {/* Delete message modal */}
       {isUser && (
         <DeleteMessageModal
           isOpen={isDeleteModalOpen}

@@ -200,7 +200,7 @@ const PlanLogSection = ({
         return log.content || 'No content';
     };
 
-    // Group logs by plan ID to reduce repetition
+    // Group logs by plan
     const groupLogsByPlan = () => {
         const groupedLogs: Record<string, any[]> = {};
 
@@ -236,7 +236,17 @@ const PlanLogSection = ({
     };
 
     // Get card colors based on log type
-    const getCardColors = (isConfirmation: boolean, isActive: boolean) => {
+    const getCardColors = (isConfirmation: boolean, isActive: boolean, logType?: string) => {
+        if (logType === 'plan_terminated') {
+            return {
+                bg: isDarkMode ? 'orange.900' : 'rgba(255, 237, 213, 0.5)',
+                border: isDarkMode ? 'orange.700' : 'rgba(237, 137, 54, 0.2)',
+                hoverBg: isDarkMode ? 'orange.800' : 'rgba(255, 237, 213, 0.8)',
+                hoverBorder: isDarkMode ? 'orange.600' : 'rgba(237, 137, 54, 0.3)',
+                shadow: isDarkMode ? '0 2px 8px rgba(237, 137, 54, 0.2)' : '0 2px 8px rgba(237, 137, 54, 0.05)'
+            };
+        }
+
         if (isConfirmation) {
             return {
                 bg: isDarkMode ? 'yellow.900' : 'rgba(255, 249, 219, 0.5)',
@@ -277,6 +287,30 @@ const PlanLogSection = ({
                     borderColor: isDarkMode ? 'yellow.700' : 'rgba(237, 212, 0, 0.2)'
                 };
             case 'plan_created':
+                return {
+                    bg: isDarkMode ? 'green.900' : 'rgba(235, 251, 238, 0.7)',
+                    color: isDarkMode ? 'green.200' : 'rgba(39, 134, 39, 0.9)',
+                    borderColor: isDarkMode ? 'green.700' : 'rgba(72, 187, 120, 0.2)'
+                };
+            case 'plan_terminated':
+                return {
+                    bg: isDarkMode ? 'orange.900' : 'rgba(255, 237, 213, 0.7)',
+                    color: isDarkMode ? 'orange.200' : 'rgba(221, 107, 32, 0.9)',
+                    borderColor: isDarkMode ? 'orange.700' : 'rgba(237, 137, 54, 0.2)'
+                };
+            case 'performing_skill':
+                return {
+                    bg: isDarkMode ? 'purple.900' : 'rgba(245, 240, 255, 0.7)',
+                    color: isDarkMode ? 'purple.200' : 'rgba(128, 90, 213, 0.9)',
+                    borderColor: isDarkMode ? 'purple.700' : 'rgba(159, 122, 234, 0.2)'
+                };
+            case 'skill_executed':
+                return {
+                    bg: isDarkMode ? 'blue.900' : 'rgba(235, 248, 255, 0.7)',
+                    color: isDarkMode ? 'blue.200' : 'rgba(49, 130, 206, 0.9)',
+                    borderColor: isDarkMode ? 'blue.700' : 'rgba(66, 153, 225, 0.2)'
+                };
+            case 'plan_completed':
                 return {
                     bg: isDarkMode ? 'green.900' : 'rgba(235, 251, 238, 0.7)',
                     color: isDarkMode ? 'green.200' : 'rgba(39, 134, 39, 0.9)',
@@ -336,8 +370,23 @@ const PlanLogSection = ({
     // Group logs by plan
     const groupedLogs = groupLogsByPlan();
 
-    // Sort logs by creation date for ungrouped view
+    // Sort logs by creation date for ungrouped view, prioritizing approval requests
     const sortedLogs = [...logs].sort((a, b) => {
+        // Prioritize approval requests
+        if (a.type === "approval_requested" || a.type === "ask_for_plan_approval") {
+            if (b.type === "approval_requested" || b.type === "ask_for_plan_approval") {
+                // If both are approval requests, sort by date
+                const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return dateB - dateA;
+            }
+            return -1; // a is approval request, b is not, so a comes first
+        }
+        if (b.type === "approval_requested" || b.type === "ask_for_plan_approval") {
+            return 1; // b is approval request, a is not, so b comes first
+        }
+
+        // Otherwise sort by date
         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
         const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
         return dateB - dateA;
@@ -366,20 +415,37 @@ const PlanLogSection = ({
                         {groupByPlan ? (
                             // Grouped view - group logs by plan
                             Object.entries(groupedLogs).map(([planId, planLogs]) => {
-                                // Sort logs by creation date
+                                // Sort logs by type (prioritizing approval requests) and then by creation date
                                 const sortedPlanLogs = [...planLogs].sort((a, b) => {
+                                    // Prioritize approval requests
+                                    if (a.type === "approval_requested" || a.type === "ask_for_plan_approval") {
+                                        if (b.type === "approval_requested" || b.type === "ask_for_plan_approval") {
+                                            // If both are approval requests, sort by date
+                                            const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                                            const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                                            return dateB - dateA;
+                                        }
+                                        return -1; // a is approval request, b is not, so a comes first
+                                    }
+                                    if (b.type === "approval_requested" || b.type === "ask_for_plan_approval") {
+                                        return 1; // b is approval request, a is not, so b comes first
+                                    }
+
+                                    // Otherwise sort by date
                                     const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
                                     const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
                                     return dateB - dateA;
                                 });
 
-                                // Get the most recent log for this plan
+                                // Get the most recent log for this plan (which might be an approval request due to sorting)
                                 const latestLog = sortedPlanLogs[0];
-                                const isConfirmation = latestLog.type === "ask_for_plan_approval";
-                                const pendingApprovals = sortedPlanLogs.filter(log => log.type === "ask_for_plan_approval").length;
+                                const isConfirmation = latestLog.type === "ask_for_plan_approval" || latestLog.type === "approval_requested";
+                                const pendingApprovals = sortedPlanLogs.filter(log =>
+                                    log.type === "ask_for_plan_approval" || log.type === "approval_requested"
+                                ).length;
 
                                 // Get colors for this card
-                                const cardColors = getCardColors(isConfirmation, true);
+                                const cardColors = getCardColors(isConfirmation, true, latestLog.type);
                                 const logTypeColors = getLogTypeBadgeColors(latestLog.type || "unknown");
 
                                 // Get tasks for this log if available
@@ -533,7 +599,7 @@ const PlanLogSection = ({
                             // Ungrouped view - show individual logs
                             sortedLogs.map((log) => {
                                 const isConfirmation = log.type === "ask_for_plan_approval";
-                                const cardColors = getCardColors(isConfirmation, false);
+                                const cardColors = getCardColors(isConfirmation, false, log.type);
                                 const logTypeColors = getLogTypeBadgeColors(log.type || "unknown");
                                 const logTasks = log.tasks || tasksByLogId[log.id] || [];
                                 const isLoadingLogTasks = loadingTasks[log.id] || false;

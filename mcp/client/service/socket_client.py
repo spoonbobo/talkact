@@ -135,16 +135,37 @@ class SocketClient:
     
     async def _reconnect_loop(self):
         """Periodically attempt to reconnect until successful."""
-        while not self.connected and not self._shutdown_requested:
-            logger.info(f"Attempting to reconnect in {self.reconnect_interval} seconds...")
+        attempts = 0
+        max_attempts = 10  # Limit the number of consecutive attempts
+        
+        while not self.connected and not self._shutdown_requested and attempts < max_attempts:
+            attempts += 1
+            logger.info(f"Attempting to reconnect (attempt {attempts}/{max_attempts}) in {self.reconnect_interval} seconds...")
             await asyncio.sleep(self.reconnect_interval)
+            
             try:
+                # Check if the socket.io client is in a bad state and recreate if needed
+                if getattr(self.sio, '_closed', False) or (hasattr(self.sio, 'eio') and self.sio.eio and self.sio.eio.state != 'connected'):
+                    logger.info("Recreating socket.io client before reconnection attempt")
+                    self.sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=0, logger=False) # type: ignore
+                    self._setup_event_handlers()
+                
                 await self.connect()
                 if self.connected:
                     logger.info("Reconnection successful")
+                    attempts = 0  # Reset attempts counter on success
                     break
             except Exception as e:
-                logger.error(f"Reconnection attempt failed: {e}")
+                logger.error(f"Reconnection attempt {attempts} failed: {e}")
+                
+                # Increase delay for exponential backoff
+                if attempts < max_attempts:
+                    self.reconnect_interval = min(30, self.reconnect_interval * 1.5)  # Cap at 30 seconds
+        
+        if attempts >= max_attempts and not self.connected:
+            logger.error(f"Failed to reconnect after {max_attempts} attempts. Will try again later.")
+            # Reset reconnect interval for next time
+            self.reconnect_interval = 5
     
     async def connect(self):
         """Connect to the socket server with authentication."""
@@ -188,15 +209,33 @@ class SocketClient:
             try:
                 # First try to disconnect properly if the client is in a bad state
                 if self.sio.connected:
-                    await self.sio.disconnect()
+                    try:
+                        await self.sio.disconnect()
+                    except Exception as e:
+                        logger.warning(f"Error during disconnect in check_connection: {e}")
                     await asyncio.sleep(0.5)
                 
-                # Recreate the client if it's been closed
-                if getattr(self.sio, '_closed', False):
-                    logger.info("Socket client was closed. Creating a new client instance.")
-                    self.sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=0) # type: ignore
+                # Check if the socket.io client is in a bad state
+                is_bad_state = False
+                try:
+                    # Try to access eio state - this will fail if the client is in a bad state
+                    if hasattr(self.sio, 'eio') and self.sio.eio:
+                        eio_state = self.sio.eio.state
+                        if eio_state != 'connected':
+                            is_bad_state = True
+                            logger.warning(f"Socket.io engine in bad state: {eio_state}")
+                    else:
+                        is_bad_state = True
+                except Exception:
+                    is_bad_state = True
+                
+                # Recreate the client if it's been closed or is in a bad state
+                if getattr(self.sio, '_closed', False) or is_bad_state:
+                    logger.info("Socket client was closed or in bad state. Creating a new client instance.")
+                    self.sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=0, logger=False) # type: ignore
                     self._setup_event_handlers()
                 
+                # Start the reconnection process
                 self.reconnect_task = asyncio.create_task(self._reconnect_loop())
             except Exception as e:
                 logger.error(f"Error during connection check: {e}")
@@ -270,6 +309,15 @@ class SocketClient:
             await self.connect()
         
         try:
+            # Add a check for the eio transport state before sending
+            if not hasattr(self.sio, 'eio') or not self.sio.eio or not self.sio.eio.state == 'connected':
+                logger.warning("Socket.io engine transport not connected. Forcing reconnection.")
+                self.connected = False
+                await self.check_connection()
+                if not self.connected:
+                    self.pending_messages.append(message_data)
+                    raise ConnectionError("Socket engine transport not connected")
+            
             await self.sio.emit("message", message_data)
             logger.info(f"Sent message to room {message_data.get('room_id')}")
         except Exception as e:
@@ -277,6 +325,11 @@ class SocketClient:
             if "packet queue is empty" in str(e):
                 logger.warning("Packet queue empty error detected. Attempting to reconnect...")
                 self.connected = False
+                # Force recreation of the socket.io client
+                self.sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=0, logger=False) # type: ignore
+                self._setup_event_handlers()
+                # Store the message for later delivery
+                self.pending_messages.append(message_data)
                 await self.check_connection()
                 raise ConnectionError("Socket connection was in an invalid state")
             raise
