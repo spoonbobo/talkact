@@ -24,8 +24,7 @@ export async function PUT(request: Request) {
         const updatedCount = await db('plan_log')
             .where('id', logId)
             .update({
-                type: type === 'approved' ? 'plan_approved' : 'plan_denied',
-                updated_at: new Date()
+                type: type === 'approved' ? 'plan_approved' : 'plan_denied'
             });
 
         if (updatedCount === 0) {

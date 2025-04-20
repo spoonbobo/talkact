@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS task (
 CREATE TABLE IF NOT EXISTS plan_log (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    -- TODO: add updated_at, but not important for now
     type TEXT,
     plan_id UUID,
     task_id UUID,
