@@ -17,7 +17,6 @@ import ChatroomTab from "@/components/admin/panel/tabs/ChatroomTab";
 // Define the User interface if it's not already defined in your types/user.d.ts
 interface User {
   id: string;
-  id: string;
   username: string;
   email: string;
   avatar?: string;
