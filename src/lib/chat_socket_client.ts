@@ -31,6 +31,7 @@ class ChatSocketClient {
 
         const socketUrl = window.location.origin;
         console.log("Initializing socket with URL:", socketUrl);
+        console.log("this.user", this.user);
 
         this.socket = io(socketUrl, {
             auth: {

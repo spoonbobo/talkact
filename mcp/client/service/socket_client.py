@@ -152,7 +152,7 @@ class SocketClient:
                 # Connect with authentication data
                 await self.sio.connect(
                     self.server_url,
-                    auth={"user": {"user_id": self.user_id}},
+                    auth={"user": {"id": self.user_id}},
                     wait_timeout=10  # Add timeout parameter
                 )
                 logger.info(f"Connected to socket server as user {self.user_id}")

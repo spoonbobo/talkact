@@ -118,7 +118,7 @@ export default function CreateProfilePage() {
         try {
             const createAt = new Date();
             const newUser: User = {
-                user_id: uuidv4(),
+                id: uuidv4(),
                 email: formData.email,
                 avatar: formData.avatarUrl,
                 role: "user",

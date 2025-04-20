@@ -3,16 +3,26 @@ import { Roboto, Space_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/providers/providers";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
+import localFont from 'next/font/local'
 
 const roboto = Roboto({
   weight: '400',
   subsets: ['latin'],
+  display: 'swap',
 })
 
-const space_mono = Space_Mono({
-  weight: '400',
-  subsets: ['latin'],
+// Load SpaceMono font
+export const spaceMono = localFont({
+  src: [
+    {
+      path: './fonts/SpaceMonoNerdFont-Regular.ttf',
+      weight: '400',
+      style: 'normal',
+    }
+  ],
+  variable: '--font-space-mono',
 })
+
 
 export const metadata: Metadata = {
   title: "onlysaid",

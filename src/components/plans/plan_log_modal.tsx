@@ -57,140 +57,104 @@ export default function PlanLogModal({
     onDeny,
     onSkillUpdated
 }: PlanLogModalProps) {
-    const t = useTranslations("Plans");
+    const t = useTranslations('Plans');
     const params = useParams();
     const locale = params.locale as string || 'en';
-
-    // Enhanced colors with dark mode support - using more user-friendly colors
-    // aligned with the Knowledge Base and Plans color schemes
-    const textColorHeading = colors?.textColorHeading || useColorModeValue("gray.800", "gray.100");
-    const textColorStrong = colors?.textColorStrong || useColorModeValue("gray.700", "gray.300");
-    const textColor = colors?.textColor || useColorModeValue("gray.600", "gray.400");
-    const textColorMuted = colors?.textColorMuted || useColorModeValue("gray.500", "gray.500");
-    const borderColor = colors?.borderColor || useColorModeValue("gray.200", "gray.700");
-    const accentColor = colors?.accentColor || "blue.500";
-    const cardBg = colors?.cardBg || useColorModeValue("white", "gray.800");
-    const inputBg = colors?.inputBg || useColorModeValue("white", "gray.700");
-
-    // Approval section colors - warmer orange tones for approval actions
-    const approvalBoxBg = useColorModeValue("orange.50", "rgba(251, 211, 141, 0.15)");
-    const approvalBoxBorder = useColorModeValue("orange.200", "orange.700");
-    const approvalTextColor = useColorModeValue("gray.800", "gray.100");
-    const approvalMutedColor = useColorModeValue("gray.600", "gray.400");
-
-    // Content box with subtle blue tint in light mode, darker gray in dark mode
-    const contentBoxBg = useColorModeValue("rgba(235, 248, 255, 0.6)", "gray.750");
-    const contentBoxBorder = useColorModeValue("blue.100", "gray.600");
-
-    // Skill section colors
-    const skillBoxBg = useColorModeValue("rgba(240, 247, 255, 0.8)", "rgba(45, 55, 72, 0.5)");
-    const skillBoxBorder = useColorModeValue("blue.200", "blue.800");
-
-    // Button colors
-    const editButtonBg = useColorModeValue("blue.50", "blue.900");
-    const editButtonColor = useColorModeValue("blue.600", "blue.300");
-    const editButtonHoverBg = useColorModeValue("blue.100", "blue.800");
-
-    // Form field focus colors
-    const inputFocusBorderColor = useColorModeValue("blue.400", "blue.300");
-    const inputPlaceholderColor = useColorModeValue("gray.400", "gray.500");
-
-    const isConfirmation = log?.type === "ask_for_plan_approval";
-
     const [editingSkill, setEditingSkill] = useState<any>(null);
     const [skillName, setSkillName] = useState('');
     const [skillExplanation, setSkillExplanation] = useState('');
     const [toolParams, setToolParams] = useState<Record<string, any>>({});
     const [paramTypes, setParamTypes] = useState<Record<string, string>>({});
-    const [isLoading, setIsLoading] = useState(false);
-    const [errors, setErrors] = useState<{ skillName?: string; skillExplanation?: string }>({});
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [tasks, setTasks] = useState<any[]>([]);
+    const [isLoadingTasks, setIsLoadingTasks] = useState(false);
+
     const skillNameInputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        if (isOpen && log) {
-            console.log("Log type:", log.type);
-            console.log("Is confirmation:", isConfirmation);
-            console.log("Has plan_id:", !!log.plan_id);
-        }
-    }, [isOpen, log, isConfirmation]);
+    // Color mode values
+    const bgColor = useColorModeValue("white", "gray.800");
+    const textColor = useColorModeValue("gray.700", "gray.200");
+    const textColorStrong = useColorModeValue("gray.800", "white");
+    const textColorMuted = useColorModeValue("gray.500", "gray.400");
+    const borderColor = useColorModeValue("gray.200", "gray.700");
+    const headerBg = useColorModeValue("gray.50", "gray.900");
+    const inputBg = useColorModeValue("white", "gray.700");
+    const inputBorder = useColorModeValue("gray.300", "gray.600");
+    const inputPlaceholderColor = useColorModeValue("gray.400", "gray.500");
+    const inputFocusBorderColor = useColorModeValue("blue.500", "blue.300");
+    const contentBoxBg = useColorModeValue("gray.50", "gray.700");
+    const contentBoxBorder = useColorModeValue("gray.200", "gray.600");
+    const skillBoxBg = useColorModeValue("blue.50", "blue.900");
+    const skillBoxBorder = useColorModeValue("blue.200", "blue.700");
+    const editButtonBg = useColorModeValue("gray.100", "gray.700");
+    const editButtonColor = useColorModeValue("gray.700", "gray.200");
+    const editButtonHoverBg = useColorModeValue("gray.200", "gray.600");
+    const approvalBg = useColorModeValue("green.50", "green.900");
+    const approvalBorder = useColorModeValue("green.200", "green.700");
+    const approvalTextColor = useColorModeValue("green.800", "green.200");
+    const approvalMutedColor = useColorModeValue("green.600", "green.400");
+    const approvalButtonBg = useColorModeValue("green.500", "green.600");
+    const approvalButtonHoverBg = useColorModeValue("green.600", "green.500");
+    const denyButtonBg = useColorModeValue("red.500", "red.600");
+    const denyButtonHoverBg = useColorModeValue("red.600", "red.500");
 
-    // Parse the plan_id from the content if it's a confirmation log
+    // Determine if this is a confirmation log
+    const isConfirmation = log?.type === "ask_for_plan_approval";
+
+    // Focus the skill name input when editing
     useEffect(() => {
-        if (isOpen && log && isConfirmation && !log.plan_id) {
-            try {
-                // Try to parse the content as JSON
-                const contentData = JSON.parse(log.content);
-                if (Array.isArray(contentData) && contentData.length > 0) {
-                    const toolData = contentData[0];
-                    if (toolData.skill_name === 'approve_plan' && toolData.args?.plan_id?.value) {
-                        // Set the plan_id from the parsed content
-                        log.plan_id = toolData.args.plan_id.value;
-                        console.log("Extracted plan_id:", log.plan_id);
-                    }
-                }
-            } catch (error) {
-                console.error("Error parsing log content:", error);
+        if (editingSkill && skillNameInputRef.current) {
+            skillNameInputRef.current.focus();
+        }
+    }, [editingSkill]);
+
+    // Fetch tasks when log changes and has a task_id
+    useEffect(() => {
+        if (log?.task_id) {
+            fetchTaskById(log.task_id);
+        } else if (log?.plan_id) {
+            fetchTasksByPlanId(log.plan_id);
+        }
+    }, [log]);
+
+    // Function to fetch a task by ID
+    const fetchTaskById = async (taskId: string) => {
+        setIsLoadingTasks(true);
+        try {
+            const response = await fetch(`/api/plan/get_task?taskId=${taskId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setTasks(Array.isArray(data) ? data : [data]);
+            } else {
+                console.error("Failed to fetch task:", await response.text());
+                setTasks([]);
             }
-        }
-    }, [isOpen, log, isConfirmation]);
-
-    const getLogTypeBadge = (type: string) => {
-        let colorScheme = "blue";
-
-        switch (type) {
-            case "ask_for_plan_approval":
-                colorScheme = "orange";
-                break;
-            case "plan_created":
-                colorScheme = "green";
-                break;
-            case "plan_completed":
-                colorScheme = "green";
-                break;
-            case "plan_failed":
-                colorScheme = "red";
-                break;
-            case "task_completed":
-                colorScheme = "teal";
-                break;
-            case "task_failed":
-                colorScheme = "red";
-                break;
-            default:
-                colorScheme = "blue";
-        }
-
-        return (
-            <Badge
-                colorScheme={colorScheme}
-                fontSize="sm"
-                px={2}
-                py={0.5}
-                borderRadius="md"
-                textTransform="uppercase"
-            >
-                {t(type)}
-            </Badge>
-        );
-    };
-
-    const getShortId = (uuid?: string) => uuid ? uuid.split('-')[0] : '';
-
-    const handleCloseModal = () => {
-        onClose();
-    };
-
-    const handleApprove = () => {
-        if (log?.plan_id && onApprove) {
-            onApprove(log.plan_id);
-            onClose();
+        } catch (error) {
+            console.error("Error fetching task:", error);
+            setTasks([]);
+        } finally {
+            setIsLoadingTasks(false);
         }
     };
 
-    const handleDeny = () => {
-        if (log?.plan_id && onDeny) {
-            onDeny(log.plan_id);
-            onClose();
+    // Function to fetch tasks by plan ID
+    const fetchTasksByPlanId = async (planId: string) => {
+        setIsLoadingTasks(true);
+        try {
+            const response = await fetch(`/api/plan/get_tasks?planId=${planId}`);
+            if (response.ok) {
+                const data = await response.json();
+                setTasks(data);
+            } else {
+                console.error("Failed to fetch tasks:", await response.text());
+                setTasks([]);
+            }
+        } catch (error) {
+            console.error("Error fetching tasks:", error);
+            setTasks([]);
+        } finally {
+            setIsLoadingTasks(false);
         }
     };
 
@@ -198,35 +162,16 @@ export default function PlanLogModal({
     const getFormattedContent = () => {
         if (!log) return "";
 
-        if (isConfirmation) {
+        // For approval logs, try to parse and format the content
+        if (log.type === "ask_for_plan_approval") {
             try {
-                // Replace single quotes with double quotes and Python None with JSON null
-                const jsonString = log.content
-                    .replace(/'/g, '"')
-                    .replace(/None/g, 'null');
-
+                // Replace single quotes with double quotes to make it valid JSON
+                const jsonString = log.content.replace(/'/g, '"').replace(/None/g, 'null');
                 const contentData = JSON.parse(jsonString);
                 if (Array.isArray(contentData) && contentData.length > 0) {
-                    const skillData = contentData[0];
-
-                    // Create a user-friendly message
-                    if (skillData.skill_name === 'approve_plan' || skillData.tool_name === 'approve_plan') {
-                        // Return a more human-readable message
-                        const planIdValue = skillData.args?.plan_id?.value || "Unknown";
-                        const serverValue = skillData.mcp_server || "Unknown server";
-                        return t("approval_needed_for_plan", {
-                            planId: planIdValue,
-                            server: serverValue
-                        });
-                    }
-
-                    // Fallback to description if available
-                    if (skillData.description) {
-                        return skillData.description.trim();
-                    }
+                    return JSON.stringify(contentData, null, 2);
                 }
             } catch (error) {
-                // If parsing fails, return the original content
                 console.error("Error parsing content:", error);
             }
         }
@@ -270,7 +215,7 @@ export default function PlanLogModal({
         setEditingSkill(skill);
 
         // Initialize form values
-        setSkillName(skill.name || skill.skill_name || '');
+        setSkillName(skill.name || skill.skill_name || skill.tool_name || '');
         setSkillExplanation(skill.description || '');
 
         // Initialize skill parameters
@@ -294,91 +239,110 @@ export default function PlanLogModal({
         setParamTypes(newParamTypes);
     };
 
-    const handleCancelEdit = () => {
-        setEditingSkill(null);
-        setSkillName('');
-        setSkillExplanation('');
-        setToolParams({});
-        setParamTypes({});
-        setErrors({});
-    };
-
-    const validateForm = () => {
-        const newErrors: { skillName?: string; skillExplanation?: string } = {};
-
-        if (!skillName) {
-            newErrors.skillName = t('skill_name_required');
-        }
-
-        if (!skillExplanation) {
-            newErrors.skillExplanation = t('skill_explanation_required');
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
     const handleSaveSkill = async () => {
-        if (!validateForm() || !editingSkill) {
+        // Validate form
+        const newErrors: Record<string, string> = {};
+        if (!skillName.trim()) {
+            newErrors.skillName = t("skill_name_required");
+        }
+        if (!skillExplanation.trim()) {
+            newErrors.skillExplanation = t("skill_explanation_required");
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
-        setIsLoading(true);
+        setIsSubmitting(true);
+
         try {
-            // Prepare augmented parameters with type information
-            const augmentedParams: Record<string, any> = {};
+            // Create updated skill object
+            const updatedSkill = {
+                ...editingSkill,
+                name: skillName.trim(),
+                skill_name: skillName.trim(),
+                tool_name: skillName.trim(),
+                description: skillExplanation.trim(),
+                args: {}
+            };
+
+            // Format parameters based on their types
             Object.entries(toolParams).forEach(([key, value]) => {
-                augmentedParams[key] = {
-                    value: value,
-                    type: paramTypes[key] || 'unknown'
+                const paramType = paramTypes[key] || 'unknown';
+
+                // Format value based on type
+                let formattedValue: any = value;
+                if (paramType === 'number') {
+                    formattedValue = Number(value);
+                } else if (paramType === 'boolean') {
+                    formattedValue = value === 'true' || value === true;
+                } else if (paramType === 'object' || paramType === 'array') {
+                    try {
+                        formattedValue = JSON.parse(value);
+                    } catch (e) {
+                        formattedValue = value;
+                    }
+                }
+
+                // Use the augmented format
+                updatedSkill.args[key] = {
+                    value: formattedValue,
+                    type: paramType
                 };
             });
 
-            const skillData = {
-                skill_id: editingSkill.id || editingSkill.skill_id,
-                plan_id: log?.plan_id || '',
-                name: skillName,
-                description: skillExplanation,
-                args: augmentedParams,
-                skill_name: editingSkill.skill_name || editingSkill.tool_name || editingSkill.name
-            };
-            console.log("Skill data to be sent:", skillData);
+            // Update the task with the new skill
+            if (log?.task_id) {
+                const response = await fetch(`/api/plan/update_task`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        task_id: log.task_id,
+                        skills: updatedSkill
+                    }),
+                });
 
-            const response = await fetch('/api/plan/update_skill', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(skillData),
-            });
+                if (!response.ok) {
+                    throw new Error(`Failed to update task: ${response.statusText}`);
+                }
 
-            const data = await response.json();
+                // Show success message
+                // toaster.toast({
+                //     title: t("skill_updated"),
+                //     description: t("skill_updated_description"),
+                //     variant: "success",
+                // });
 
-            if (!response.ok) {
-                throw new Error(data.error || t('failed_to_update_skill'));
+                // Reset form and close edit mode
+                setEditingSkill(null);
+                setErrors({});
+
+                // Refresh tasks
+                if (log.task_id) {
+                    fetchTaskById(log.task_id);
+                } else if (log.plan_id) {
+                    fetchTasksByPlanId(log.plan_id);
+                }
+
+                // Notify parent component
+                if (onSkillUpdated) {
+                    onSkillUpdated();
+                }
+            } else {
+                throw new Error("No task ID available for update");
             }
-
-            toaster.create({
-                title: t("skill_updated"),
-                description: t("skill_updated_successfully"),
-                duration: 3000,
-            });
-
-            // Call the onSkillUpdated callback to refresh skills
-            if (onSkillUpdated) {
-                onSkillUpdated();
-            }
-
-            handleCancelEdit();
         } catch (error) {
-            console.error('Error saving skill:', error);
-            toaster.create({
-                title: t("error"),
-                description: error instanceof Error ? error.message : t("failed_to_update_skill"),
-                duration: 5000,
-            });
+            console.error("Error updating skill:", error);
+            // toaster.toast({
+            //     title: t("error"),
+            //     description: t("skill_update_error"),
+            //     variant: "destructive",
+            // });
         } finally {
-            setIsLoading(false);
+            setIsSubmitting(false);
         }
     };
 
@@ -436,57 +400,36 @@ export default function PlanLogModal({
                         </Text>
                         <Stack gap={2}>
                             {Object.entries(editingSkill.args).map(([key, value]) => {
-                                // Extract value and type if in augmented format
+                                // Determine if value is in the augmented format
                                 const isAugmented = value && typeof value === 'object' && 'value' in value && 'type' in value;
-                                const paramType = isAugmented ? value.type as string : 'unknown';
+                                const paramValue = isAugmented ? (value as any).value : value;
+                                const paramType = isAugmented ? (value as any).type : 'unknown';
 
-                                // Check if this is an array type
-                                const isArray = paramType === 'array';
+                                // Format the display value based on type
+                                let displayValue = paramValue;
+                                if (typeof paramValue === 'object') {
+                                    displayValue = JSON.stringify(paramValue);
+                                }
 
                                 return (
                                     <Field.Root key={key}>
-                                        <Flex justifyContent="space-between" alignItems="center" mb={1}>
-                                            <Field.Label fontSize="sm" color={textColorStrong}>{key}</Field.Label>
-                                            <Badge size="sm" colorScheme="blue">{paramType}</Badge>
-                                        </Flex>
-                                        {isArray ? (
-                                            <>
-                                                <Textarea
-                                                    size="sm"
-                                                    bg={inputBg}
-                                                    value={Array.isArray(toolParams[key])
-                                                        ? JSON.stringify(toolParams[key], null, 2)
-                                                        : toolParams[key] || '[]'}
-                                                    onChange={(e) => {
-                                                        try {
-                                                            // Try to parse as JSON array
-                                                            const parsedValue = JSON.parse(e.target.value);
-                                                            handleParamChange(key, parsedValue);
-                                                        } catch (err) {
-                                                            // If not valid JSON, just store as string
-                                                            handleParamChange(key, e.target.value);
-                                                        }
-                                                    }}
-                                                    color={textColor}
-                                                    placeholder={t('enter_array_as_json')}
-                                                    _placeholder={{ color: inputPlaceholderColor }}
-                                                    _focus={{ borderColor: inputFocusBorderColor }}
-                                                    rows={3}
-                                                />
-                                                <Text fontSize="xs" color={textColorMuted} mt={1}>
-                                                    {t("enter_array_as_json_example")}
-                                                </Text>
-                                            </>
-                                        ) : (
-                                            <Input
-                                                size="sm"
-                                                bg={inputBg}
-                                                value={toolParams[key] || ''}
-                                                onChange={(e) => handleParamChange(key, e.target.value)}
-                                                color={textColor}
-                                                _focus={{ borderColor: inputFocusBorderColor }}
-                                            />
-                                        )}
+                                        <Field.Label color={textColorStrong} fontSize="xs">
+                                            {key}
+                                            {paramType !== 'unknown' && (
+                                                <Badge ml={1} fontSize="2xs" colorScheme="blue">
+                                                    {paramType}
+                                                </Badge>
+                                            )}
+                                        </Field.Label>
+                                        <Input
+                                            color={textColor}
+                                            bg={inputBg}
+                                            size="sm"
+                                            value={toolParams[key] !== undefined ? toolParams[key] : displayValue}
+                                            onChange={(e) => handleParamChange(key, e.target.value)}
+                                            _placeholder={{ color: inputPlaceholderColor }}
+                                            _focus={{ borderColor: inputFocusBorderColor }}
+                                        />
                                     </Field.Root>
                                 );
                             })}
@@ -498,26 +441,23 @@ export default function PlanLogModal({
     };
 
     return (
-        <Dialog.Root open={isOpen} onOpenChange={handleCloseModal}>
+        <Dialog.Root open={isOpen} onOpenChange={onClose}>
             <Portal>
-                <Dialog.Backdrop />
                 <Dialog.Positioner>
                     <Dialog.Content
-                        maxWidth="600px"
-                        maxHeight="calc(100vh - 40px)"
-                        overflow="hidden"
-                        bg={cardBg}
+                        bg={bgColor}
                         borderColor={borderColor}
-                        boxShadow="lg"
+                        maxWidth="600px"
+                        width="90%"
                     >
-                        <Dialog.Header>
-                            <Dialog.Title color={textColorHeading}>
-                                {editingSkill ? t("edit_skill") : (log?.planName || t("plan_log_details"))}
+                        <Dialog.Header bg={headerBg} borderBottomWidth="1px" borderBottomColor={borderColor}>
+                            <Dialog.Title color={textColorStrong}>
+                                {editingSkill ? t("edit_skill") : t("log_details")}
                             </Dialog.Title>
                             <Dialog.CloseTrigger />
                         </Dialog.Header>
 
-                        <Dialog.Body overflowY="auto" maxHeight="calc(100vh - 160px)">
+                        <Dialog.Body>
                             {editingSkill ? (
                                 renderSkillEditForm()
                             ) : (
@@ -526,86 +466,50 @@ export default function PlanLogModal({
                                         {/* Log Type */}
                                         <Box>
                                             <Text fontWeight="medium" color={textColorStrong} mb={1}>
-                                                {t("type")}
+                                                {t("log_type")}
                                             </Text>
-                                            {log.type && getLogTypeBadge(log.type)}
+                                            <Badge colorScheme={
+                                                log.type === "plan_created" ? "green" :
+                                                    log.type === "plan_completed" ? "blue" :
+                                                        log.type === "plan_failed" ? "red" :
+                                                            log.type === "ask_for_plan_approval" ? "yellow" :
+                                                                "gray"
+                                            }>
+                                                {t(log.type)}
+                                            </Badge>
                                         </Box>
-
-                                        {/* Plan ID with Link */}
-                                        {log.planShortId && (
-                                            <Box>
-                                                <Text fontWeight="medium" color={textColorStrong} mb={1}>
-                                                    {t("plan_id")}
-                                                </Text>
-                                                {(log.type === "plan_created" || log.type === "ask_for_plan_approval") && log.planNavId ? (
-                                                    <Link
-                                                        as={NextLink}
-                                                        href={`/${locale}/plans/${log.planNavId}`}
-                                                        _hover={{ textDecoration: 'none' }}
-                                                    >
-                                                        <Badge
-                                                            colorScheme="blue"
-                                                            fontSize="sm"
-                                                            fontFamily="monospace"
-                                                            cursor="pointer"
-                                                            _hover={{ bg: 'blue.100', color: 'blue.700' }}
-                                                        >
-                                                            {log.planNavId} {log.type === "plan_created" ? `(${t("open_plan")})` : ''}
-                                                        </Badge>
-                                                    </Link>
-                                                ) : (
-                                                    <Badge
-                                                        colorScheme="gray"
-                                                        fontSize="sm"
-                                                        fontFamily="monospace"
-                                                    >
-                                                        {log.planNavId}
-                                                    </Badge>
-                                                )}
-                                            </Box>
-                                        )}
 
                                         {/* Timestamp */}
                                         <Box>
                                             <Text fontWeight="medium" color={textColorStrong} mb={1}>
                                                 {t("timestamp")}
                                             </Text>
-                                            <Text color={textColor}>
-                                                {new Date(log.created_at).toLocaleString()}
+                                            <Text fontSize="sm" color={textColor}>
+                                                {new Date(log.created_at).toLocaleString(locale)}
                                             </Text>
                                         </Box>
 
-                                        <Separator my={2} />
-
-                                        {/* Plan Approval Details */}
+                                        {/* Plan Approval Section */}
                                         {isConfirmation && planDetails && (
                                             <Box>
-                                                <Text fontWeight="medium" color={textColorStrong} mb={1}>
-                                                    {t("approval_request")}
+                                                <Text fontWeight="medium" color={textColorStrong} mb={2}>
+                                                    {t("plan_approval")}
                                                 </Text>
                                                 <Box
                                                     p={4}
                                                     borderRadius="md"
-                                                    bg={approvalBoxBg}
+                                                    bg={approvalBg}
                                                     border="1px"
-                                                    borderColor={approvalBoxBorder}
+                                                    borderColor={approvalBorder}
                                                 >
-                                                    <Stack gap={3}>
-                                                        <Text color={approvalTextColor} fontSize="sm" fontWeight="medium">
-                                                            {t("plan_requires_approval")}
-                                                        </Text>
-
+                                                    <Stack gap={2}>
                                                         <Box>
                                                             <Text fontSize="xs" color={approvalMutedColor} fontWeight="medium">
                                                                 {t("plan_id")}:
                                                             </Text>
-                                                            <Badge
-                                                                colorScheme="orange"
-                                                                fontSize="sm"
-                                                                fontFamily="monospace"
-                                                            >
+                                                            <Text fontSize="sm" color={approvalTextColor} fontFamily="monospace">
                                                                 {planDetails.planId}
-                                                            </Badge>
+                                                            </Text>
                                                         </Box>
 
                                                         {planDetails.server && (
@@ -636,11 +540,15 @@ export default function PlanLogModal({
                                             </Box>
                                         )}
 
-                                        {/* Skills Section */}
-                                        {log.skills && log.skills.length > 0 && (
+                                        {/* Tasks Section */}
+                                        {isLoadingTasks ? (
+                                            <Box textAlign="center" py={4}>
+                                                <Text fontSize="sm" color={textColorMuted}>{t("loading_tasks")}</Text>
+                                            </Box>
+                                        ) : tasks.length > 0 ? (
                                             <Box>
                                                 <Text fontWeight="medium" color={textColorStrong} mb={2}>
-                                                    {t("skills")}
+                                                    {t("tasks")}
                                                 </Text>
                                                 <Box
                                                     p={4}
@@ -650,38 +558,34 @@ export default function PlanLogModal({
                                                     borderColor={skillBoxBorder}
                                                 >
                                                     <Stack gap={3}>
-                                                        {log.skills.map((skill, index) => (
+                                                        {tasks.map((task, index) => (
                                                             <Box key={index} position="relative">
                                                                 <SkillInfo
-                                                                    task={{
-                                                                        skill: skill,
-                                                                        plan_id: log.plan_id || '',
-                                                                        task_name: '',
-                                                                        status: '',
-                                                                        step_number: 0
-                                                                    }}
+                                                                    task={task}
                                                                     colors={colors}
                                                                     t={t}
                                                                     showDetails={true}
                                                                 />
-                                                                <Button
-                                                                    size="xs"
-                                                                    position="absolute"
-                                                                    top={2}
-                                                                    right={2}
-                                                                    onClick={() => handleEditSkill(skill)}
-                                                                    bg={editButtonBg}
-                                                                    color={editButtonColor}
-                                                                    _hover={{ bg: editButtonHoverBg }}
-                                                                >
-                                                                    {t("edit")}
-                                                                </Button>
+                                                                {task.skills && (
+                                                                    <Button
+                                                                        size="xs"
+                                                                        position="absolute"
+                                                                        top={2}
+                                                                        right={2}
+                                                                        onClick={() => handleEditSkill(task.skills)}
+                                                                        bg={editButtonBg}
+                                                                        color={editButtonColor}
+                                                                        _hover={{ bg: editButtonHoverBg }}
+                                                                    >
+                                                                        {t("edit")}
+                                                                    </Button>
+                                                                )}
                                                             </Box>
                                                         ))}
                                                     </Stack>
                                                 </Box>
                                             </Box>
-                                        )}
+                                        ) : null}
 
                                         {/* Content (only show if not a confirmation or if we couldn't parse details) */}
                                         {(!isConfirmation || !planDetails) && (
@@ -729,47 +633,53 @@ export default function PlanLogModal({
                             )}
                         </Dialog.Body>
 
-                        <Dialog.Footer>
+                        <Dialog.Footer borderTopWidth="1px" borderTopColor={borderColor}>
                             {editingSkill ? (
-                                <Stack direction="row" gap={4} width="100%">
+                                <Flex justify="space-between" width="100%">
                                     <Button
-                                        onClick={handleCancelEdit}
                                         variant="outline"
-                                        flex="1"
+                                        onClick={() => {
+                                            setEditingSkill(null);
+                                            setErrors({});
+                                        }}
                                     >
                                         {t("cancel")}
                                     </Button>
                                     <Button
-                                        onClick={handleSaveSkill}
                                         colorScheme="blue"
-                                        flex="1"
-                                        loading={isLoading}
+                                        onClick={handleSaveSkill}
+                                        loading={isSubmitting}
                                     >
-                                        {t("save")}
+                                        {t("save_changes")}
                                     </Button>
-                                </Stack>
-                            ) : isConfirmation ? (
-                                <Stack direction="row" gap={4} width="100%">
-                                    <Button
-                                        onClick={handleDeny}
-                                        colorScheme="red"
-                                        variant="outline"
-                                        flex="1"
-                                    >
-                                        {t("deny")}
-                                    </Button>
-                                    <Button
-                                        onClick={handleApprove}
-                                        colorScheme="green"
-                                        flex="1"
-                                    >
-                                        {t("approve")}
-                                    </Button>
-                                </Stack>
+                                </Flex>
                             ) : (
-                                <Button onClick={onClose} colorScheme="blue">
-                                    {t("close")}
-                                </Button>
+                                <Flex justify="space-between" width="100%">
+                                    <Button variant="outline" onClick={onClose}>
+                                        {t("close")}
+                                    </Button>
+
+                                    {isConfirmation && planDetails && onApprove && onDeny && (
+                                        <Flex gap={2}>
+                                            <Button
+                                                colorScheme="red"
+                                                bg={denyButtonBg}
+                                                _hover={{ bg: denyButtonHoverBg }}
+                                                onClick={() => onDeny(planDetails.planId)}
+                                            >
+                                                {t("deny")}
+                                            </Button>
+                                            <Button
+                                                colorScheme="green"
+                                                bg={approvalButtonBg}
+                                                _hover={{ bg: approvalButtonHoverBg }}
+                                                onClick={() => onApprove(planDetails.planId)}
+                                            >
+                                                {t("approve")}
+                                            </Button>
+                                        </Flex>
+                                    )}
+                                </Flex>
                             )}
                         </Dialog.Footer>
                     </Dialog.Content>

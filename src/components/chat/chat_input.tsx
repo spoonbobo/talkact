@@ -91,9 +91,9 @@ export const ChatInput = React.memo(({
     // Memoize current room users to prevent recalculations
     const currentRoomUsers = useMemo(() => {
         return roomUsers.length > 0
-            ? roomUsers.filter(user => user.user_id !== currentUser?.user_id)
-            : users.filter(user => currentRoom?.active_users?.includes(user.user_id || ''));
-    }, [roomUsers, users, currentRoom?.active_users, currentUser?.user_id]);
+            ? roomUsers.filter(user => user.id !== currentUser?.id)
+            : users.filter(user => currentRoom?.active_users?.includes(user.id || ''));
+    }, [roomUsers, users, currentRoom?.active_users, currentUser?.id]);
 
     // Memoize all users to prevent array recreation on every render
     const allUsers = useMemo(() => {
@@ -279,7 +279,7 @@ export const ChatInput = React.memo(({
         setMessageInput(`${beforeMention}@${user.username} ${afterMention}`);
 
         setActiveMentions(prev => {
-            if (!prev.some(u => u.user_id === user.user_id)) {
+            if (!prev.some(u => u.id === user.id)) {
                 return [...prev, user];
             }
             return prev;
@@ -293,7 +293,7 @@ export const ChatInput = React.memo(({
             id: uuidv4(),
             room_id: selectedRoomId || '',
             sender: {
-                user_id: currentUser?.user_id || '',
+                id: currentUser?.id || '',
                 username: currentUser?.username || '',
                 email: currentUser?.email || '',
                 created_at: currentUser?.created_at || new Date().toISOString(),
@@ -513,7 +513,7 @@ export const ChatInput = React.memo(({
                             <Box>
                                 {suggestions.map((user, index) => (
                                     <MotionBox
-                                        key={user.user_id}
+                                        key={user.id}
                                         data-selected-suggestion={index === selectedSuggestionIndex ? "true" : "false"}
                                         p={2}
                                         cursor="pointer"

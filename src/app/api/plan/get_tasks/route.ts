@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { ITask, ITool } from '@/types/plan';
+import { ITask } from '@/types/plan';
 
 export async function GET(request: Request) {
     try {
@@ -21,38 +21,38 @@ export async function GET(request: Request) {
 
         // Also fetch the plan to get room_id
         const plan = await db('plan')
-            .where('plan_id', planId)
+            .where('id', planId)
             .first();
 
         // Format the tasks to match the ITask interface
         const formattedTasks: ITask[] = tasks.map(task => {
-            // Parse tool JSON if it exists
-            let toolData = null;
-            if (task.tool) {
+            // Parse skills JSON if it exists
+            let skillsData = null;
+            if (task.skills) {
                 try {
-                    const parsedTool = typeof task.tool === 'string'
-                        ? JSON.parse(task.tool)
-                        : task.tool;
+                    const parsedSkills = typeof task.skills === 'string'
+                        ? JSON.parse(task.skills)
+                        : task.skills;
 
                     // Handle both array and single object formats
-                    if (Array.isArray(parsedTool)) {
-                        // It's already an array of tool calls
-                        toolData = parsedTool;
-                    } else if (parsedTool.tool_name) {
-                        // It's a single tool call
-                        toolData = parsedTool;
-                    } else if (parsedTool.original_assignee_name) {
-                        // Convert our custom format to ITool format
-                        toolData = {
-                            tool_name: `Assigned to ${parsedTool.original_assignee_name}`,
-                            mcp_server: parsedTool.original_assignee_name,
+                    if (Array.isArray(parsedSkills)) {
+                        // It's already an array of skills calls
+                        skillsData = parsedSkills;
+                    } else if (parsedSkills.tool_name) {
+                        // It's a single skills call
+                        skillsData = parsedSkills;
+                    } else if (parsedSkills.original_assignee_name) {
+                        // Convert our custom format to ISkills format
+                        skillsData = {
+                            tool_name: `Assigned to ${parsedSkills.original_assignee_name}`,
+                            mcp_server: parsedSkills.original_assignee_name,
                             args: {}
                         };
                     } else {
-                        toolData = null;
+                        skillsData = null;
                     }
                 } catch (e) {
-                    console.error('Error parsing tool JSON:', e);
+                    console.error('Error parsing skills JSON:', e);
                 }
             }
 
@@ -80,7 +80,7 @@ export async function GET(request: Request) {
                 task_explanation: task.task_explanation,
                 expected_result: task.expected_result || "",
                 mcp_server: task.mcp_server || null,
-                tool: toolData,
+                skills: skillsData,
                 status: task.status,
                 result: task.result || "",
                 logs: logsData,

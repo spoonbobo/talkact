@@ -80,7 +80,7 @@ export const chatSlice = createSlice({
                             if (typeof id === 'string') {
                                 return id !== userId;
                             } else if (typeof id === 'object' && id !== null) {
-                                return (id as User).user_id !== userId;
+                                return (id as User).id !== userId;
                             }
                             return true;
                         }

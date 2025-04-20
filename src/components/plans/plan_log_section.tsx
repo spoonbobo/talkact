@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Card, CardHeader, CardBody, Flex, Text, Stack, Box, Badge, Link } from "@chakra-ui/react";
+import { useEffect, useState } from 'react';
+import { Card, CardHeader, CardBody, Flex, Text, Stack, Box, Badge, Link, Spinner } from "@chakra-ui/react";
 import NextLink from "next/link";
 import { useParams } from "next/navigation";
 import SkillInfo from './skill_info';
@@ -32,6 +32,8 @@ const PlanLogSection = ({ logs, colors, t, onLogClick }: PlanLogSectionProps) =>
     const plansColors = usePlansColors();
     const { colorMode } = useColorMode();
     const isDarkMode = colorMode === "dark";
+    const [tasksByLogId, setTasksByLogId] = useState<Record<string, any[]>>({});
+    const [loadingTasks, setLoadingTasks] = useState<Record<string, boolean>>({});
 
     // Function to get formatted content for approval logs
     const getFormattedContent = (log: any) => {
@@ -75,6 +77,78 @@ const PlanLogSection = ({ logs, colors, t, onLogClick }: PlanLogSectionProps) =>
         return groupedLogs;
     };
 
+    // Fetch tasks for logs with task_ids
+    useEffect(() => {
+        const fetchTasks = async () => {
+            // Add debugging to see what logs have task_ids
+            console.log("All logs:", logs.map(log => ({
+                id: log.id,
+                task_id: log.task_id,
+                plan_id: log.plan_id,
+                type: log.type
+            })));
+
+            const logsWithTaskIds = logs.filter(log => log.task_id && !tasksByLogId[log.id]);
+            console.log("Logs with task_ids:", logsWithTaskIds.length, logsWithTaskIds);
+
+            for (const log of logsWithTaskIds) {
+                if (log.task_id) {
+                    setLoadingTasks(prev => ({ ...prev, [log.id]: true }));
+                    try {
+                        console.log(`Fetching task for log ${log.id} with task_id ${log.task_id}`);
+                        const response = await fetch(`/api/plan/get_task?taskId=${log.task_id}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log(`Task data for log ${log.id}:`, data);
+                            setTasksByLogId(prev => ({
+                                ...prev,
+                                [log.id]: Array.isArray(data) ? data : [data]
+                            }));
+                        } else {
+                            console.error(`Failed to fetch task for log ${log.id}:`, response.status, response.statusText);
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching task for log ${log.id}:`, error);
+                    } finally {
+                        setLoadingTasks(prev => ({ ...prev, [log.id]: false }));
+                    }
+                }
+            }
+
+            // Also fetch tasks for logs with plan_ids but no task_ids
+            const logsWithPlanIds = logs.filter(log =>
+                log.plan_id &&
+                !log.task_id &&
+                !tasksByLogId[log.id] &&
+                log.type === "ask_for_plan_approval"
+            );
+
+            for (const log of logsWithPlanIds) {
+                if (log.plan_id) {
+                    setLoadingTasks(prev => ({ ...prev, [log.id]: true }));
+                    try {
+                        const response = await fetch(`/api/plan/get_tasks?planId=${log.plan_id}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data && data.length > 0) {
+                                setTasksByLogId(prev => ({
+                                    ...prev,
+                                    [log.id]: data
+                                }));
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching tasks for log ${log.id}:`, error);
+                    } finally {
+                        setLoadingTasks(prev => ({ ...prev, [log.id]: false }));
+                    }
+                }
+            }
+        };
+
+        fetchTasks();
+    }, [logs]);
+
     // If logs array is empty, show a message
     if (!logs || logs.length === 0) {
         return (
@@ -100,7 +174,12 @@ const PlanLogSection = ({ logs, colors, t, onLogClick }: PlanLogSectionProps) =>
     // Function to handle log click
     const handleLogClick = (log: any) => {
         if (onLogClick) {
-            onLogClick(log);
+            // Enhance log with tasks if available
+            const enhancedLog = {
+                ...log,
+                fetchedTasks: tasksByLogId[log.id] || []
+            };
+            onLogClick(enhancedLog);
         }
     };
 
@@ -147,87 +226,62 @@ const PlanLogSection = ({ logs, colors, t, onLogClick }: PlanLogSectionProps) =>
                     ? "rgba(226, 246, 254, 0.95)"
                     : "rgba(240, 247, 255, 0.8)",
                 hoverBorder: isConfirmation
-                    ? "blue.400"
-                    : plansColors.accentColor,
+                    ? "blue.300"
+                    : "blue.200",
                 shadow: isConfirmation
                     ? "0 4px 12px rgba(66, 153, 225, 0.15)"
-                    : "0 2px 5px rgba(0, 0, 0, 0.05)"
+                    : "0 4px 6px rgba(0, 0, 0, 0.05)"
             };
         }
     };
 
-    // Define badge colors for different log types
-    const getLogTypeBadgeColors = (type: string) => {
-        switch (type) {
-            case "ask_for_plan_approval":
-                return {
-                    bg: isDarkMode ? "blue.800" : "blue.50",
-                    color: isDarkMode ? "blue.200" : "blue.700",
-                    borderColor: isDarkMode ? "blue.700" : "blue.200"
-                };
-            case "plan_created":
-                return {
-                    bg: isDarkMode ? "green.800" : "green.50",
-                    color: isDarkMode ? "green.200" : "green.700",
-                    borderColor: isDarkMode ? "green.700" : "green.200"
-                };
-            case "plan_completed":
-                return {
-                    bg: isDarkMode ? "teal.800" : "teal.50",
-                    color: isDarkMode ? "teal.200" : "teal.700",
-                    borderColor: isDarkMode ? "teal.700" : "teal.200"
-                };
-            case "plan_failed":
-                return {
-                    bg: isDarkMode ? "red.800" : "red.50",
-                    color: isDarkMode ? "red.200" : "red.700",
-                    borderColor: isDarkMode ? "red.700" : "red.200"
-                };
-            case "task_completed":
-                return {
-                    bg: isDarkMode ? "purple.800" : "purple.50",
-                    color: isDarkMode ? "purple.200" : "purple.700",
-                    borderColor: isDarkMode ? "purple.700" : "purple.200"
-                };
-            case "task_failed":
-                return {
-                    bg: isDarkMode ? "orange.800" : "orange.50",
-                    color: isDarkMode ? "orange.200" : "orange.700",
-                    borderColor: isDarkMode ? "orange.700" : "orange.200"
-                };
-            default:
-                return {
-                    bg: isDarkMode ? "gray.700" : "gray.100",
-                    color: isDarkMode ? "gray.300" : "gray.700",
-                    borderColor: isDarkMode ? "gray.600" : "gray.200"
-                };
+    // Badge colors for different elements
+    const planIdBadgeColors = isDarkMode
+        ? { bg: "gray.800", color: "blue.200", borderColor: "gray.700" }
+        : { bg: "blue.50", color: "blue.700", borderColor: "blue.100" };
+
+    const skillBadgeColors = isDarkMode
+        ? {
+            bg: "gray.800",
+            color: "green.200",
+            borderColor: "gray.700",
+            hoverBg: "gray.700"
         }
-    };
+        : {
+            bg: "green.50",
+            color: "green.700",
+            borderColor: "green.100",
+            hoverBg: "green.100"
+        };
 
-    // Define skill badge colors
-    const skillBadgeColors = {
-        bg: isDarkMode ? "purple.800" : "purple.50",
-        color: isDarkMode ? "purple.200" : "purple.700",
-        borderColor: isDarkMode ? "purple.700" : "purple.200",
-        hoverBg: isDarkMode ? "purple.700" : "purple.100",
-    };
-
-    // Define plan ID badge colors
-    const planIdBadgeColors = {
-        bg: isDarkMode ? "gray.700" : "gray.100",
-        color: isDarkMode ? "blue.200" : "blue.600",
-        borderColor: isDarkMode ? "gray.600" : "gray.300",
+    // Function to get badge colors for log types
+    const getLogTypeBadgeColors = (type: string) => {
+        if (type === "ask_for_plan_approval") {
+            return isDarkMode
+                ? { bg: "blue.900", color: "blue.200", borderColor: "blue.800" }
+                : { bg: "blue.50", color: "blue.700", borderColor: "blue.100" };
+        } else if (type === "plan_created") {
+            return isDarkMode
+                ? { bg: "green.900", color: "green.200", borderColor: "green.800" }
+                : { bg: "green.50", color: "green.700", borderColor: "green.100" };
+        } else if (type === "task_completed") {
+            return isDarkMode
+                ? { bg: "purple.900", color: "purple.200", borderColor: "purple.800" }
+                : { bg: "purple.50", color: "purple.700", borderColor: "purple.100" };
+        } else if (type === "plan_completed") {
+            return isDarkMode
+                ? { bg: "teal.900", color: "teal.200", borderColor: "teal.800" }
+                : { bg: "teal.50", color: "teal.700", borderColor: "teal.100" };
+        } else {
+            return isDarkMode
+                ? { bg: "gray.800", color: "gray.200", borderColor: "gray.700" }
+                : { bg: "gray.100", color: "gray.700", borderColor: "gray.200" };
+        }
     };
 
     return (
         <div>
-            <Text
-                fontSize="sm"
-                fontWeight="bold"
-                color={plansColors.textColorHeading}
-                mb={3}
-                px={1}
-            >
+            <Text fontSize="sm" fontWeight="bold" color={plansColors.textColorHeading} mb={2}>
                 {t("plan_logs")}
             </Text>
 
@@ -246,6 +300,10 @@ const PlanLogSection = ({ logs, colors, t, onLogClick }: PlanLogSectionProps) =>
                     // Get colors for this card
                     const cardColors = getCardColors(isConfirmation, true);
                     const logTypeColors = getLogTypeBadgeColors(latestLog.type);
+
+                    // Get tasks for this log if available
+                    const logTasks = tasksByLogId[latestLog.id] || [];
+                    const isLoadingLogTasks = loadingTasks[latestLog.id] || false;
 
                     return (
                         <Box
@@ -323,8 +381,15 @@ const PlanLogSection = ({ logs, colors, t, onLogClick }: PlanLogSectionProps) =>
                                 {t("total_logs")}: {planLogs.length}
                             </Text>
 
-                            {/* Render skills if available */}
-                            {latestLog.skills && latestLog.skills.length > 0 ? (
+                            {/* Show tasks if available */}
+                            {isLoadingLogTasks ? (
+                                <Flex align="center" gap={2} mt={2} mb={1}>
+                                    <Spinner size="xs" color={plansColors.accentColor} />
+                                    <Text fontSize="xs" color={plansColors.textColorMuted}>
+                                        {t("loading_tasks")}
+                                    </Text>
+                                </Flex>
+                            ) : logTasks.length > 0 ? (
                                 <Box mt={2}>
                                     <Text
                                         fontSize="xs"
@@ -332,10 +397,10 @@ const PlanLogSection = ({ logs, colors, t, onLogClick }: PlanLogSectionProps) =>
                                         mb={1.5}
                                         fontWeight="medium"
                                     >
-                                        {t("latest_skills")}:
+                                        {t("tasks")}:
                                     </Text>
                                     <Flex gap={1.5} flexWrap="wrap">
-                                        {latestLog.skills.map((skill: any, index: number) => (
+                                        {logTasks.map((task: any, index: number) => (
                                             <Badge
                                                 key={index}
                                                 bg={skillBadgeColors.bg}
@@ -350,26 +415,17 @@ const PlanLogSection = ({ logs, colors, t, onLogClick }: PlanLogSectionProps) =>
                                                     bg: skillBadgeColors.hoverBg
                                                 }}
                                             >
-                                                {skill.name || skill.tool_name || t("unnamed_skill")}
+                                                {task.task_name || t("unnamed_task")}
                                             </Badge>
                                         ))}
                                     </Flex>
                                 </Box>
-                            ) : (
-                                <Text
-                                    fontSize="xs"
-                                    color={plansColors.textColorMuted}
-                                    fontStyle="italic"
-                                >
-                                    {t("no_skill_action")}
-                                </Text>
-                            )}
+                            ) : null}
 
                             <Flex justify="flex-end" mt={2}>
                                 <Text
                                     fontSize="xs"
                                     color={plansColors.textColorMuted}
-                                    fontFamily="monospace"
                                 >
                                     {new Date(latestLog.created_at).toLocaleString()}
                                 </Text>

@@ -220,7 +220,7 @@ const ChatPageContent = () => {
         );
 
         if (mentionedUser) {
-          assigneeId = mentionedUser.user_id;
+          assigneeId = mentionedUser.id;
         }
       }
 
@@ -229,7 +229,7 @@ const ChatPageContent = () => {
         summoner: currentUser?.email,
         query: message,
         room_id: roomId,
-        assigner: currentUser?.user_id,
+        assigner: currentUser?.id,
         created_at: new Date().toISOString(),
         assignee: assigneeId, // Always include this field, even if null
       };
@@ -279,7 +279,7 @@ const ChatPageContent = () => {
 
       // Find the deepseek user or create a fallback if not found
       const deepseekUser: User = users.find((user: User) => user.username === "deepseek") || {
-        user_id: "deepseek-" + uuidv4(),
+        id: "deepseek-" + uuidv4(),
         username: "deepseek",
         role: "agent", // Changed to "agent" to match your streaming middleware expectations
         email: "deepseek@ai.com",
@@ -546,7 +546,7 @@ const ChatPageContent = () => {
           // Create a new group
           acc.push({
             sender: message.sender.username || 'Unknown User',
-            senderId: message.sender.user_id,
+            senderId: message.sender.id,
             avatar: message.avatar || '',
             messages: [message],
             isCurrentUser: isCurrentUser
@@ -599,31 +599,31 @@ const ChatPageContent = () => {
           const processMessages = async () => {
             // Extract all unique user IDs from the messages
             const userIds = [...new Set(serverMessages.map((msg: any) =>
-              typeof msg.sender === 'string' ? msg.sender : msg.sender?.user_id
+              typeof msg.sender === 'string' ? msg.sender : msg.sender?.id
             ))].filter(Boolean);
 
             // Fetch user details for all message senders in a single request
             const usersResponse = await axios.post('/api/user/get_users', {
-              user_ids: userIds
+              ids: userIds
             });
 
-            // Create a map of user_id to User object for faster lookups
+            // Create a map of id to User object for faster lookups
             const userMap = new Map();
             if (usersResponse.data && usersResponse.data.users) {
               usersResponse.data.users.forEach((user: User) => {
-                userMap.set(user.user_id, user);
+                userMap.set(user.id, user);
               });
             }
 
             // Transform messages to include proper User objects
             const transformedMessages = serverMessages.map((msg: any) => {
-              // If sender is a string (user_id), replace with User object
+              // If sender is a string (id), replace with User object
               if (typeof msg.sender === 'string') {
                 const user = userMap.get(msg.sender);
                 return {
                   ...msg,
                   sender: user || {
-                    user_id: msg.sender,
+                    id: msg.sender,
                     username: 'Unknown User',
                     email: '',
                     role: 'user',
@@ -682,12 +682,12 @@ const ChatPageContent = () => {
         payload: { message: newMessage }
       });
 
-      console.log("Message dispatched to Redux");
-      await axios.post("/api/mcp/ask_admin", {
-        room_id: selectedRoomId,
-        owner_id: currentUser?.user_id || '',
-        owner_message: newMessage.content
-      });
+      // console.log("Message dispatched to Redux");
+      // await axios.post("/api/mcp/ask_admin", {
+      //   room_id: selectedRoomId,
+      //   owner_id: currentUser?.id || '',
+      //   owner_message: newMessage.content
+      // });
 
       // Use a longer timeout to ensure the user's message is fully rendered
       // before starting any AI processing
@@ -787,19 +787,19 @@ const ChatPageContent = () => {
       if (serverMessages.length > 0) {
         // Use a more efficient approach to process messages
         const userIds = [...new Set(serverMessages.map((msg: any) =>
-          typeof msg.sender === 'string' ? msg.sender : msg.sender?.user_id
+          typeof msg.sender === 'string' ? msg.sender : msg.sender?.id
         ))].filter(Boolean);
 
         // Fetch all user data in a single request
         const usersResponse = await axios.post('/api/user/get_users', {
-          user_ids: userIds
+          ids: userIds
         });
 
         // Create a map for faster lookups
         const userMap = new Map();
         if (usersResponse.data && usersResponse.data.users) {
           usersResponse.data.users.forEach((user: User) => {
-            userMap.set(user.user_id, user);
+            userMap.set(user.id, user);
           });
         }
 
@@ -810,7 +810,7 @@ const ChatPageContent = () => {
             return {
               ...msg,
               sender: user || {
-                user_id: msg.sender,
+                id: msg.sender,
                 username: 'Unknown User',
                 email: '',
                 role: 'user',
@@ -858,18 +858,18 @@ const ChatPageContent = () => {
 
         // Process messages efficiently
         const userIds = [...new Set(serverMessages.map((msg: any) =>
-          typeof msg.sender === 'string' ? msg.sender : msg.sender?.user_id
+          typeof msg.sender === 'string' ? msg.sender : msg.sender?.id
         ))].filter(Boolean);
 
         if (userIds.length > 0) {
           const usersResponse = await axios.post('/api/user/get_users', {
-            user_ids: userIds
+            ids: userIds
           });
 
           const userMap = new Map();
           if (usersResponse.data && usersResponse.data.users) {
             usersResponse.data.users.forEach((user: User) => {
-              userMap.set(user.user_id, user);
+              userMap.set(user.id, user);
             });
           }
 
@@ -879,7 +879,7 @@ const ChatPageContent = () => {
               return {
                 ...msg,
                 sender: user || {
-                  user_id: msg.sender,
+                  id: msg.sender,
                   username: 'Unknown User',
                   email: '',
                   role: 'user',
@@ -1099,7 +1099,7 @@ const ChatPageContent = () => {
                       {roomUsers && roomUsers.length > 0 ? (
                         <VStack align="stretch" gap={2}>
                           {roomUsers.map((user: User) => (
-                            <HStack key={user.user_id} gap={3}>
+                            <HStack key={user.id} gap={3}>
 
                               <Avatar.Root size="sm" mt={2}>
                                 <Avatar.Fallback name={user.username || user.email} />
@@ -1337,14 +1337,14 @@ const ChatInterfaceContainer = ({
                   // Call the remove_user_from_room endpoint
                   await axios.put(`/api/chat/remove_user_from_room`, {
                     roomId: currentRoom.id,
-                    userId: currentUser?.user_id
+                    userId: currentUser?.id
                   });
 
-                  // Only dispatch if currentUser and user_id exist
-                  if (currentUser?.user_id) {
+                  // Only dispatch if currentUser and id exist
+                  if (currentUser?.id) {
                     dispatch(removeUserFromRoom({
                       roomId: currentRoom.id,
-                      userId: currentUser.user_id
+                      userId: currentUser.id
                     }));
                   }
 

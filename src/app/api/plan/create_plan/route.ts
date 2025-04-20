@@ -17,8 +17,7 @@ export async function POST(request: Request) {
             }, { status: 400 });
         }
 
-        // Use client-provided IDs if available, otherwise generate them
-        const plan_id = body.plan_id || uuidv4();
+        // Generate ID if not provided
         const id = body.id || uuidv4();
 
         // Require user IDs instead of providing defaults
@@ -47,7 +46,6 @@ export async function POST(request: Request) {
         // Prepare plan data according to IPlan interface
         const planData = {
             id: id,
-            plan_id: plan_id,
             created_at: new Date(),
             updated_at: new Date(),
             completed_at: completed_at,

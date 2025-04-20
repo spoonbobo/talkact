@@ -48,7 +48,7 @@ export interface ITask {
     updated_at?: Date;
     start_time?: Date | null;
     completed_at?: Date | null;
-    skill?: any;
+    skills?: any;
     expected_result?: string;
     result?: string;
     mcp_server?: string;
@@ -82,8 +82,4 @@ export class Log {
     plan_id?: string;
     task_id?: string;
     content: string;
-    skills?: any[];
-
-    // for UI
-    confirmation?: boolean;
 }

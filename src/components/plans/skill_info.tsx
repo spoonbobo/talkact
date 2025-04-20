@@ -26,7 +26,7 @@ export default function SkillInfo({ task, colors, t, showDetails = false }: Task
     if (!task) return null;
 
     // Support both skill and tool properties for backward compatibility
-    const skillData = task.skill || task.skill;
+    const skillData = task.skills || task.skills;
 
     return (
         <Flex direction="column" gap={2} mt={3}>

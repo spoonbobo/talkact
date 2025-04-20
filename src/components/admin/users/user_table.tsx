@@ -14,7 +14,6 @@ import {
 
 interface User {
     id: string;
-    user_id: string;
     username: string;
     email: string;
     avatar?: string;
@@ -161,7 +160,7 @@ const UserTable: React.FC<UserTableProps> = ({
                                         color={colors.textColorHeading}
                                         display={{ base: "none", md: "table-cell" }}
                                     >
-                                        {t("user_id")}
+                                        {t("id")}
                                     </Table.ColumnHeader>
                                     <Table.ColumnHeader
                                         fontWeight="semibold"
@@ -203,7 +202,7 @@ const UserTable: React.FC<UserTableProps> = ({
                                             color={colors.textColorStrong}
                                             display={{ base: "none", md: "table-cell" }}
                                         >
-                                            {formatUserId(user.user_id)}
+                                            {formatUserId(user.id)}
                                         </Table.Cell>
                                         <Table.Cell
                                             fontSize={{ base: "xs", md: "sm" }}

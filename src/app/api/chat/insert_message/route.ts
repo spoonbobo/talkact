@@ -8,7 +8,7 @@ export async function POST(request: Request) {
         await db('messages').insert({
             id: message.id,
             created_at: message.created_at,
-            sender: message.sender.user_id,
+            sender: message.sender.id,
             content: message.content,
             avatar: message.sender.avatar,
             room_id: message.room_id

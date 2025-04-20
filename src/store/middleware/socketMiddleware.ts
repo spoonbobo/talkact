@@ -239,7 +239,7 @@ export const socketMiddleware: Middleware = store => next => (action: unknown) =
             notification_id: uuidv4(),
             message: message.content,
             sender: message.sender,
-            receivers: message.mentions?.map((user: User) => user.user_id),
+            receivers: message.mentions?.map((user: User) => user.id),
             created_at: new Date().toISOString(),
         }
         if (socketClient && socketClient.socket && socketClient.socket.connected) {
@@ -267,7 +267,7 @@ export const socketMiddleware: Middleware = store => next => (action: unknown) =
         const notification: INotification = {
             notification_id: uuidv4(),
             message: `Plan ${plan.plan_name} has been approved`,
-            sender: plan.user_id,
+            sender: plan.id,
             created_at: new Date().toISOString(),
             room_id: plan.room_id
         }

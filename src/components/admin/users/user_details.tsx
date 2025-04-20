@@ -13,7 +13,6 @@ import { FaUsers } from "react-icons/fa";
 
 interface User {
     id: string;
-    user_id: string;
     username: string;
     email: string;
     avatar?: string;
@@ -73,10 +72,10 @@ const UserDetails: React.FC<UserDetailsProps> = ({
             <Flex wrap="wrap" gap={6}>
                 <Box>
                     <Text fontSize="xs" color={colors.textColorMuted}>
-                        {t("user_id")}
+                        {t("id")}
                     </Text>
                     <Text fontSize="sm" fontWeight="medium" color={colors.textColorStrong}>
-                        {formatUserId(selectedUser.user_id)}
+                        {formatUserId(selectedUser.id)}
                     </Text>
                 </Box>
 

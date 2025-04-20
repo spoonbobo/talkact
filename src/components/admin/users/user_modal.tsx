@@ -71,7 +71,7 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserMo
 
         try {
             const userData = {
-                user_id: uuidv4(),
+                id: uuidv4(),
                 email,
                 username: username || email.split('@')[0],
                 role,

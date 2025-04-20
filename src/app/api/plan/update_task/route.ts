@@ -16,7 +16,7 @@ export async function PUT(request: Request) {
             mcp_server,
             status,
             start_time,
-            tool,
+            skills,
             logs,
             step_number,
             reset_tasks
@@ -51,7 +51,7 @@ export async function PUT(request: Request) {
         // Check if at least one field to update is provided
         if (!status &&
             start_time === undefined &&
-            tool === undefined &&
+            skills === undefined &&
             task_name === undefined &&
             task_explanation === undefined &&
             expected_result === undefined &&
@@ -116,25 +116,25 @@ export async function PUT(request: Request) {
             updateData.start_time = start_time ? new Date(start_time) : null;
         }
 
-        // Handle tool update if provided
-        if (tool !== undefined) {
+        // Handle skills update if provided
+        if (skills !== undefined) {
             try {
                 // For PostgreSQL JSONB, we'll use a raw query with proper JSON casting
                 // This ensures the JSON is properly formatted for PostgreSQL
-                const toolJson = JSON.stringify(tool);
+                const skillsJson = JSON.stringify(skills);
 
-                // We'll handle the update separately for the tool field
+                // We'll handle the update separately for the skills field
                 await db.raw(
-                    `UPDATE task SET tool = ?::jsonb WHERE task_id = ?`,
-                    [toolJson, task_id]
+                    `UPDATE task SET skills = ?::jsonb WHERE task_id = ?`,
+                    [skillsJson, task_id]
                 );
 
-                // Remove tool from updateData since we've handled it separately
-                delete updateData.tool;
+                // Remove skills from updateData since we've handled it separately
+                delete updateData.skills;
             } catch (error) {
-                console.error('Error processing tool JSON:', error);
+                console.error('Error processing skills JSON:', error);
                 return NextResponse.json({
-                    error: 'Invalid JSON format for tool field',
+                    error: 'Invalid JSON format for skills field',
                     details: error instanceof Error ? error.message : 'Unknown error'
                 }, { status: 400 });
             }
@@ -193,15 +193,15 @@ export async function PUT(request: Request) {
             .update(updateData)
             .returning('*');
 
-        // Format the response - handle both string and object cases for tool and logs
+        // Format the response - handle both string and object cases for skills and logs
         const formattedTask = updatedTask[0];
-        let parsedTool = null;
-        if (formattedTask.tool) {
+        let parsedSkills = null;
+        if (formattedTask.skills) {
             try {
-                parsedTool = typeof formattedTask.tool === 'string' ?
-                    JSON.parse(formattedTask.tool) : formattedTask.tool;
+                parsedSkills = typeof formattedTask.skills === 'string' ?
+                    JSON.parse(formattedTask.skills) : formattedTask.skills;
             } catch (e) {
-                parsedTool = formattedTask.tool;
+                parsedSkills = formattedTask.skills;
             }
         }
 
@@ -219,7 +219,7 @@ export async function PUT(request: Request) {
             message: 'Task updated successfully',
             task: {
                 ...formattedTask,
-                tool: parsedTool,
+                skills: parsedSkills,
                 logs: parsedLogs
             }
         }, { status: 200 });

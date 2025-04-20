@@ -64,7 +64,7 @@ export const ChatRoomList = ({
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        user_ids: Array.from(allUserIds),
+                        ids: Array.from(allUserIds),
                         limit: 100 // Adjust as needed
                     }),
                 });
@@ -74,9 +74,9 @@ export const ChatRoomList = ({
                 const data = await response.json();
                 const users = data.users;
 
-                // Create a map of user_id to user object
+                // Create a map of id to user object
                 const userMap = users.reduce((acc: Record<string, User>, user: User) => {
-                    acc[user.user_id] = user;
+                    acc[user.id] = user;
                     return acc;
                 }, {});
 

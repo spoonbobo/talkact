@@ -92,8 +92,6 @@ class PlanLog(BaseModel):
     created_at: str
     type: str
     content: str
-    skills: List[Skill]
-    proposed_action: Optional[str] = None
 
 class MCPTaskRequest(BaseModel):
     task: TaskData

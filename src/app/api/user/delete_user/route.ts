@@ -1,9 +1,10 @@
+
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
 export async function POST(request: Request) {
     try {
-        const { email, user_id, all } = await request.json();
+        const { email, id, all } = await request.json();
 
         // Handle deleting all users
         if (all === true) {
@@ -17,18 +18,18 @@ export async function POST(request: Request) {
             }, { status: 200 });
         }
 
-        // Require either email or user_id for single user deletion
-        if (!email && !user_id) {
+        // Require either email or id for single user deletion
+        if (!email && !id) {
             return NextResponse.json({
                 error: 'Bad Request',
-                message: 'Either email or user_id is required'
+                message: 'Either email or id is required'
             }, { status: 400 });
         }
 
         // Build query based on provided parameters
         const query: Record<string, any> = {};
         if (email) query['email'] = email;
-        if (user_id) query['user_id'] = user_id;
+        if (id) query['id'] = id;
 
         // Check if user exists before deletion
         const userExists = await db('users').where(query).first();

@@ -15,7 +15,7 @@ import {
 } from '@chakra-ui/react';
 import axios from 'axios';
 import { toaster } from "@/components/ui/toaster"
-import { useColorModeValue } from "@/components/ui/color-mode";
+import { useChatPageColors } from '@/utils/colors';
 import { useTranslations } from "next-intl";
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
@@ -37,10 +37,8 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
     const dispatch = useDispatch();
     const currentUser = useSelector((state: RootState) => state.user.currentUser);
 
-    // Add color mode values for text
-    const textColorHeading = useColorModeValue("gray.800", "gray.100");
-    const textColorStrong = useColorModeValue("gray.700", "gray.300");
-    const textColor = useColorModeValue("gray.600", "gray.400");
+    // Use the color utility function instead of individual useColorModeValue calls
+    const colors = useChatPageColors();
 
     const validateForm = () => {
         const newErrors: { roomName?: string } = {};
@@ -80,28 +78,36 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
             dispatch(updateActiveRooms({ roomId, action: "add" }));
 
             // Initialize active users with current user
-            let activeUsers = currentUser ? [currentUser.user_id] : [];
+            let activeUsers = currentUser ? [currentUser.id] : [];
             console.log("selectedAgents", selectedAgents);
+
             // Add agents if selected
             if (selectedAgents.length > 0) {
                 try {
                     for (const agentType of selectedAgents) {
-                        let agentId;
+                        let agentUsername;
+
                         if (agentType === 'standard') {
-                            agentId = '00000000-0000-0000-0000-000000000000'; // Agent user_id from seed
+                            agentUsername = 'agent';
                         } else if (agentType === 'deepseek') {
-                            agentId = '11111111-1111-1111-1111-111111111111'
+                            agentUsername = 'deepseek';
                         }
 
-                        if (agentId) {
-                            activeUsers.push(agentId);
+                        if (agentUsername) {
+                            // Get the agent user by username
+                            const response = await axios.get(`/api/user/get_user_by_username?username=${agentUsername}`);
+                            const user = response.data.user;
+                            console.log("user", user);
 
-                            // Update agent's active_rooms
-                            await axios.post("/api/user/update_user", {
-                                roomId,
-                                action: "add",
-                                userId: agentId
-                            });
+                            if (user) {
+                                activeUsers.push(user.id);
+                                console.log("user", user);
+                                await axios.post("/api/user/update_user", {
+                                    roomId,
+                                    action: "add",
+                                    username: agentUsername
+                                });
+                            }
                         }
                     }
                 } catch (error) {
@@ -147,12 +153,12 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
         {
             value: "standard",
             title: "Standard Agent",
-            description: "Add a standard AI assistant to this room"
+            description: t("add_standard_ai_assistant")
         },
         {
             value: "deepseek",
             title: "DeepSeek Agent",
-            description: "Add a DeepSeek AI assistant to this room"
+            description: t("add_deepseek_ai_assistant")
         },
     ];
 
@@ -163,16 +169,16 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
                 <Dialog.Positioner>
                     <Dialog.Content>
                         <Dialog.Header>
-                            <Dialog.Title color={textColorHeading}>{t("create_new_room")}</Dialog.Title>
+                            <Dialog.Title color={colors.textColorHeading}>{t("create_new_room")}</Dialog.Title>
                             <Dialog.CloseTrigger />
                         </Dialog.Header>
 
                         <Dialog.Body>
                             <Stack gap={4}>
                                 <Field.Root invalid={!!errors.roomName}>
-                                    <Field.Label color={textColorStrong}>{t("room_name")}</Field.Label>
+                                    <Field.Label color={colors.textColorHeading}>{t("room_name")}</Field.Label>
                                     <Input
-                                        color={textColor}
+                                        color={colors.textColor}
                                         ref={roomNameInputRef}
                                         type="text"
                                         value={roomName}
@@ -194,8 +200,8 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
                                         setSelectedAgents(checked as string[]);
                                     }}
                                 >
-                                    <Text textStyle="sm" fontWeight="medium" color={textColorStrong} mb={2}>
-                                        Add AI Assistants
+                                    <Text textStyle="sm" fontWeight="medium" color={colors.textColorHeading} mb={2}>
+                                        {t("add_ai_assistants")}
                                     </Text>
                                     <Flex gap="2" flexWrap="wrap">
                                         {agentOptions.map((item) => (
@@ -203,8 +209,8 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
                                                 <CheckboxCard.HiddenInput />
                                                 <CheckboxCard.Control>
                                                     <CheckboxCard.Content>
-                                                        <CheckboxCard.Label>{item.title}</CheckboxCard.Label>
-                                                        <CheckboxCard.Description>
+                                                        <CheckboxCard.Label color={colors.textColorHeading}>{item.title}</CheckboxCard.Label>
+                                                        <CheckboxCard.Description color={colors.textColor}>
                                                             {item.description}
                                                         </CheckboxCard.Description>
                                                     </CheckboxCard.Content>
@@ -219,7 +225,7 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
 
                         <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>
-                                <Button variant="ghost" onClick={handleClose} color={textColor}>
+                                <Button variant="ghost" onClick={handleClose} color={colors.textColor}>
                                     {t("cancel")}
                                 </Button>
                             </Dialog.ActionTrigger>

@@ -5,7 +5,6 @@ GRANT ALL PRIVILEGES ON DATABASE postgres TO spoonbobo;
 -- Then create the users table and insert data
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -18,5 +17,5 @@ CREATE TABLE IF NOT EXISTS users (
     settings JSONB
 );
 
-INSERT INTO users (user_id, username, email, role, settings) VALUES ('00000000-0000-0000-0000-000000000000', 'agent', 'agent@agent.com', 'agent', '{"theme": "light"}');
-INSERT INTO users (user_id, username, email, role, settings) VALUES ('11111111-1111-1111-1111-111111111111', 'deepseek', 'deepseek@llm.com', 'user', '{"theme": "light"}');
+INSERT INTO users (username, email, role, settings, avatar) VALUES ('agent', 'agent@agent.com', 'agent', '{"theme": "light"}', 'https://static.vecteezy.com/system/resources/thumbnails/046/435/654/small/illustration-of-a-cute-little-girl-with-a-smile-on-her-face-png.png');
+INSERT INTO users (username, email, role, settings, avatar) VALUES ('deepseek', 'deepseek@llm.com', 'user', '{"theme": "light"}', 'https://diplo-media.s3.eu-central-1.amazonaws.com/2025/01/deepseek-italy-ban-garante.png');

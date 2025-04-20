@@ -358,7 +358,7 @@ export const ChatMessageList = ({
                                 cursor="pointer"
                                 onClick={() => handleUserProfileClick(
                                     typeof group.sender === 'string' ? group.sender : group.sender?.username || 'Unknown',
-                                    typeof group.sender === 'string' ? undefined : group.sender?.user_id,
+                                    typeof group.sender === 'string' ? undefined : group.sender?.id,
                                     group.avatar
                                 )}
                             >
@@ -437,7 +437,7 @@ export const ChatMessageList = ({
                                 cursor="pointer"
                                 onClick={() => handleUserProfileClick(
                                     typeof group.sender === 'string' ? group.sender : group.sender?.username || 'Unknown',
-                                    typeof group.sender === 'string' ? undefined : group.sender?.user_id,
+                                    typeof group.sender === 'string' ? undefined : group.sender?.id,
                                     group.avatar
                                 )}
                             >

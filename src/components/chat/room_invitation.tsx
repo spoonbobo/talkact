@@ -50,7 +50,7 @@ export const RoomInvitation = ({ roomId, currentUsers, onClose }: RoomInvitation
 
     // Update the ref when currentUsers changes
     useEffect(() => {
-        currentUserIds.current = currentUsers.map(user => user.user_id);
+        currentUserIds.current = currentUsers.map(user => user.id).filter(Boolean) as string[];
     }, [currentUsers]);
 
     // Custom outside click handler
@@ -81,7 +81,7 @@ export const RoomInvitation = ({ roomId, currentUsers, onClose }: RoomInvitation
 
                 // Filter out users who are already in the room
                 const filteredResults = response.data.users.filter(
-                    (user: User) => !currentUserIds.current.includes(user.user_id)
+                    (user: User) => !currentUserIds.current.includes(user.id || "")
                 );
 
                 setSearchResults(filteredResults);
@@ -104,7 +104,7 @@ export const RoomInvitation = ({ roomId, currentUsers, onClose }: RoomInvitation
 
     // Handle selecting a user
     const handleSelectUser = (user: User) => {
-        if (!selectedUsers.some(u => u.user_id === user.user_id)) {
+        if (!selectedUsers.some(u => u.id === user.id)) {
             setSelectedUsers([...selectedUsers, user]);
         }
         setSearchQuery("");
@@ -113,7 +113,7 @@ export const RoomInvitation = ({ roomId, currentUsers, onClose }: RoomInvitation
 
     // Handle removing a selected user
     const handleRemoveUser = (userId: string) => {
-        setSelectedUsers(selectedUsers.filter(user => user.user_id !== userId));
+        setSelectedUsers(selectedUsers.filter(user => user.id !== userId));
     };
 
     // Handle inviting users
@@ -124,7 +124,8 @@ export const RoomInvitation = ({ roomId, currentUsers, onClose }: RoomInvitation
             setIsInviting(true);
 
             // Get the user IDs to add
-            const userIdsToAdd = selectedUsers.map(user => user.user_id);
+            const userIdsToAdd = selectedUsers.map(user => user.id);
+            console.log("userIdsToAdd", userIdsToAdd);
 
             // Update the room's active users
             const response = await axios.put("/api/chat/update_room", {
@@ -133,20 +134,21 @@ export const RoomInvitation = ({ roomId, currentUsers, onClose }: RoomInvitation
             });
 
             // join room
-            dispatch(inviteToRoom({ roomId, userIds: userIdsToAdd }));
+            dispatch(inviteToRoom({ roomId, userIds: userIdsToAdd.filter(Boolean) as string[] }));
 
             if (response.data) {
                 // Update the room in Redux
                 dispatch(updateRoom(response.data));
 
                 // For each invited user, update their active_rooms
-                await Promise.all(userIdsToAdd.map(userId =>
-                    axios.post("/api/user/update_user", {
+                await Promise.all(selectedUsers.map(user => {
+                    return axios.post("/api/user/update_user", {
                         roomId,
                         action: "add",
-                        userId // Pass the specific user ID to update
-                    })
-                ));
+                        userId: user.id,
+                        username: user.username
+                    });
+                }));
 
                 toaster.create({
                     title: t("success"),
@@ -231,7 +233,7 @@ export const RoomInvitation = ({ roomId, currentUsers, onClose }: RoomInvitation
                     >
                         {searchResults.map(user => (
                             <HStack
-                                key={user.user_id}
+                                key={user.id}
                                 p={2}
                                 _hover={{ bg: colors.hoverBg }}
                                 cursor="pointer"
@@ -285,7 +287,7 @@ export const RoomInvitation = ({ roomId, currentUsers, onClose }: RoomInvitation
                     <Flex flexWrap="wrap" gap={2}>
                         {selectedUsers.map(user => (
                             <Badge
-                                key={user.user_id}
+                                key={user.id || ""}
                                 colorScheme="blue"
                                 borderRadius="full"
                                 px={2}
@@ -299,7 +301,7 @@ export const RoomInvitation = ({ roomId, currentUsers, onClose }: RoomInvitation
                                 <Box
                                     as="span"
                                     cursor="pointer"
-                                    onClick={() => handleRemoveUser(user.user_id)}
+                                    onClick={() => handleRemoveUser(user.id || "")}
                                     ml={1}
                                     fontSize="xs"
                                 >

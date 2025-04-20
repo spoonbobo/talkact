@@ -5,15 +5,15 @@ export async function GET(request: Request) {
     try {
         // Get id from URL params
         const url = new URL(request.url);
-        const userId = url.searchParams.get('id');
+        const username = url.searchParams.get('username');
 
-        if (!userId) {
-            return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+        if (!username) {
+            return NextResponse.json({ error: 'Username is required' }, { status: 400 });
         }
 
-        console.log("userId", userId);
+        console.log("username", username);
 
-        const user = await db('users').where({ id: userId }).first();
+        const user = await db('users').where({ username: username }).first();
 
         if (!user) {
             return NextResponse.json({ exists: false }, { status: 404 });

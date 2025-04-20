@@ -20,7 +20,7 @@ interface ChatRoom {
 // Define the User interface for active users
 interface User {
     id: string;
-    user_id: string;
+    id: string;
     username: string;
     email: string;
     avatar?: string;
@@ -465,7 +465,7 @@ export default function ChatroomTab({ colors, t }: ChatroomTabProps) {
                                                     {activeUsers.map((user) => (
                                                         <Box
                                                             as="tr"
-                                                            key={user.user_id}
+                                                            key={user.id}
                                                             _hover={{ bg: colors.hoverBg }}
                                                         >
                                                             <Box as="td" py={2} px={3} fontWeight="medium" color={colors.textColorStrong}>{user.username}</Box>

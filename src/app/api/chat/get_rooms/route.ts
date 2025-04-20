@@ -66,7 +66,7 @@ export async function POST(request: Request) {
         const users = await db('users')
             .select([
                 'id',
-                'user_id',
+                'id',
                 'email',
                 'username',
                 'avatar',
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
                 'created_at',
                 'updated_at'
             ])
-            .whereIn('user_id', userIds);
+            .whereIn('id', userIds);
 
         return NextResponse.json({ users }, { status: 200 });
     } catch (error) {

@@ -14,7 +14,13 @@ export async function POST(request: Request) {
 
         // Parse the request body
         const body = await request.json();
-        const { roomId, action, userId, settings } = body;
+        const { roomId, action, userId, username, settings } = body;
+
+        console.log("roomId", roomId);
+        console.log("action", action);
+        console.log("userId", userId);
+        console.log("username", username);
+        console.log("settings", settings);
 
         // If settings is provided, update user settings
         if (settings) {
@@ -33,13 +39,19 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // If userId is provided, update that user's active_rooms
-        // Otherwise, update the current user's active_rooms
-        const userQuery = userId
-            ? db('users').where('user_id', userId)
-            : db('users').where('email', session.user.email);
+        // Determine how to query the user - by ID, username, or current session
+        let userQuery;
+
+        if (userId) {
+            userQuery = db('users').where('id', userId);
+        } else if (username) {
+            userQuery = db('users').where('username', username);
+        } else {
+            userQuery = db('users').where('email', session.user.email);
+        }
 
         const user = await userQuery.first();
+        console.log("user", user);
 
         if (!user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });

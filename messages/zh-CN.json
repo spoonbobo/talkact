@@ -218,7 +218,14 @@
     "needs_confirmation": "请求确认",
     "plan_created": "计划已创建",
     "ask_for_plan_approval": "请求确认执行",
-    "select_room_to_see_plans": "选择聊天室以查看相关计划"
+    "select_room_to_see_plans": "选择聊天室以查看相关计划",
+    "pending": "待定",
+    "latest_skills": "技能",
+    "total_logs": "总日志",
+    "loading_tasks": "加载任务中...",
+    "add_ai_assistants": "邀请AI智能体",
+    "add_standard_ai_assistant": "邀请标准AI智能体",
+    "add_deepseek_ai_assistant": "邀请DeepSeek AI智能体"
   },
   "Plans": {
     "plans": "计划",
@@ -321,7 +328,8 @@
     "enter_array_as_json_example": "例如: [\"项目1\", \"项目2\"]",
     "approval_needed_for_plan": "计划 {planId} 在服务器 {server} 上需要批准",
     "no_description_available": "没有可用描述",
-    "open_plan": "打开计划"
+    "open_plan": "打开计划",
+    "log_details": "日志详情"
   },
   "Learn": {
     "learn": "学习",
@@ -491,15 +499,18 @@
     "kb_error": "错误",
     "kb_registered": "知识库已注册",
     "kb_registered_description": "知识库已成功注册",
+    "cancel": "取消",
+    "configure_knowledge_base": "配置知识库",
+    "source_placeholder": "输入来源",
+    "api_key_placeholder": "输入API密钥",
+    "optional": "可选",
+    "api_url_placeholder": "输入API网址",
+    "source_type": "来源类型",
     "please_select_source_type": "请选择来源类型",
-    "kb_path": "路径",
-    "kb_path_placeholder": "输入文件或目录路径",
-    "kb_path_help": "指定知识库文件或目录的路径",
-    "kb_disabled": "已停用",
-    "kb_running": "运行中",
+    "confirm_reinitialize": "确认重新初始化",
+    "confirm_reinitialize_description": "这将重新初始化知识库，可能需要一些时间完成",
     "reinitialize": "重新初始化",
-    "confirm_reinitialize": "确定重新初始化知识库?",
-    "confirm_reinitialize_description": "重置知识库将会删除现有知识库并重新初始化，并需要等待一段时间才能使用。"
+    "error": "错误"
   },
   "Loading": {
     "loading": "加载中...",

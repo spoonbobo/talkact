@@ -3,7 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  /* Now the mono font will be defined by the next/font module */
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -47,8 +47,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "SpaceMono", "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande", "Lucida Sans", Arial, sans-serif;
-  /* The Space Mono font is already applied via the className in layout.tsx */
+  font-family: var(--font-space-mono),ubuntu, "Lucida Sans Unicode", "Lucida Grande", "Lucida Sans", Arial, sans-serif;
 }
 
 

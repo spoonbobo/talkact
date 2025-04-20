@@ -21,7 +21,7 @@ AdminPanel.select_user_to_view_details
 AdminPanel.select_user_to_view_permissions
 AdminPanel.showing
 AdminPanel.updated_at
-AdminPanel.user_id
+AdminPanel.id
 AdminPanel.user_list
 AdminPanel.user_management
 AdminPanel.username

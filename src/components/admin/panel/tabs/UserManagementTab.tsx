@@ -14,7 +14,6 @@ import ResizableContainer from "../layout/ResizableContainer";
 // Define the User interface if it's not already defined in your types/user.d.ts
 interface User {
     id: string;
-    user_id: string;
     username: string;
     email: string;
     avatar?: string;
@@ -228,7 +227,7 @@ export default function UserManagementTab({
                                             </Text>
 
                                             <UserLogger
-                                                userId={selectedUser.user_id}
+                                                userId={selectedUser.id}
                                                 limit={15}
                                                 showUsername={false}
                                                 showHeader={true}

@@ -22,7 +22,6 @@ import { toaster } from "@/components/ui/toaster";
 // Define the UserLog interface
 interface UserLog {
     id: string;
-    user_id: string;
     username: string;
     action: string;
     action_type: "login" | "logout" | "create" | "update" | "delete" | "other";
@@ -84,7 +83,7 @@ const UserLogger: React.FC<UserLoggerProps> = ({
             });
 
             if (userId) {
-                params.append('user_id', userId);
+                params.append('id', userId);
             }
 
             const response = await fetch(`/api/user/get_user_logs?${params.toString()}`);

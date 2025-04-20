@@ -13,7 +13,6 @@ export async function GET(request: Request) {
         // Base query
         let query = db('users').select([
             'id',
-            'user_id',
             'email',
             'username',
             'avatar',
@@ -77,7 +76,7 @@ export async function GET(request: Request) {
     }
 }
 
-// Add a new POST method to handle filtering by user_ids
+// Add a new POST method to handle filtering by ids
 export async function POST(request: Request) {
     try {
         const body = await request.json();
@@ -87,13 +86,12 @@ export async function POST(request: Request) {
         const offset = body.offset || 0;
         const search = body.search || '';
         const role = body.role || '';
-        const userIds = body.user_ids || [];
+        const userIds = body.ids || [];
         const roomId = body.room_id || '';
 
         // Base query
         let query = db('users').select([
             'id',
-            'user_id',
             'email',
             'username',
             'avatar',
@@ -116,9 +114,9 @@ export async function POST(request: Request) {
             query = query.where('role', role);
         }
 
-        // Add user_ids filtering if user_ids array is provided
+        // Add ids filtering if ids array is provided
         if (userIds.length > 0) {
-            query = query.whereIn('user_id', userIds);
+            query = query.whereIn('id', userIds);
         }
 
         // Add room_id filtering if room_id is provided
@@ -141,7 +139,7 @@ export async function POST(request: Request) {
                     builder.where('role', role);
                 }
                 if (userIds.length > 0) {
-                    builder.whereIn('user_id', userIds);
+                    builder.whereIn('id', userIds);
                 }
                 if (roomId) {
                     builder.where('active_rooms', '@>', `{${roomId}}`);

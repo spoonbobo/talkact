@@ -213,7 +213,12 @@
     "no_logs_found": "沒有找到日誌",
     "open_plan": "打開計劃",
     "no_plans_found": "沒有計劃",
-    "loading_plans": "加載計劃中..."
+    "loading_plans": "加載計劃中...",
+    "plan_created": "計劃已創建",
+    "total_logs": "總日誌數",
+    "no_skill_action": "無技能操作",
+    "pending": "待定",
+    "needs_confirmation": "需要確認"
   },
   "Plans": {
     "calendar": "日曆",
@@ -296,7 +301,14 @@
     "select_plan_from_sidebar": "請選擇一個計劃",
     "step": "步驟",
     "task": "任務",
-    "task_status_updated": "任務狀態已更新"
+    "task_status_updated": "任務狀態已更新",
+    "plan_log_details": "計劃日誌詳情",
+    "no_log_selected": "未選擇日誌",
+    "plan_created": "計劃已創建",
+    "plan_id": "計劃ID",
+    "open_plan": "打開計劃",
+    "timestamp": "時間戳",
+    "content": "內容"
   },
   "Learn": {
     "learn": "學習",

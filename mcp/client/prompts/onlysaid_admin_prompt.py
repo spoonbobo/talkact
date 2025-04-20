@@ -8,7 +8,7 @@ You will be given
     4. an owner's message
 
 Analyze the conversation history and owner's message, perform an administrative action.
-If no action is needed, call the idle tool.
+If no action is needed or owner's message is not clear, call the idle tool.
 Remember to think fast, and act fast.
 """
 

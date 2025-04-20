@@ -77,7 +77,7 @@ export default function PlanHeader({ plan, colors, isLoading = false, loadingTas
             try {
                 // Fetch assigner name
                 if (plan.assigner && plan.assigner !== 'system') {
-                    const assignerResponse = await axios.get(`/api/user/get_user_by_id?user_id=${plan.assigner}`);
+                    const assignerResponse = await axios.get(`/api/user/get_user_by_id?id=${plan.assigner}`);
                     if (assignerResponse.data.exists) {
                         setAssignerName(assignerResponse.data.user.name);
                     } else {
@@ -89,7 +89,7 @@ export default function PlanHeader({ plan, colors, isLoading = false, loadingTas
 
                 // Fetch assignee name
                 if (plan.assignee) {
-                    const assigneeResponse = await axios.get(`/api/user/get_user_by_id?user_id=${plan.assignee}`);
+                    const assigneeResponse = await axios.get(`/api/user/get_user_by_id?id=${plan.assignee}`);
                     if (assigneeResponse.data.exists) {
                         setAssigneeName(assigneeResponse.data.user.name);
                     } else {

@@ -16,7 +16,6 @@ export async function POST(request: Request) {
 
         // Prepare user data for insertion
         const userToInsert = {
-            user_id: userData.user_id,
             email: userData.email,
             username: userData.username,
             avatar: userData.avatar || null,
@@ -30,7 +29,7 @@ export async function POST(request: Request) {
         // Insert the user using Knex
         const [newUser] = await db('users')
             .insert(userToInsert)
-            .returning(['id', 'user_id', 'email', 'username', 'avatar', 'created_at', 'updated_at']);
+            .returning(['id', 'email', 'username', 'avatar', 'created_at', 'updated_at']);
 
         return NextResponse.json({
             message: 'User created successfully',

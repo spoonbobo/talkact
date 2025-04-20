@@ -52,7 +52,7 @@ export async function POST(request: Request) {
                 const hasAccess = await db('room_users')
                     .where({
                         room_id: room_id,
-                        user_id: session.user?.email
+                        id: session.user?.email
                     })
                     .first();
 

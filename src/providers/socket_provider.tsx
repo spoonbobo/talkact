@@ -18,7 +18,7 @@ export default function SocketProvider({ children }: { children: React.ReactNode
     //   sessionExists: !!session,
     //   isSocketConnected,
     //   currentUserExists: !!currentUser,
-    //   currentUserId: currentUser?.user_id
+    //   currentUserId: currentUser?.id
     // });
 
     // Initialize socket when session is available
@@ -27,7 +27,7 @@ export default function SocketProvider({ children }: { children: React.ReactNode
       console.log("Initializing socket connection from SocketProvider");
 
       const user = {
-        user_id: currentUser.user_id,
+        id: currentUser.id,
         username: currentUser?.username || "",
         email: currentUser?.email || "",
         created_at: new Date().toISOString(),

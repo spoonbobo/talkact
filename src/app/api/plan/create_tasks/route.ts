@@ -63,8 +63,7 @@ export async function POST(request: Request) {
             }
 
             return {
-                id: uuidv4(), // Primary key
-                task_id: uuidv4(), // Unique identifier for the task
+                id: task.id || uuidv4(), // Use provided id or generate a new one
                 plan_id: plan_id,
                 step_number: task.step_number || index + 1,
                 task_name: task.task_name,
