@@ -219,7 +219,7 @@
     "no_skill_action": "無技能操作",
     "pending": "待定",
     "needs_confirmation": "需要確認",
-    "add_standard_ai_assistant": "添加標準AI助手",
+    "add_standard_ai_assistant": "添加Onlysaid AI助手",
     "add_deepseek_ai_assistant": "添加Deepseek AI助手",
     "add_ai_assistants": "添加AI助手",
     "log_type_plan_created": "計劃已創建",
@@ -231,7 +231,11 @@
     "log_type_approved": "已批准",
     "log_type_denied": "已拒絕",
     "log_type_ask_for_plan_approval": "請求計劃批准",
+    "log_type_skill_executed": "技能已執行",
+    "log_type_performing_skill": "執行技能中",
     "plan_was_created": "計劃已創建",
+    "log_type_plan_approved": "計劃已批准",
+    "log_type_plan_terminated": "計劃已終止",
     "skills": "技能"
   },
   "Plans": {

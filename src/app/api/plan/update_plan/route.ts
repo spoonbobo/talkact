@@ -4,7 +4,7 @@ import db from '@/lib/db';
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
-        const { plan_id, logs, step_number, status } = body;
+        const { plan_id, logs, step_number, status, progress } = body;
 
         // Validate required fields
         if (!plan_id) {
@@ -13,14 +13,23 @@ export async function PUT(request: Request) {
             }, { status: 400 });
         }
 
-        // Check if we're updating status
-        if (status) {
+        // Check if we're updating status or progress
+        if (status || progress !== undefined) {
+            const updateData: any = {
+                updated_at: new Date()
+            };
+
+            if (status) {
+                updateData.status = status;
+            }
+
+            if (progress !== undefined) {
+                updateData.progress = progress;
+            }
+
             const statusUpdateCount = await db('plan')
                 .where({ id: plan_id })
-                .update({
-                    status,
-                    updated_at: new Date()
-                });
+                .update(updateData);
 
             if (statusUpdateCount === 0) {
                 console.error('Plan not found');
@@ -43,12 +52,12 @@ export async function PUT(request: Request) {
             };
 
             return NextResponse.json({
-                message: 'Plan status updated successfully',
+                message: 'Plan updated successfully',
                 plan: formattedPlan
             }, { status: 200 });
         }
 
-        // If no status update, proceed with logs update
+        // If no status or progress update, proceed with logs update
         if (logs === undefined) {
             return NextResponse.json({
                 error: 'Missing required field: logs'

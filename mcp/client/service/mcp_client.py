@@ -574,6 +574,7 @@ class MCPClient:
 
             try:
                 room_users = await get_room_users(room_id)
+                logger.info(f"Room users: {room_users}")
             except Exception as e:
                 logger.error(f"Error getting room users: {e}")
                 room_users = []
@@ -817,7 +818,8 @@ class MCPClient:
                     json={
                         "id": str(uuid4()),
                         "type": "skill_executed",
-                        "content": f"Skill {tool_name} was  performed",
+                        # TODO: refine it.
+                        "content": f"Skill {tool_name} was performed. Result: {result}",
                         "plan_id": plan_id,
                     },
                     headers={"Content-Type": "application/json"}
@@ -849,8 +851,16 @@ class MCPClient:
                 )
                 tasks.raise_for_status()
                 tasks = tasks.json()
-                progress = int (step_number / len(tasks)) * 100
-                await client.put(
+                logger.info(f"Tasks for plan {plan_id}: {tasks}")
+                
+                # Calculate progress based on completed tasks, not just current step
+                completed_tasks = sum(1 for task in tasks if task.get("status") in ["success", "failed"])
+                logger.info(f"Completed tasks: {completed_tasks} out of {len(tasks)}")
+                
+                progress = int((completed_tasks / len(tasks)) * 100)
+                logger.info(f"Calculated progress: {progress}%")
+                
+                update_response = await client.put(
                     f"{client_url}/api/plan/update_plan",
                     json={
                         "plan_id": plan_id, 
@@ -859,6 +869,17 @@ class MCPClient:
                     },
                     headers={"Content-Type": "application/json"}
                 )
+                update_response.raise_for_status()
+                logger.info(f"Plan progress update response: {update_response.status_code}")
+                
+                # Log the updated plan to verify changes
+                updated_plan = await client.get(
+                    f"{client_url}/api/plan/get_plan_by_id?id={plan_id}",
+                    headers={"Content-Type": "application/json"}
+                )
+                updated_plan.raise_for_status()
+                updated_plan_data = updated_plan.json()
+                logger.info(f"Updated plan data: progress={updated_plan_data.get('progress')}, status={updated_plan_data.get('status')}")
                 
                 # 3. determine if the plan is completed, if not, prepare the skill and, proceed to next step with background ctx
                 async with httpx.AsyncClient() as client:
@@ -885,12 +906,32 @@ class MCPClient:
                             json={
                                 "id": str(uuid4()),
                                 "type": "plan_completed",
-                                "content": f"✅ I've successfully completed the plan! Mission accomplished!",
+                                "content": f"✅ I've successfully completed the plan! Mission accomplished: {result}!",
                                 "plan_id": plan_id,
                             },
                             headers={"Content-Type": "application/json"}
                         )
                         success_plan_log.raise_for_status()
+                        
+                        # summarize the plan
+                        plan_logs_response = await client.get(
+                            f"{client_url}/api/plan/get_plan_log?planId={plan_id}",
+                            headers={"Content-Type": "application/json"}
+                        )
+                        plan_logs_response.raise_for_status()
+                        plan_logs = plan_logs_response.json()
+                        formatted_plan_logs = self._format_plan_logs(plan_logs)
+                        logger.info(f"Formatted plan logs: {formatted_plan_logs}")
+                        
+                        # TODO: refine it with summarization agent
+                        summarization = self.openai_client.chat.completions.create(
+                            model="deepseek-chat",
+                            messages=[
+                                {"role": "system", "content": "You are a helpful assistant that summarizes logs."}, 
+                                {"role": "user", "content": formatted_plan_logs}],
+                        )
+                        summarization = summarization.choices[0].message.content
+                        logger.info(f"Summarization: {summarization}")
                         
                         # send msg to chat
                         await self.socket_client.send_message(
@@ -898,7 +939,7 @@ class MCPClient:
                                 "id": str(uuid4()),
                                 "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(),
                                 "sender": agent["user"],
-                                "content": f"✨ Plan completed successfully! All tasks have been finished.",
+                                "content": f"✨ Plan completed successfully! All tasks have been finished. Summary: \n{summarization}",
                                 "avatar": agent["user"].get("avatar", None),
                                 "room_id": room_id,
                                 "mentions": []
@@ -1015,3 +1056,46 @@ class MCPClient:
     async def cleanup(self):
         for server in self.servers:
             await self.exit_stack[server].aclose()
+
+    def _format_plan_logs(self, logs):
+        """Format plan logs in a human-readable way."""
+        if not logs:
+            return "No logs available for this plan."
+        
+        # Sort logs by creation time
+        sorted_logs = sorted(logs, key=lambda log: log.get('created_at', ''))
+        
+        # Group logs by type
+        task_logs = []
+        system_logs = []
+        other_logs = []
+        
+        for log in sorted_logs:
+            log_type = log.get('type', '')
+            content = log.get('content', '')
+            
+            if log_type.startswith('task_'):
+                task_logs.append(f"- {content}")
+            elif log_type.startswith('system_'):
+                system_logs.append(f"- {content}")
+            else:
+                other_logs.append(f"- {content}")
+        
+        # Build the formatted output
+        formatted_output = []
+        
+        if task_logs:
+            formatted_output.append("**Task Activities:**")
+            formatted_output.extend(task_logs)
+            formatted_output.append("")
+        
+        if system_logs:
+            formatted_output.append("**System Events:**")
+            formatted_output.extend(system_logs)
+            formatted_output.append("")
+        
+        if other_logs:
+            formatted_output.append("**Other Activities:**")
+            formatted_output.extend(other_logs)
+        
+        return "\n".join(formatted_output)

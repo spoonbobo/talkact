@@ -369,13 +369,19 @@ def format_conversation(
     formatted_text += "\nCONVERSATION END"
     return formatted_text
 
+import os
+import httpx
+import logging
+
+logger = logging.getLogger(__name__)
+
 async def get_room_users(
     room_id: str,
     limit: int = 50,
     offset: int = 0,
     search: str = '',
     role: str = ''
-) -> dict:
+) -> list:
     """
     Get all users in a specific room
     
@@ -387,9 +393,13 @@ async def get_room_users(
         role (str, optional): Filter users by role. Defaults to ''.
         
     Returns:
-        dict: Response containing users and pagination info
+        list: List of users in the room
     """
     client_url = os.environ.get("CLIENT_URL", "")
+    if not client_url:
+        logger.error("CLIENT_URL environment variable not set")
+        return []
+        
     url = f"{client_url}/api/user/get_users"
     payload = {
         "room_id": room_id,
@@ -401,16 +411,24 @@ async def get_room_users(
     
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=payload)
-            if response.status_code != 200:
-                error_text = response.json()
-                raise Exception(f"Failed to get room users: {error_text}")
+            logger.info(f"Fetching room users from {url} with payload: {payload}")
+            response = await client.post(url, json=payload, timeout=10.0)
+            response.raise_for_status()
             
-            return response.json()
+            data = response.json()
+            # Extract the users array from the response
+            users = data.get("users", [])
+            logger.info(f"Successfully fetched {len(users)} room users")
+            return users
+    except httpx.RequestError as e:
+        logger.error(f"Request error when fetching room users: {e}")
+        return []
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error {e.response.status_code} when fetching room users: {e.response.text}")
+        return []
     except Exception as e:
         logger.error(f"Error getting room users: {e}")
-        return {}
-
+        return [] 
 
 def extract_json_from_response(response):
     """
@@ -446,3 +464,9 @@ def extract_json_from_response(response):
     except Exception as e:
         logger.error(f"Error extracting JSON from response: {e}")
         return None
+
+def summarize_logs(logs) -> str:
+    """
+    Summarize the logs into a single string
+    """
+    return "\n".join([log.content for log in logs])

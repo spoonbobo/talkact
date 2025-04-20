@@ -8,6 +8,8 @@
 - Intelligent planning and execution system with full natural-langugage support
 - Support multiple languages, Chinese, English, Japanese, Korean, and more to come
 
+## Use Case Demonstrations
+
 ## Agents
 
 - `agent`: Master agent that performs planning and executions
