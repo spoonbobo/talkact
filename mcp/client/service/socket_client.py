@@ -75,6 +75,7 @@ class SocketClient:
         self.joined_rooms = set()  # Track joined rooms for reconnection
         self.pending_messages = []  # Store messages that need to be sent after reconnection
         self._shutdown_requested = False  # Flag to indicate graceful shutdown
+        self._message_ids_sent = set()  # Track message IDs that have been successfully sent
         
         # Set up event handlers
         self._setup_event_handlers()
@@ -114,6 +115,13 @@ class SocketClient:
                         try:
                             # Make sure we're in the room for this message
                             room_id = message_data.get('room_id')
+                            message_id = message_data.get('id')
+                            
+                            # Skip if we've already sent this message successfully
+                            if message_id and message_id in self._message_ids_sent:
+                                logger.info(f"Skipping already sent message with ID: {message_id}")
+                                continue
+                                
                             if room_id and room_id not in self.joined_rooms:
                                 await self.sio.emit("join_room", room_id)
                                 logger.info(f"Joined room for pending message: {room_id}")
@@ -121,7 +129,11 @@ class SocketClient:
                             
                             # Now send the message
                             await self.sio.emit("message", message_data)
-                            logger.info(f"Resent pending message to room {message_data.get('room_id')}")
+                            logger.info(f"Resent pending message to room {room_id}, message ID: {message_id}")
+                            
+                            # Mark as sent
+                            if message_id:
+                                self._message_ids_sent.add(message_id)
                         except Exception as e:
                             logger.error(f"Failed to resend pending message: {e}")
                             # Put it back in the pending list
@@ -214,6 +226,9 @@ class SocketClient:
         if self.reconnect_task and not self.reconnect_task.done():
             self.reconnect_task.cancel()
             self.reconnect_task = None
+        
+        # Clear tracking sets
+        self._message_ids_sent.clear()
         
         if self.connected or self.sio.connected:
             try:
@@ -316,11 +331,21 @@ class SocketClient:
         if self._shutdown_requested:
             logger.warning("Shutdown requested, not sending message")
             return
+        
+        # Get message ID for tracking
+        message_id = message_data.get('id')
+        
+        # Check if we've already sent this message successfully
+        if message_id and message_id in self._message_ids_sent:
+            logger.info(f"Message with ID {message_id} already sent successfully, skipping")
+            return
             
         if not self.connected:
             # Store the message to be sent after reconnection
             logger.info(f"Not connected. Storing message to room {message_data.get('room_id')} for later delivery")
-            self.pending_messages.append(message_data)
+            # Check if this message is already in pending messages to avoid duplicates
+            if not any(m.get('id') == message_id for m in self.pending_messages if message_id and m.get('id')):
+                self.pending_messages.append(message_data)
             raise ConnectionError("Not connected to socket server")
         
         # Check connection health with a ping before sending the actual message
@@ -334,8 +359,8 @@ class SocketClient:
             # Connection is not healthy, force reconnection
             self.connected = False
             
-            # Store the message for later delivery
-            if message_data not in self.pending_messages:
+            # Store the message for later delivery if not already there
+            if not any(m.get('id') == message_id for m in self.pending_messages if message_id and m.get('id')):
                 self.pending_messages.append(message_data)
             
             # Reconnect and make sure we rejoin rooms
@@ -362,11 +387,14 @@ class SocketClient:
         try:
             # If we got here, the connection passed the health check
             await self.sio.emit("message", message_data)
-            logger.info(f"Sent message to room {message_data.get('room_id')}")
+            logger.info(f"Sent message to room {message_data.get('room_id')}, message ID: {message_id}")
             
-            # If this was a pending message, remove it from the pending list
-            if message_data in self.pending_messages:
-                self.pending_messages.remove(message_data)
+            # Mark this message as successfully sent
+            if message_id:
+                self._message_ids_sent.add(message_id)
+            
+            # Remove from pending messages if it was there
+            self.pending_messages = [m for m in self.pending_messages if not (message_id and m.get('id') == message_id)]
             
         except Exception as e:
             logger.error(f"Error sending message: {e}")
@@ -375,7 +403,7 @@ class SocketClient:
                 self.connected = False
                 
                 # Store the message for later delivery if not already there
-                if message_data not in self.pending_messages:
+                if not any(m.get('id') == message_id for m in self.pending_messages if message_id and m.get('id')):
                     self.pending_messages.append(message_data)
                 
                 # Force recreation of the socket.io client

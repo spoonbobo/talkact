@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from "react";
-import { Flex, Textarea, Box, Icon } from "@chakra-ui/react";
-import { FaPaperPlane } from "react-icons/fa";
+import { Flex, Textarea, Box, Icon, Button } from "@chakra-ui/react";
+import { FaPaperPlane, FaArrowRight, FaPaperclip } from "react-icons/fa";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,7 +8,7 @@ import { User } from "@/types/user";
 import { IChatRoom, IMessage } from "@/types/chat";
 import { v4 as uuidv4 } from "uuid";
 
-const MotionBox = motion.create(Box);
+const MotionBox = motion(Box);
 
 // do not change
 interface MentionState {
@@ -26,13 +26,12 @@ interface ChatInputProps {
     users?: User[];
     agents?: User[];
     currentUser?: User | null;
-    isTaskMode?: boolean;
     currentRoom?: IChatRoom | null;
     roomUsers?: User[];
 }
 
 // Extract color values to a custom hook to prevent recalculation on every render
-const useInputColors = (isTaskMode = true) => {
+const useInputColors = () => {
     const borderColor = useColorModeValue("gray.200", "gray.700");
     const bgSubtle = useColorModeValue("bg.subtle", "gray.800");
     const textColor = useColorModeValue("gray.600", "gray.400");
@@ -41,14 +40,8 @@ const useInputColors = (isTaskMode = true) => {
     const mentionBg = useColorModeValue("white", "#1A202C");
     const mentionHoverBg = useColorModeValue("gray.100", "gray.800");
     const mentionSelectedBg = useColorModeValue("blue.100", "blue.900");
-    const buttonBg = useColorModeValue(
-        isTaskMode ? "blue.500" : "green.500",
-        isTaskMode ? "blue.600" : "green.600"
-    );
-    const buttonHoverBg = useColorModeValue(
-        isTaskMode ? "blue.600" : "green.600",
-        isTaskMode ? "blue.700" : "green.700"
-    );
+    const buttonBg = useColorModeValue("blue.500", "green.500");
+    const buttonHoverBg = useColorModeValue("blue.600", "green.600");
 
     return {
         borderColor,
@@ -72,7 +65,6 @@ export const ChatInput = React.memo(({
     users = [],
     agents = [],
     currentUser = null,
-    isTaskMode = true,
     currentRoom = null,
     roomUsers = [],
 }: ChatInputProps) => {
@@ -84,9 +76,10 @@ export const ChatInput = React.memo(({
     });
     const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
     const [activeMentions, setActiveMentions] = useState<User[]>([]);
+    const [trustMode, setTrustMode] = useState(false);
 
     // Use memoized colors
-    const colors = useInputColors(isTaskMode);
+    const colors = useInputColors();
 
     // Memoize current room users to prevent recalculations
     const currentRoomUsers = useMemo(() => {
@@ -393,200 +386,270 @@ export const ChatInput = React.memo(({
     }
 
     return (
-        <Flex
-            p={4}
-            borderTopWidth="1px"
-            borderColor={isTaskMode ? colors.borderColor : "green.200"}
-            bg={isTaskMode ? colors.bgSubtle : "rgba(236, 253, 245, 0.4)"}
-            align="center"
-            position="relative"
-        >
-            <Textarea
-                ref={textareaRef}
-                flex="1"
-                placeholder={!selectedRoomId ? t("please_select_a_room") : t("type_message")}
-                mr={2}
-                value={messageInput}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                borderRadius="md"
-                size="md"
-                disabled={!selectedRoomId}
-                _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
-                bg={colors.inputBg}
-                color={colors.textColorStrong}
-                _placeholder={{ color: colors.textColor }}
-                borderColor={isTaskMode ? "inherit" : "green.200"}
-                _focus={{
-                    borderColor: isTaskMode ? "blue.500" : "green.400",
-                    boxShadow: isTaskMode ?
-                        "0 0 0 1px var(--chakra-colors-blue-500)" :
-                        "0 0 0 1px var(--chakra-colors-green-400)"
-                }}
-                resize="none"
-                overflow="auto"
-                minHeight="40px"
-                maxHeight="50vh"
-                py={2}
-                px={4}
-                rows={1}
-            />
-
-            <Box
-                as="button"
-                py={2}
-                px={4}
-                borderRadius="md"
-                bg={isTaskMode ? "blue.500" : "green.500"}
-                color="white"
-                fontWeight="medium"
-                fontSize="sm"
-                _hover={{ bg: isTaskMode ? "blue.600" : "green.600" }}
-                _active={{ bg: isTaskMode ? "blue.700" : "green.700" }}
-                opacity={!messageInput.trim() || !selectedRoomId ? 0.5 : 1}
-                cursor={!messageInput.trim() || !selectedRoomId ? "not-allowed" : "pointer"}
-                pointerEvents={!messageInput.trim() || !selectedRoomId ? "none" : "auto"}
-                onClick={handleSendButtonClick}
+        <>
+            <Flex
+                p={4}
+                borderTopWidth="1px"
+                borderColor={colors.borderColor}
+                bg={colors.bgSubtle}
+                align="center"
+                position="relative"
+                mt={3}
             >
-                <Flex align="center" justify="center">
-                    <Icon as={FaPaperPlane} mr={2} />
-                    {t("send")}
-                </Flex>
-            </Box>
-
-            <AnimatePresence onExitComplete={() => {
-                const parentElement = document.querySelector('[data-scroll-container="true"]');
-                if (parentElement) {
-                    parentElement.setAttribute('style', 'overflow: auto;');
-                }
-                document.body.style.overflowX = '';
-            }}>
-                {mentionState.isActive && (
-                    <MotionBox
-                        data-mention-suggestions="true"
-                        position="absolute"
-                        bottom={`calc(100% - ${cursorPosition.top}px)`}
-                        left={`${cursorPosition.left}px`}
-                        width="250px"
-                        maxHeight="200px"
-                        maxWidth="calc(100vw - 20px)"
-                        bg={colors.mentionBg}
+                <Box
+                    position="relative"
+                    flex="1"
+                    display="flex"
+                    alignItems="flex-end"
+                >
+                    <Textarea
+                        ref={textareaRef}
+                        flex="1"
+                        value={messageInput}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyDown}
                         borderRadius="md"
-                        boxShadow="lg"
-                        zIndex={1000}
-                        overflowY="auto"
-                        overflowX="hidden"
-                        border="1px solid"
-                        borderColor="gray.200"
-                        variants={{
-                            hidden: { opacity: 0, y: 10, scale: 0.95 },
-                            visible: {
-                                opacity: 1,
-                                y: 0,
-                                scale: 1,
-                                transition: {
-                                    type: "spring",
-                                    stiffness: 500,
-                                    damping: 30,
-                                    staggerChildren: 0.03
-                                }
-                            },
-                            exit: {
-                                opacity: 0,
-                                y: 10,
-                                scale: 0.95,
-                                transition: { duration: 0.2 }
-                            }
+                        size="md"
+                        fontSize="md"
+                        disabled={!selectedRoomId}
+                        _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+                        bg={colors.inputBg}
+                        color={colors.textColorStrong}
+                        _placeholder={{ color: colors.textColor }}
+                        placeholder={!selectedRoomId ? t("please_select_a_room") : t("type_message")}
+                        borderColor={"inherit"}
+                        _focus={{
+                            borderColor: "blue.500",
+                            boxShadow: "0 0 0 1px var(--chakra-colors-blue-500)"
                         }}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        style={{
-                            transformOrigin: "bottom left",
-                            scrollbarWidth: "none",
-                            msOverflowStyle: "none",
+                        resize="none"
+                        overflow="auto"
+                        minHeight="24px"
+                        pt={3}
+                        pb="40px"
+                        rows={1}
+                        pr="44px"
+                        css={{
+                            '&::-webkit-scrollbar': { display: 'none' },
+                            scrollbarWidth: 'none',
+                            msOverflowStyle: 'none',
                         }}
+                        pl="12px"
+                    />
 
+                    {/* TRUST MODE moved to right side */}
+                    <MotionBox
+                        as="button"
+                        position="absolute"
+                        right="100px" // Position to the left of the file upload button
+                        bottom="8px"
+                        zIndex={2}
+                        p={0}
+                        m={0}
+                        bg="transparent"
+                        border="none"
+                        fontWeight="bold"
+                        fontSize="sm"
+                        cursor="pointer"
+                        animate={{
+                            color: trustMode ? "#ec4899" : "#a0aec0",
+                            transition: { duration: 0.2 }
+                        }}
+                        _hover={{
+                            textDecoration: "none",
+                        }}
+                        onClick={() => setTrustMode((v) => !v)}
                     >
-                        {suggestions.length > 0 ? (
-                            <Box>
-                                {suggestions.map((user, index) => (
-                                    <MotionBox
-                                        key={user.id}
-                                        data-selected-suggestion={index === selectedSuggestionIndex ? "true" : "false"}
-                                        p={2}
-                                        cursor="pointer"
-                                        bg={index === selectedSuggestionIndex ? colors.mentionSelectedBg : "transparent"}
-                                        _hover={{ bg: colors.mentionHoverBg }}
-                                        onClick={() => handleSelectMention(user)}
-                                        variants={{
-                                            hidden: { opacity: 0, x: -5 },
-                                            visible: { opacity: 1, x: 0 },
-                                            exit: { opacity: 0, x: 5 }
-                                        }}
-                                        display="flex"
-                                        alignItems="center"
-                                        borderBottom={index < suggestions.length - 1 ? "1px solid" : "none"}
-                                        borderColor="gray.200"
-                                        color={colors.textColorStrong}
-                                    >
-                                        <Box
-                                            borderRadius="full"
-                                            bg={user.username.startsWith('agent') ? "green.100" : "blue.100"}
-                                            color={user.username.startsWith('agent') ? "green.700" : "blue.700"}
-                                            p={1}
-                                            mr={2}
-                                            fontSize="xs"
-                                            width="24px"
-                                            height="24px"
+                        TRUST MODE
+                    </MotionBox>
+
+                    {/* File Upload Button */}
+                    <Button
+                        variant="ghost"
+                        height="32px"
+                        minWidth="44px"
+                        width="44px"
+                        borderRadius="full"
+                        bg="transparent"
+                        color="gray.400"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        boxShadow="none"
+                        _hover={{ bg: "gray.100", color: "gray.600" }}
+                        _active={{ bg: "gray.200", color: "gray.700" }}
+                        position="absolute"
+                        bottom="8px"
+                        right="52px"
+                        zIndex={2}
+                        p={0}
+                        onClick={() => alert("File upload clicked!")}
+                    >
+                        <Icon as={FaPaperclip} boxSize={4} />
+                    </Button>
+
+                    <Button
+                        variant="ghost"
+                        alignSelf="flex-end"
+                        height="32px"
+                        minWidth="44px"
+                        width="44px"
+                        borderRadius="full"
+                        bg="transparent"
+                        color="gray.400"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        boxShadow="none"
+                        _hover={{ bg: "gray.100", color: "gray.600" }}
+                        _active={{ bg: "gray.200", color: "gray.700" }}
+                        opacity={!messageInput.trim() || !selectedRoomId ? 0.5 : 1}
+                        cursor={!messageInput.trim() || !selectedRoomId ? "not-allowed" : "pointer"}
+                        pointerEvents={!messageInput.trim() || !selectedRoomId ? "none" : "auto"}
+                        onClick={handleSendButtonClick}
+                        zIndex={2}
+                        p={0}
+                        position="absolute"
+                        bottom="8px"
+                        right="8px"
+                    >
+                        <Icon as={FaArrowRight} boxSize={4} />
+                    </Button>
+                </Box>
+                <AnimatePresence onExitComplete={() => {
+                    const parentElement = document.querySelector('[data-scroll-container="true"]');
+                    if (parentElement) {
+                        parentElement.setAttribute('style', 'overflow: auto;');
+                    }
+                    document.body.style.overflowX = '';
+                }}>
+                    {mentionState.isActive && (
+                        <MotionBox
+                            data-mention-suggestions="true"
+                            position="absolute"
+                            bottom={`calc(100% - ${cursorPosition.top}px)`}
+                            left={`${cursorPosition.left}px`}
+                            width="250px"
+                            maxHeight="200px"
+                            maxWidth="calc(100vw - 20px)"
+                            bg={colors.mentionBg}
+                            borderRadius="md"
+                            boxShadow="lg"
+                            zIndex={1000}
+                            overflowY="auto"
+                            overflowX="hidden"
+                            border="1px solid"
+                            borderColor="gray.200"
+                            variants={{
+                                hidden: { opacity: 0, y: 10, scale: 0.95 },
+                                visible: {
+                                    opacity: 1,
+                                    y: 0,
+                                    scale: 1,
+                                    transition: {
+                                        type: "spring",
+                                        stiffness: 500,
+                                        damping: 30,
+                                        staggerChildren: 0.03
+                                    }
+                                },
+                                exit: {
+                                    opacity: 0,
+                                    y: 10,
+                                    scale: 0.95,
+                                    transition: { duration: 0.2 }
+                                }
+                            }}
+                            initial="hidden"
+                            animate="visible"
+                            exit="exit"
+                            style={{
+                                transformOrigin: "bottom left",
+                                scrollbarWidth: "none",
+                                msOverflowStyle: "none",
+                            }}
+
+                        >
+                            {suggestions.length > 0 ? (
+                                <Box>
+                                    {suggestions.map((user, index) => (
+                                        <MotionBox
+                                            key={user.id}
+                                            data-selected-suggestion={index === selectedSuggestionIndex ? "true" : "false"}
+                                            p={2}
+                                            cursor="pointer"
+                                            bg={index === selectedSuggestionIndex ? colors.mentionSelectedBg : "transparent"}
+                                            _hover={{ bg: colors.mentionHoverBg }}
+                                            onClick={() => handleSelectMention(user)}
+                                            variants={{
+                                                hidden: { opacity: 0, x: -5 },
+                                                visible: { opacity: 1, x: 0 },
+                                                exit: { opacity: 0, x: 5 }
+                                            }}
                                             display="flex"
                                             alignItems="center"
-                                            justifyContent="center"
+                                            borderBottom={index < suggestions.length - 1 ? "1px solid" : "none"}
+                                            borderColor="gray.200"
+                                            color={colors.textColorStrong}
                                         >
-                                            {user.username[0].toUpperCase()}
-                                        </Box>
-                                        <Flex flex="1" alignItems="center" justifyContent="space-between">
-                                            <Box>{user.username}</Box>
-                                            {user.role && (
-                                                <Box
-                                                    ml={2}
-                                                    px={2}
-                                                    py={0.5}
-                                                    borderRadius="full"
-                                                    fontSize="xs"
-                                                    fontWeight="medium"
-                                                    bg={user.role === "agent" ? "green.100" : "blue.100"}
-                                                    color={user.role === "agent" ? "green.700" : "blue.700"}
-                                                    _dark={{
-                                                        bg: user.role === "agent" ? "green.800" : "blue.800",
-                                                        color: user.role === "agent" ? "green.200" : "blue.200"
-                                                    }}
-                                                >
-                                                    {user.role}
-                                                </Box>
-                                            )}
-                                        </Flex>
-                                    </MotionBox>
-                                ))}
-                            </Box>
-                        ) : (
-                            <MotionBox
-                                p={2}
-                                color={colors.textColor}
-                                variants={{
-                                    hidden: { opacity: 0 },
-                                    visible: { opacity: 1 },
-                                    exit: { opacity: 0 }
-                                }}
-                                textAlign="center"
-                            >
-                                {t("no_users_found")}
-                            </MotionBox>
-                        )}
-                    </MotionBox>
-                )}
-            </AnimatePresence>
-        </Flex>
+                                            <Box
+                                                borderRadius="full"
+                                                bg={user.username.startsWith('agent') ? "green.100" : "blue.100"}
+                                                color={user.username.startsWith('agent') ? "green.700" : "blue.700"}
+                                                p={1}
+                                                mr={2}
+                                                fontSize="xs"
+                                                width="24px"
+                                                height="24px"
+                                                display="flex"
+                                                alignItems="center"
+                                                justifyContent="center"
+                                            >
+                                                {user.username[0].toUpperCase()}
+                                            </Box>
+                                            <Flex flex="1" alignItems="center" justifyContent="space-between">
+                                                <Box>{user.username}</Box>
+                                                {user.role && (
+                                                    <Box
+                                                        ml={2}
+                                                        px={2}
+                                                        py={0.5}
+                                                        borderRadius="full"
+                                                        fontSize="xs"
+                                                        fontWeight="medium"
+                                                        bg={user.role === "agent" ? "green.100" : "blue.100"}
+                                                        color={user.role === "agent" ? "green.700" : "blue.700"}
+                                                        _dark={{
+                                                            bg: user.role === "agent" ? "green.800" : "blue.800",
+                                                            color: user.role === "agent" ? "green.200" : "blue.200"
+                                                        }}
+                                                    >
+                                                        {user.role}
+                                                    </Box>
+                                                )}
+                                            </Flex>
+                                        </MotionBox>
+                                    ))}
+                                </Box>
+                            ) : (
+                                <MotionBox
+                                    p={2}
+                                    color={colors.textColor}
+                                    variants={{
+                                        hidden: { opacity: 0 },
+                                        visible: { opacity: 1 },
+                                        exit: { opacity: 0 }
+                                    }}
+                                    textAlign="center"
+                                >
+                                    {t("no_users_found")}
+                                </MotionBox>
+                            )}
+                        </MotionBox>
+                    )}
+                </AnimatePresence>
+            </Flex>
+        </>
     );
 }, (prevProps, nextProps) => {
     // Custom comparison function for React.memo
@@ -595,17 +658,9 @@ export const ChatInput = React.memo(({
     // Simple comparison for primitive props
     if (prevProps.messageInput !== nextProps.messageInput) return false;
     if (prevProps.selectedRoomId !== nextProps.selectedRoomId) return false;
-    if (prevProps.isTaskMode !== nextProps.isTaskMode) return false;
 
     // Deep comparison for complex objects when needed
     if (prevProps.currentRoom?.id !== nextProps.currentRoom?.id) return false;
-
-    // No need to deeply compare functions since they should be memoized in the parent
-
-    // Compare arrays length as a quick check
-    if (prevProps.roomUsers?.length !== nextProps.roomUsers?.length) return false;
-    if (prevProps.users?.length !== nextProps.users?.length) return false;
-    if (prevProps.agents?.length !== nextProps.agents?.length) return false;
 
     // By default, assume props are equal
     return true;

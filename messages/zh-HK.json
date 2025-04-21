@@ -237,7 +237,10 @@
     "log_type_plan_approved": "計劃已批准",
     "log_type_plan_terminated": "計劃已終止",
     "skills": "技能",
-    "skill_executed": "技能已執行"
+    "skill_executed": "技能已執行",
+    "log_type_plan_denied": "已拒絕",
+    "no_tasks_available": "沒有任務",
+    "no_plans_available": "沒有計劃"
   },
   "Plans": {
     "calendar": "日曆",
@@ -349,7 +352,8 @@
     "enter_name": "輸入名稱",
     "skill_executed": "技能已執行",
     "log_content": "日誌內容",
-    "plan_approved": "計劃已批准"
+    "plan_approved": "計劃已批准",
+    "no_tasks_available": "沒有任務"
   },
   "Learn": {
     "learn": "學習",
