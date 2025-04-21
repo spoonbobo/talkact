@@ -13,7 +13,7 @@ import { motion } from "framer-motion";
 import { FaDiagramProject, FaFolderTree } from "react-icons/fa6";
 import { FaTools } from "react-icons/fa";
 import { useTranslations } from "next-intl";
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -21,6 +21,7 @@ import Loading from "@/components/loading";
 import { useSession } from "next-auth/react";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { Global, css } from '@emotion/react';
+import { setSidebarWidth } from '@/store/features/workbenchSlice';
 
 const MotionBox = motion(Box);
 
@@ -31,6 +32,9 @@ export default function WorkbenchLayout({
 }) {
     const t = useTranslations("Workbench");
     const { isAuthenticated, isLoading, isOwner } = useSelector((state: RootState) => state.user);
+    const storedSidebarWidth = useSelector((state: RootState) =>
+        state.workbench?.ui?.sidebarWidth || 300);
+    const dispatch = useDispatch();
     const router = useRouter();
     const pathname = usePathname();
     const { data: session } = useSession();
@@ -39,7 +43,7 @@ export default function WorkbenchLayout({
     const sidebarRef = useRef<HTMLDivElement>(null);
 
     // State for resizing
-    const [sidebarWidth, setSidebarWidth] = useState(300);
+    const [sidebarWidth, setSidebarWidthState] = useState(storedSidebarWidth);
     const [sidebarResizing, setSidebarResizing] = useState(false);
     const [resizeStartPosition, setResizeStartPosition] = useState(0);
 
@@ -68,11 +72,11 @@ export default function WorkbenchLayout({
             label: t("file_explorer"),
             path: "/workbench/file_explorer",
         },
-        {
-            icon: FaDiagramProject,
-            label: t("workflow"),
-            path: "/workbench/workflow",
-        },
+        // {
+        //     icon: FaDiagramProject,
+        //     label: t("workflow"),
+        //     path: "/workbench/workflow",
+        // },
     ];
 
     // Handle sidebar resize start
@@ -93,7 +97,7 @@ export default function WorkbenchLayout({
                 );
 
                 // Update local state
-                setSidebarWidth(newWidth);
+                setSidebarWidthState(newWidth);
 
                 // Update DOM directly
                 sidebarRef.current.style.width = `${newWidth}px`;
@@ -104,6 +108,12 @@ export default function WorkbenchLayout({
 
         const handleMouseUp = () => {
             setSidebarResizing(false);
+            // Save to Redux when resize is complete
+            try {
+                dispatch(setSidebarWidth(sidebarWidth));
+            } catch (error) {
+                console.error("Failed to save sidebar width to Redux:", error);
+            }
         };
 
         if (sidebarResizing) {
@@ -117,7 +127,7 @@ export default function WorkbenchLayout({
             document.removeEventListener('mouseup', handleMouseUp);
             document.body.style.userSelect = '';
         };
-    }, [sidebarResizing, resizeStartPosition, sidebarWidth]);
+    }, [sidebarResizing, resizeStartPosition, sidebarWidth, dispatch]);
 
     // Use useEffect for navigation instead of doing it during render
     useEffect(() => {

@@ -11,6 +11,7 @@ interface UserState {
     isSigningOut: boolean;
     error: string | null;
     expiresAt: number | null;
+    trustMode: boolean;
 }
 
 const initialState: UserState = {
@@ -20,7 +21,8 @@ const initialState: UserState = {
     isLoading: false,
     isSigningOut: false,
     error: null,
-    expiresAt: null
+    expiresAt: null,
+    trustMode: false
 };
 
 // TTL duration in milliseconds (1 hour)
@@ -29,7 +31,7 @@ export const SESSION_TTL = 60 * 60 * 1000;
 const userPersistConfig = {
     key: 'user',
     storage,
-    whitelist: ['currentUser', 'isAuthenticated', 'expiresAt']
+    whitelist: ['currentUser', 'isAuthenticated', 'expiresAt', 'trustMode']
 };
 
 export const userSlice = createSlice({
@@ -118,6 +120,9 @@ export const userSlice = createSlice({
             if (!state.currentUser) return;
 
             state.currentUser.settings = action.payload;
+        },
+        setTrustMode: (state, action: PayloadAction<boolean>) => {
+            state.trustMode = action.payload;
         }
     }
 });
@@ -132,7 +137,8 @@ export const {
     refreshSessionTTL,
     updateActiveRooms,
     updateUserSettings,
-    setUserSettings
+    setUserSettings,
+    setTrustMode
 } = userSlice.actions;
 
 // Create a persisted reducer

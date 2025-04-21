@@ -85,6 +85,14 @@ function setupSocketIO(io, client) {
       // Add this socket to the user's set of sockets
       await client.sadd(`user:${userId}:sockets`, socket.id);
 
+      // --- BEGIN: Add ping-pong heartbeat handler ---
+      socket.on("ping", (data) => {
+        // Optionally log or update connectionTimestamps here
+        connectionTimestamps.set(socket.id, Date.now());
+        socket.emit("pong", { timestamp: Date.now() });
+      });
+      // --- END: Add ping-pong heartbeat handler ---
+
       // Handle disconnection
       socket.on("disconnect", async () => {
         console.log(`User ${userId} disconnected socket ${socket.id}`);

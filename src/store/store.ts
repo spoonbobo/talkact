@@ -8,6 +8,7 @@ import notificationReducer from './features/notificationSlice';
 import planReducer from './features/planSlice';
 import assistantReducer from './features/assistantSlice';
 import announcementReducer from './features/announcementSlice';
+import workbenchReducer from './features/workbenchSlice';
 import { socketMiddleware } from './middleware/socketMiddleware';
 import streamingMiddleware from './middleware/streamingMiddleware';
 
@@ -19,6 +20,7 @@ const rootReducer = combineReducers({
     plan: planReducer,
     assistant: assistantReducer,
     announcement: announcementReducer,
+    workbench: workbenchReducer,
     // Add other reducers here
 });
 
@@ -26,7 +28,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
     key: 'root',
     storage,
-    whitelist: ['chat', 'user', 'notification', 'assistant', 'plan', 'announcement'],
+    whitelist: ['chat', 'user', 'notification', 'assistant', 'plan', 'announcement', 'workbench'],
 };
 
 // Create a persisted reducer

@@ -72,7 +72,7 @@ def seek_task_approval_message(task, skills=None, skill_ids=None, log_id=None):
     message_parts = []
     
     # Add title with the task name
-    message_parts.append(f"🔔 **Task: {task['task_name']}. May I proceed?**\n")
+    message_parts.append(f"🔔 **I'd like to perform {task['task_name']}. May I proceed?**\n")
     
     # Task details section
     message_parts.append("**Task Details:**")

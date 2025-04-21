@@ -11,19 +11,6 @@ const roboto = Roboto({
   display: 'swap',
 })
 
-// Load SpaceMono font
-export const spaceMono = localFont({
-  src: [
-    {
-      path: './fonts/SpaceMonoNerdFont-Regular.ttf',
-      weight: '400',
-      style: 'normal',
-    }
-  ],
-  variable: '--font-space-mono',
-})
-
-
 export const metadata: Metadata = {
   title: "onlysaid",
   description: "onlysaid",
@@ -39,7 +26,7 @@ export default function RootLayout({
   return (
     <html suppressHydrationWarning>
       <body
-        className={`antialiased`}
+        className={`antialiased ${roboto.className}`}
       >
         <NextIntlClientProvider>
           <Providers session={session}>{children}</Providers>

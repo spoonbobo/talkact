@@ -1,0 +1,30 @@
+<h3 id="tables">Tables</h3>
+<table>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Age</th>
+<th>Occupation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Alice</td>
+<td>28</td>
+<td>Engineer</td>
+</tr>
+<tr class="even">
+<td>Bob</td>
+<td>35</td>
+<td>Data Scientist</td>
+</tr>
+<tr class="odd">
+<td>Carol</td>
+<td>42</td>
+<td>Manager</td>
+</tr>
+</tbody>
+</table>
+<h2 id="conclusion">Conclusion</h2>
+<p>This document demonstrates various markdown features that can be
+converted to a Word document using Pandoc.</p>

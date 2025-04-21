@@ -24,7 +24,8 @@
     "signout_success": "Sign Out Successful",
     "signout_success_description": "You have successfully signed out",
     "admin_panel": "Admin Panel",
-    "plans": "Plans"
+    "plans": "Plans",
+    "workbench": "Workbench"
   },
   "Signup": {
     "signup": "Sign Up",
@@ -234,7 +235,8 @@
     "log_type_plan_denied": "Plan Denied",
     "no_tasks_available": "No tasks available",
     "no_plans_available": "No plans available",
-    "no_logs_found": "No logs found"
+    "no_logs_found": "No logs found",
+    "trust_mode": "TRUST MODE"
   },
   "Tasks": {
     "tasks": "Tasks",
@@ -503,7 +505,7 @@
     "default_no_access": "You do not have permission to access this page",
     "redirecting_in": "Redirect in",
     "seconds": "seconds",
-    "to_home": "to home"
+    "to_home": "Back to home"
   },
   "Plans": {
     "plans": "Plans",
@@ -637,5 +639,49 @@
     "how_can_i_help_you_today": "How can I help you today?",
     "knowledge_bases": "Knowledge Bases",
     "no_knowledge_bases": "No knowledge bases configured, queries requiring specific knowledge may be less effective"
+  },
+  "Workbench": {
+    "workbench": "Workbench",
+    "under_development": "This feature is under development",
+    "workbench_coming_soon": "Workbench will be coming soon",
+    "workflow": "Workflow",
+    "file_explorer": "File Explorer",
+    "error": "Error",
+    "failed_to_load_files": "Failed to load files",
+    "search_files": "Search files",
+    "add_new": "Add New",
+    "new_folder": "New Folder",
+    "new_file": "New File",
+    "upload_file": "Upload File",
+    "no_files_found": "No files found",
+    "refresh": "Refresh",
+    "select_file_or_folder": "Select file or folder",
+    "file_explorer_description": "Browse and manage your files",
+    "create_new_folder": "Create New Folder",
+    "folder_name": "Folder Name",
+    "enter_folder_name": "Enter folder name",
+    "cancel": "Cancel",
+    "create": "Create",
+    "create_new_file": "Create New File",
+    "file_name": "File Name",
+    "enter_file_name": "Enter file name",
+    "download": "Download",
+    "file_details": "File Details",
+    "file_content": "File Content",
+    "file_not_found": "File not found",
+    "file_uploaded": "File uploaded",
+    "file_uploaded_successfully": "File uploaded successfully",
+    "file_upload_failed": "File upload failed",
+    "file_upload_cancelled": "File upload cancelled",
+    "file_preview_not_available": "File preview not available",
+    
+    "welcome_to_workbench": "Welcome to Workbench",
+    "workbench_description": "Workbench is a powerful tool to help you manage and execute various tasks",
+    "explore_files": "Explore Files",
+    "view_workflows": "View Workflows",
+    "available_tools": "Available Tools",
+    "workflow_description": "Create and manage automated workflows",
+    "code_editor": "Code Editor",
+    "code_editor_description": "Write and execute code"
   }
 }

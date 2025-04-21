@@ -16,7 +16,8 @@
     "signout_success_description": "已成功登出",
     "admin_panel": "管理面板",
     "workbench": "工作台",
-    "plans": "計劃"
+    "plans": "計劃",
+    "trust_mode": "信任模式"
   },
   "Home": {
     "welcome": "歡迎來到onlysaid",
@@ -241,7 +242,8 @@
     "skill_executed": "技能已執行",
     "log_type_plan_denied": "已拒絕",
     "no_tasks_available": "沒有任務",
-    "no_plans_available": "沒有計劃"
+    "no_plans_available": "沒有計劃",
+    "trust_mode": "信任模式"
   },
   "Plans": {
     "calendar": "日曆",
@@ -417,7 +419,25 @@
       "create": "創建",
       "create_new_file": "創建新文件",
       "file_name": "文件名稱",
-      "enter_file_name": "輸入文件名稱"
+      "enter_file_name": "輸入文件名稱",
+      "download": "下載",
+      "file_details": "文件詳情",
+      "file_content": "文件內容",
+      "file_not_found": "文件未找到",
+      "file_uploaded": "文件已上傳",
+      "file_uploaded_successfully": "文件上傳成功",
+      "file_upload_failed": "文件上傳失敗",
+      "file_upload_cancelled": "文件上傳已取消",
+      "file_preview_not_available": "文件預覽不可用",
+      
+      "welcome_to_workbench": "歡迎使用工作台",
+      "workbench_description": "工作台是一個強大的工具，可以幫助您管理和執行各種任務",
+      "explore_files": "瀏覽文件",
+      "view_workflows": "查看工作流",
+      "available_tools": "可用工具",
+      "workflow_description": "創建和管理自動化工作流程",
+      "code_editor": "代碼編輯器",
+      "code_editor_description": "編寫和執行代碼"
     },
   "AdminPanel": {
     "admin_panel": "管理面板",

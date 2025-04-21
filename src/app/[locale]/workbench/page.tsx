@@ -9,11 +9,45 @@ import { RootState } from "@/store/store";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Box, Heading, Icon, Container, Center, Text, VStack } from "@chakra-ui/react";
-import { FaHome, FaTools } from "react-icons/fa";
+import { Box, Heading, Icon, Container, Center, Text, VStack, SimpleGrid, Button, Flex } from "@chakra-ui/react";
+import { FaHome, FaTools, FaFolder, FaCode, FaRocket } from "react-icons/fa";
+import { FaNetworkWired } from "react-icons/fa6";
 import { useColorModeValue } from "@/components/ui/color-mode";
 
-const MotionBox = motion.create(Box);
+const MotionBox = motion(Box);
+const MotionFlex = motion(Flex);
+
+// Feature card component
+const FeatureCard = ({ icon, title, description, onClick }: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  onClick?: () => void;
+}) => {
+  const cardBg = useColorModeValue("white", "gray.700");
+  const cardBorder = useColorModeValue("gray.200", "gray.600");
+  const iconColor = useColorModeValue("blue.500", "blue.300");
+
+  return (
+    <MotionBox
+      p={6}
+      borderWidth="1px"
+      borderColor={cardBorder}
+      borderRadius="lg"
+      bg={cardBg}
+      boxShadow="sm"
+      whileHover={{ y: -5, boxShadow: "0 10px 30px -10px rgba(0,0,0,0.2)" }}
+      transition={{ duration: 0.2 }}
+      cursor={onClick ? "pointer" : "default"}
+      onClick={onClick}
+      height="100%"
+    >
+      <Icon as={icon} fontSize="3xl" color={iconColor} mb={4} />
+      <Heading size="md" mb={3}>{title}</Heading>
+      <Text fontSize="sm">{description}</Text>
+    </MotionBox>
+  );
+};
 
 export default function DashboardPage() {
   const { data: session } = useSession();
@@ -28,6 +62,10 @@ export default function DashboardPage() {
   const textColor = useColorModeValue("gray.600", "gray.400");
   const bgColor = useColorModeValue("gray.50", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
+  const gradientBg = useColorModeValue(
+    "linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%)",
+    "linear-gradient(135deg, #2d3748 0%, #1a202c 100%)"
+  );
 
   // If user data is available, log it
   useEffect(() => {
@@ -42,6 +80,11 @@ export default function DashboardPage() {
       router.push('/redirect/no_access?reason=Not available for UAT');
     }
   }, [currentUser, isOwner, router]);
+
+  // Navigation handlers
+  const navigateToFileExplorer = () => router.push('/workbench/file_explorer');
+
+  // Removed workflow navigation since it's not available yet
 
   // Show loading state while checking authentication
   if (isLoading || !session) {
@@ -79,11 +122,11 @@ export default function DashboardPage() {
         position="relative"
       >
         <Heading size="lg" mb={6} display="flex" alignItems="center" color={textColorHeading}>
-          <Icon as={FaHome} mr={3} color="blue.500" />
+          <Icon as={FaTools} mr={3} color="blue.500" />
           {t("workbench")}
         </Heading>
 
-        <Center
+        <Box
           p={8}
           bg={bgColor}
           borderRadius="lg"
@@ -91,20 +134,118 @@ export default function DashboardPage() {
           height="calc(100vh - 200px)"
           borderWidth="1px"
           borderColor={borderColor}
+          overflow="auto"
+          position="relative"
         >
-          <VStack gap={6}>
-            <Icon as={FaTools} fontSize="6xl" color="blue.400" />
-            <Text fontSize="2xl" fontWeight="bold" color={textColorHeading}>
-              {t("under_development")}
+          {/* Hero section */}
+          <MotionBox
+            mb={12}
+            p={8}
+            borderRadius="xl"
+            bg={gradientBg}
+            boxShadow="md"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <Flex direction={{ base: "column", md: "row" }} align="center">
+              <Box flex="1" pr={{ base: 0, md: 8 }} mb={{ base: 6, md: 0 }}>
+                <Heading size="xl" mb={4} lineHeight="1.2">
+                  {t("welcome_to_workbench")}
+                </Heading>
+                <Text fontSize="lg" mb={6} color={textColor}>
+                  {t("workbench_description")}
+                </Text>
+                <Flex gap={4} flexWrap="wrap">
+                  <Button
+                    // leftIcon={<FaFolder />}
+                    colorScheme="blue"
+                    size="lg"
+                    onClick={navigateToFileExplorer}
+                  >
+                    {t("explore_files")}
+                  </Button>
+                  {/* Removed workflow button since it's not available yet */}
+                </Flex>
+              </Box>
+              <Center flex="1">
+                <Icon as={FaRocket} fontSize="9xl" color="blue.400" />
+              </Center>
+            </Flex>
+          </MotionBox>
+
+          {/* Features section */}
+          <Heading size="md" mb={6} color={textColorHeading}>
+            {t("available_tools")}
+          </Heading>
+
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={8} mb={12}>
+            <MotionFlex
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              <FeatureCard
+                icon={FaFolder}
+                title={t("file_explorer")}
+                description={t("file_explorer_description")}
+                onClick={navigateToFileExplorer}
+              />
+            </MotionFlex>
+
+            {/* Commented out unavailable features
+            <MotionFlex
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+            >
+              <FeatureCard
+                icon={FaNetworkWired}
+                title={`${t("workflow")} (${t("coming_soon")})`}
+                description={t("workflow_description")}
+              />
+            </MotionFlex>
+
+            <MotionFlex
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+            >
+              <FeatureCard
+                icon={FaCode}
+                title={`${t("code_editor")} (${t("coming_soon")})`}
+                description={t("code_editor_description")}
+              />
+            </MotionFlex>
+            */}
+          </SimpleGrid>
+
+          {/* Development note */}
+          <MotionBox
+            p={6}
+            borderRadius="lg"
+            borderWidth="1px"
+            borderColor={borderColor}
+            bg={useColorModeValue("blue.50", "blue.900")}
+            color={useColorModeValue("blue.600", "blue.200")}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+          >
+            <Flex align="center" mb={2}>
+              <Icon as={FaTools} mr={2} />
+              <Heading size="sm">{t("under_development")}</Heading>
+            </Flex>
+            <Text fontSize="sm">
+              {t("currently_only_file_browsing")} {/* You may need to add this translation */}
             </Text>
-            <Text color={textColor} textAlign="center" maxW="md">
-              {t("workbench_coming_soon")}
-            </Text>
-            <Box pt={4}>
-              <ColorModeButton />
-            </Box>
-          </VStack>
-        </Center>
+          </MotionBox>
+
+          {/* Color mode toggle */}
+          <Center mt={8}>
+            <ColorModeButton />
+          </Center>
+        </Box>
       </MotionBox>
     </Container>
   );

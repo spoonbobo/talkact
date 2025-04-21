@@ -15,7 +15,9 @@
     "signout_success": "Đăng xuất thành công",
     "signout_success_description": "Đã đăng xuất thành công",
     "admin_panel": "Bảng quản trị",
-    "plans": "Kế hoạch"
+    "plans": "Kế hoạch",
+    "workbench": "Bàn làm việc",
+    "trust_mode": "Chế độ tin cậy"
   },
   "Home": {
     "welcome": "Chào mừng đến với Nói mà không làm",
@@ -233,7 +235,8 @@
     "log_type_plan_terminated": "Kế hoạch đã kết thúc",
     "plan_was_created": "Kế hoạch đã được tạo",
     "log_type_performing_skill": "Đang thực hiện kỹ năng",
-    "log_type_skill_executed": "Kỹ năng đã được thực hiện"
+    "log_type_skill_executed": "Kỹ năng đã được thực hiện",
+    "trust_mode": "Chế độ tin cậy"
   },
   "Plans": {
     "plans": "Kế hoạch",
@@ -547,5 +550,49 @@
     "redirecting_in": "Sẽ chuyển hướng trong",
     "seconds": "giây",
     "to_home": "trở về trang chủ"
+  },
+  "Workbench": {
+    "workbench": "Bàn làm việc",
+    "under_development": "Tính năng này đang được phát triển",
+    "workbench_coming_soon": "Bàn làm việc sẽ sớm ra mắt",
+    "workflow": "Quy trình làm việc",
+    "file_explorer": "Trình quản lý tệp",
+    "error": "Lỗi",
+    "failed_to_load_files": "Không thể tải tệp",
+    "search_files": "Tìm kiếm tệp",
+    "add_new": "Thêm mới",
+    "new_folder": "Thư mục mới",
+    "new_file": "Tệp mới",
+    "upload_file": "Tải lên tệp",
+    "no_files_found": "Không tìm thấy tệp",
+    "refresh": "Làm mới",
+    "select_file_or_folder": "Chọn tệp hoặc thư mục",
+    "file_explorer_description": "Duyệt và quản lý tệp của bạn",
+    "create_new_folder": "Tạo thư mục mới",
+    "folder_name": "Tên thư mục",
+    "enter_folder_name": "Nhập tên thư mục",
+    "cancel": "Hủy",
+    "create": "Tạo",
+    "create_new_file": "Tạo tệp mới",
+    "file_name": "Tên tệp",
+    "enter_file_name": "Nhập tên tệp",
+    "download": "Tải xuống",
+    "file_details": "Chi tiết tệp",
+    "file_content": "Nội dung tệp",
+    "file_not_found": "Không tìm thấy tệp",
+    "file_uploaded": "Đã tải lên tệp",
+    "file_uploaded_successfully": "Tải lên tệp thành công",
+    "file_upload_failed": "Tải lên tệp thất bại",
+    "file_upload_cancelled": "Đã hủy tải lên tệp",
+    "file_preview_not_available": "Không có bản xem trước tệp",
+    
+    "welcome_to_workbench": "Chào mừng đến với Bàn làm việc",
+    "workbench_description": "Bàn làm việc là công cụ mạnh mẽ giúp bạn quản lý và thực hiện các nhiệm vụ khác nhau",
+    "explore_files": "Khám phá tệp",
+    "view_workflows": "Xem quy trình làm việc",
+    "available_tools": "Công cụ có sẵn",
+    "workflow_description": "Tạo và quản lý quy trình làm việc tự động",
+    "code_editor": "Trình soạn thảo mã",
+    "code_editor_description": "Viết và thực thi mã"
   }
 } 

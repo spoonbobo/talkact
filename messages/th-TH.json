@@ -15,7 +15,9 @@
     "signout_success": "ออกจากระบบสำเร็จ",
     "signout_success_description": "ออกจากระบบเรียบร้อยแล้ว",
     "admin_panel": "แผงควบคุมผู้ดูแล",
-    "plans": "แผน"
+    "plans": "แผน",
+    "workbench": "เวิร์กเบนช์",
+    "trust_mode": "โหมดความเชื่อถือ"
   },
   "Home": {
     "welcome": "ยินดีต้อนรับสู่พูดอย่างเดียวไม่ทำ",
@@ -233,7 +235,8 @@
     "log_type_plan_terminated": "แผนถูกยกเลิก",
     "plan_was_created": "แผนถูกสร้างแล้ว",
     "log_type_performing_skill": "กำลังดำเนินการทักษะ",
-    "log_type_skill_executed": "ดำเนินการทักษะแล้ว"
+    "log_type_skill_executed": "ดำเนินการทักษะแล้ว",
+    "trust_mode": "โหมดความเชื่อถือ"
   },
   "Plans": {
     "plans": "แผน",
@@ -547,5 +550,49 @@
     "redirecting_in": "จะเปลี่ยนเส้นทางใน",
     "seconds": "วินาที",
     "to_home": "กลับไปที่หน้าแรก"
+  },
+  "Workbench": {
+    "workbench": "เวิร์กเบนช์",
+    "under_development": "คุณสมบัตินี้อยู่ระหว่างการพัฒนา",
+    "workbench_coming_soon": "เวิร์กเบนช์จะเปิดให้ใช้งานเร็วๆ นี้",
+    "workflow": "เวิร์กโฟลว์",
+    "file_explorer": "ตัวจัดการไฟล์",
+    "error": "ข้อผิดพลาด",
+    "failed_to_load_files": "ไม่สามารถโหลดไฟล์ได้",
+    "search_files": "ค้นหาไฟล์",
+    "add_new": "เพิ่มใหม่",
+    "new_folder": "โฟลเดอร์ใหม่",
+    "new_file": "ไฟล์ใหม่",
+    "upload_file": "อัปโหลดไฟล์",
+    "no_files_found": "ไม่พบไฟล์",
+    "refresh": "รีเฟรช",
+    "select_file_or_folder": "เลือกไฟล์หรือโฟลเดอร์",
+    "file_explorer_description": "เรียกดูและจัดการไฟล์ของคุณ",
+    "create_new_folder": "สร้างโฟลเดอร์ใหม่",
+    "folder_name": "ชื่อโฟลเดอร์",
+    "enter_folder_name": "ป้อนชื่อโฟลเดอร์",
+    "cancel": "ยกเลิก",
+    "create": "สร้าง",
+    "create_new_file": "สร้างไฟล์ใหม่",
+    "file_name": "ชื่อไฟล์",
+    "enter_file_name": "ป้อนชื่อไฟล์",
+    "download": "ดาวน์โหลด",
+    "file_details": "รายละเอียดไฟล์",
+    "file_content": "เนื้อหาไฟล์",
+    "file_not_found": "ไม่พบไฟล์",
+    "file_uploaded": "อัปโหลดไฟล์แล้ว",
+    "file_uploaded_successfully": "อัปโหลดไฟล์สำเร็จ",
+    "file_upload_failed": "อัปโหลดไฟล์ล้มเหลว",
+    "file_upload_cancelled": "ยกเลิกการอัปโหลดไฟล์แล้ว",
+    "file_preview_not_available": "ไม่สามารถแสดงตัวอย่างไฟล์ได้",
+    
+    "welcome_to_workbench": "ยินดีต้อนรับสู่เวิร์กเบนช์",
+    "workbench_description": "เวิร์กเบนช์เป็นเครื่องมือที่ทรงพลังช่วยให้คุณจัดการและดำเนินการงานต่างๆ",
+    "explore_files": "สำรวจไฟล์",
+    "view_workflows": "ดูเวิร์กโฟลว์",
+    "available_tools": "เครื่องมือที่มี",
+    "workflow_description": "สร้างและจัดการเวิร์กโฟลว์อัตโนมัติ",
+    "code_editor": "ตัวแก้ไขโค้ด",
+    "code_editor_description": "เขียนและรันโค้ด"
   }
 } 

@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { User } from "@/types/user";
 import { IChatRoom, IMessage } from "@/types/chat";
 import { v4 as uuidv4 } from "uuid";
+import { useSelector, useDispatch } from "react-redux";
+import { setTrustMode } from "@/store/features/userSlice";
 
 const MotionBox = motion(Box);
 
@@ -76,7 +78,8 @@ export const ChatInput = React.memo(({
     });
     const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
     const [activeMentions, setActiveMentions] = useState<User[]>([]);
-    const [trustMode, setTrustMode] = useState(false);
+    const dispatch = useDispatch();
+    const trustMode = useSelector((state: any) => state.user.trustMode);
 
     // Use memoized colors
     const colors = useInputColors();
@@ -437,84 +440,73 @@ export const ChatInput = React.memo(({
                         pl="12px"
                     />
 
-                    {/* TRUST MODE moved to right side */}
-                    <MotionBox
-                        as="button"
-                        position="absolute"
-                        right="100px" // Position to the left of the file upload button
-                        bottom="8px"
-                        zIndex={2}
-                        p={0}
-                        m={0}
-                        bg="transparent"
-                        border="none"
-                        fontWeight="bold"
-                        fontSize="sm"
-                        cursor="pointer"
-                        animate={{
-                            color: trustMode ? "#ec4899" : "#a0aec0",
-                            transition: { duration: 0.2 }
-                        }}
-                        _hover={{
-                            textDecoration: "none",
-                        }}
-                        onClick={() => setTrustMode((v) => !v)}
-                    >
-                        TRUST MODE
-                    </MotionBox>
-
-                    {/* File Upload Button */}
-                    <Button
-                        variant="ghost"
-                        height="32px"
-                        minWidth="44px"
-                        width="44px"
-                        borderRadius="full"
-                        bg="transparent"
-                        color="gray.400"
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                        boxShadow="none"
-                        _hover={{ bg: "gray.100", color: "gray.600" }}
-                        _active={{ bg: "gray.200", color: "gray.700" }}
-                        position="absolute"
-                        bottom="8px"
-                        right="52px"
-                        zIndex={2}
-                        p={0}
-                        onClick={() => alert("File upload clicked!")}
-                    >
-                        <Icon as={FaPaperclip} boxSize={4} />
-                    </Button>
-
-                    <Button
-                        variant="ghost"
-                        alignSelf="flex-end"
-                        height="32px"
-                        minWidth="44px"
-                        width="44px"
-                        borderRadius="full"
-                        bg="transparent"
-                        color="gray.400"
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                        boxShadow="none"
-                        _hover={{ bg: "gray.100", color: "gray.600" }}
-                        _active={{ bg: "gray.200", color: "gray.700" }}
-                        opacity={!messageInput.trim() || !selectedRoomId ? 0.5 : 1}
-                        cursor={!messageInput.trim() || !selectedRoomId ? "not-allowed" : "pointer"}
-                        pointerEvents={!messageInput.trim() || !selectedRoomId ? "none" : "auto"}
-                        onClick={handleSendButtonClick}
-                        zIndex={2}
-                        p={0}
+                    {/* Button group: Trust Mode, File Upload, Send */}
+                    <Flex
                         position="absolute"
                         bottom="8px"
                         right="8px"
+                        zIndex={2}
+                        gap={2}
+                        align="center"
                     >
-                        <Icon as={FaArrowRight} boxSize={4} />
-                    </Button>
+                        <Button
+                            variant="ghost"
+                            height="32px"
+                            minWidth="auto"
+                            px={3}
+                            borderRadius="full"
+                            bg="transparent"
+                            color={trustMode ? "#ec4899" : "gray.400"}
+                            fontWeight="bold"
+                            fontSize="sm"
+                            _hover={{ color: "#ec4899", bg: "transparent" }}
+                            _active={{ color: "#db2777", bg: "transparent" }}
+                            onClick={() => dispatch(setTrustMode(!trustMode))}
+                        >
+                            {t("trust_mode")}
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            height="32px"
+                            minWidth="44px"
+                            width="44px"
+                            borderRadius="full"
+                            bg="transparent"
+                            color="gray.400"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            boxShadow="none"
+                            _hover={{ color: "gray.600", bg: "transparent" }}
+                            _active={{ color: "gray.700", bg: "transparent" }}
+                            p={0}
+                            onClick={() => alert("File upload clicked!")}
+                        >
+                            <Icon as={FaPaperclip} boxSize={4} />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            height="32px"
+                            minWidth="44px"
+                            width="44px"
+                            borderRadius="full"
+                            bg="transparent"
+                            color="gray.400"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            boxShadow="none"
+                            _hover={{ color: "gray.600", bg: "transparent" }}
+                            _active={{ color: "gray.700", bg: "transparent" }}
+                            opacity={!messageInput.trim() || !selectedRoomId ? 0.5 : 1}
+                            cursor={!messageInput.trim() || !selectedRoomId ? "not-allowed" : "pointer"}
+                            pointerEvents={!messageInput.trim() || !selectedRoomId ? "none" : "auto"}
+                            onClick={handleSendButtonClick}
+                            p={0}
+                        >
+                            <Icon as={FaArrowRight} boxSize={4} />
+                        </Button>
+                    </Flex>
                 </Box>
                 <AnimatePresence onExitComplete={() => {
                     const parentElement = document.querySelector('[data-scroll-container="true"]');

@@ -81,7 +81,7 @@ const SimplifiedPlanSection = ({
     const [isLoadingTask, setIsLoadingTask] = useState(false);
     const [skillsCache, setSkillsCache] = useState<Record<string, any>>({});
     const [isLoadingSkills, setIsLoadingSkills] = useState(false);
-
+    const currentUser = useSelector((state: RootState) => state.user.currentUser);
     // Create collection for plans
     const plansCollection = useMemo(() => {
         return createListCollection({
@@ -537,7 +537,7 @@ const SimplifiedPlanSection = ({
                 body: JSON.stringify({
                     type: 'plan_terminated',
                     plan_id: log.plan_id,
-                    content: `Plan was manually terminated by user. Original log ID: ${log.id || 'unknown'}`
+                    content: `Plan was manually terminated by ${currentUser?.username}. Original log ID: ${log.id || 'unknown'}`
                 }),
             });
 

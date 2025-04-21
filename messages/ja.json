@@ -14,7 +14,9 @@
     "sign_in": "ログイン",
     "signout_success": "ログアウト成功",
     "signout_success_description": "正常にログアウトしました",
-    "admin_panel": "管理パネル"
+    "admin_panel": "管理パネル",
+    "workbench": "ワークベンチ",
+    "trust_mode": "トラストモード"
   },
   "Signup": {
     "signup": "サインアップ",
@@ -213,7 +215,8 @@
     "add_standard_ai_assistant": "標準AIアシスタントを追加",
     "add_deepseek_ai_assistant": "DeepseekAIアシスタントを追加",
     "add_ai_assistants": "AIアシスタントを追加",
-    "skills": "スキル"
+    "skills": "スキル",
+    "trust_mode": "トラストモード"
   },
   "Plans": {
     "plans": "プラン",
@@ -514,11 +517,11 @@
     "dashboard_coming_soon": "ダッシュボードはまもなく公開されます"
   },
   "Errors": {
-    "access_denied": "アクセスが拒否されました",
+    "access_denied": "アクセス拒否",
     "no_permission": "このページにアクセスする権限がありません",
     "owner_access_required": "このページにアクセスするには管理者権限が必要です",
     "default_no_access": "このページにアクセスする権限がありません",
-    "redirecting_in": "リダイレクトまで",
+    "redirecting_in": "リダイレクト",
     "seconds": "秒",
     "to_home": "ホームに戻る"
   },
@@ -535,5 +538,49 @@
     "no_kb_selected_warning": "知識ベースが選択されていません。クエリの精度が低下する可能性があります。",
     "knowledge_bases": "知識ベース",
     "no_knowledge_bases": "知識ベースが設定されていません。特定の知識が必要なクエリは精度が低下する可能性があります。"
+  },
+  "Workbench": {
+    "workbench": "ワークベンチ",
+    "under_development": "この機能は開発中です",
+    "workbench_coming_soon": "ワークベンチは近日公開予定です",
+    "workflow": "ワークフロー",
+    "file_explorer": "ファイルエクスプローラー",
+    "error": "エラー",
+    "failed_to_load_files": "ファイルの読み込みに失敗しました",
+    "search_files": "ファイルを検索",
+    "add_new": "新規追加",
+    "new_folder": "新しいフォルダ",
+    "new_file": "新しいファイル",
+    "upload_file": "ファイルをアップロード",
+    "no_files_found": "ファイルが見つかりません",
+    "refresh": "更新",
+    "select_file_or_folder": "ファイルまたはフォルダを選択",
+    "file_explorer_description": "ファイルの閲覧と管理",
+    "create_new_folder": "新しいフォルダを作成",
+    "folder_name": "フォルダ名",
+    "enter_folder_name": "フォルダ名を入力",
+    "cancel": "キャンセル",
+    "create": "作成",
+    "create_new_file": "新しいファイルを作成",
+    "file_name": "ファイル名",
+    "enter_file_name": "ファイル名を入力",
+    "download": "ダウンロード",
+    "file_details": "ファイル詳細",
+    "file_content": "ファイル内容",
+    "file_not_found": "ファイルが見つかりません",
+    "file_uploaded": "ファイルがアップロードされました",
+    "file_uploaded_successfully": "ファイルのアップロードに成功しました",
+    "file_upload_failed": "ファイルのアップロードに失敗しました",
+    "file_upload_cancelled": "ファイルのアップロードがキャンセルされました",
+    "file_preview_not_available": "ファイルプレビューは利用できません",
+    
+    "welcome_to_workbench": "ワークベンチへようこそ",
+    "workbench_description": "ワークベンチは様々なタスクを管理・実行するための強力なツールです",
+    "explore_files": "ファイルを探索",
+    "view_workflows": "ワークフローを表示",
+    "available_tools": "利用可能なツール",
+    "workflow_description": "自動化されたワークフローの作成と管理",
+    "code_editor": "コードエディタ",
+    "code_editor_description": "コードの記述と実行"
   }
 }

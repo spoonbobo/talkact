@@ -76,6 +76,7 @@ class SocketClient:
         self.pending_messages = []  # Store messages that need to be sent after reconnection
         self._shutdown_requested = False  # Flag to indicate graceful shutdown
         self._message_ids_sent = set()  # Track message IDs that have been successfully sent
+        self._heartbeat_task = None  # Add this line to track the heartbeat task
         
         # Set up event handlers
         self._setup_event_handlers()
@@ -166,6 +167,11 @@ class SocketClient:
                 except Exception as e:
                     logger.error(f"Error in notification handler: {e}")
                     logger.error(traceback.format_exc())
+        
+        @self.sio.event
+        async def pong(data):
+            logger.debug(f"Received pong: {data}")
+            # Optionally, update a last_pong timestamp here if you want to track latency or missed heartbeats
     
     async def _reconnect_loop(self):
         """Periodically attempt to reconnect until successful."""
@@ -213,6 +219,9 @@ class SocketClient:
                     transports=['websocket']  # Prefer websocket transport
                 )
                 logger.info(f"Connected to socket server as user {self.user_id}")
+                # Start the heartbeat task after successful connection
+                if not self._heartbeat_task or self._heartbeat_task.done():
+                    self._heartbeat_task = asyncio.create_task(self.start_heartbeat())
             except Exception as e:
                 logger.error(f"Failed to connect to socket server: {e}")
                 logger.error(traceback.format_exc())
@@ -226,6 +235,11 @@ class SocketClient:
         if self.reconnect_task and not self.reconnect_task.done():
             self.reconnect_task.cancel()
             self.reconnect_task = None
+        
+        # Cancel the heartbeat task if it's running
+        if self._heartbeat_task and not self._heartbeat_task.done():
+            self._heartbeat_task.cancel()
+            self._heartbeat_task = None
         
         # Clear tracking sets
         self._message_ids_sent.clear()
@@ -445,6 +459,22 @@ class SocketClient:
             handler: Async function that takes a notification data dict as parameter
         """
         self.notification_handlers.append(handler)
+
+    async def start_heartbeat(self, interval=30):
+        """
+        Periodically send a ping to the server to check connection health.
+        """
+        import time
+        while self.connected and not self._shutdown_requested:
+            try:
+                await self.sio.emit("ping", {"timestamp": time.time()})
+                logger.debug("Sent ping to server")
+                await asyncio.sleep(interval)
+            except Exception as e:
+                logger.warning(f"Heartbeat failed: {e}")
+                self.connected = False
+                await self.check_connection()
+                break
 
 if __name__ == "__main__":
     print(os.environ)

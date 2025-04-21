@@ -82,7 +82,7 @@ export default function WorkflowPage() {
                             <Text fontWeight="bold" color={textColorHeading}>
                                 {t("my_workflows")}
                             </Text>
-                            <Button size="sm" colorScheme="blue" leftIcon={<Icon as={FaPlus} />}>
+                            <Button size="sm" colorScheme="blue">
                                 {t("new")}
                             </Button>
                         </Flex>
@@ -138,10 +138,10 @@ export default function WorkflowPage() {
                             <Flex justify="space-between" align="center">
                                 <Heading size="md" color={textColorHeading}>Data Processing</Heading>
                                 <HStack>
-                                    <Button size="sm" leftIcon={<Icon as={FiSettings} />} variant="outline">
+                                    <Button size="sm" variant="outline">
                                         {t("configure")}
                                     </Button>
-                                    <Button size="sm" leftIcon={<Icon as={FaPlay} />} colorScheme="green">
+                                    <Button size="sm" colorScheme="green">
                                         {t("run")}
                                     </Button>
                                 </HStack>
@@ -213,7 +213,7 @@ export default function WorkflowPage() {
                             <Text color={textColor} textAlign="center" maxW="md">
                                 {t("workflow_description")}
                             </Text>
-                            <Button colorScheme="blue" mt={4} leftIcon={<Icon as={FaPlus} />}>
+                            <Button colorScheme="blue" mt={4}>
                                 {t("create_workflow")}
                             </Button>
                         </Center>

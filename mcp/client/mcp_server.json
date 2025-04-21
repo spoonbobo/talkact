@@ -29,6 +29,11 @@
             "description": "/servers/description/onlysaid_admin.md",
             "path": "/servers/onlysaid_admin.py",
             "metadata": {}
+        },
+        "msft_office_professional": {
+            "description": "/servers/description/msft_office_professional.md",
+            "path": "/servers/msft_office_professional.py",
+            "metadata": {}
         }
     }
 }

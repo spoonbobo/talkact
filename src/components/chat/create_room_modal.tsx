@@ -152,7 +152,7 @@ export function CreateRoomModal({ isOpen, onClose }: CreateRoomModalProps) {
     const agentOptions = [
         {
             value: "standard",
-            title: "Standard Agent",
+            title: "Onlysaid Agent",
             description: t("add_standard_ai_assistant")
         },
         {

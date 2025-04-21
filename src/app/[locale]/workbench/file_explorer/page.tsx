@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from "@/store/store";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -49,6 +49,16 @@ import {
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { toaster } from "@/components/ui/toaster";
 import { FileNode, Breadcrumb, FileContentResponse } from "@/types/file";
+import {
+    setRootDirectory,
+    setSelectedItem,
+    setCurrentPath,
+    setBreadcrumbs,
+    setSearchQuery,
+    setFileContent,
+    addExpandedPath,
+    removeExpandedPath,
+} from "@/store/features/workbenchSlice";
 
 const MotionBox = motion(Box);
 
@@ -131,7 +141,14 @@ const FileTreeItem = ({
     selectedPath: string | null;
     onRefresh: () => Promise<void>;
 }) => {
-    const [isOpen, setIsOpen] = useState(false);
+    const dispatch = useDispatch();
+    const expandedPaths = useSelector((state: RootState) =>
+        state.workbench?.fileExplorer?.expandedPaths || []);
+
+    // Check if this path is expanded in Redux (with safety check)
+    const isPathExpanded = expandedPaths?.includes?.(item.path) || false;
+
+    const [isOpen, setIsOpen] = useState(isPathExpanded);
     const [children, setChildren] = useState<FileNode[]>(item.children || []);
     const [isLoading, setIsLoading] = useState(false);
     const isDirectory = item.type === 'directory';
@@ -141,6 +158,11 @@ const FileTreeItem = ({
     const bgHover = useColorModeValue("gray.100", "gray.700");
     const selectedBg = useColorModeValue("blue.50", "blue.900");
     const selectedColor = useColorModeValue("blue.600", "blue.200");
+
+    // Sync local state with Redux expanded paths
+    useEffect(() => {
+        setIsOpen(isPathExpanded);
+    }, [isPathExpanded]);
 
     // Load children when directory is opened
     useEffect(() => {
@@ -169,7 +191,15 @@ const FileTreeItem = ({
 
     const toggleOpen = (e: React.MouseEvent) => {
         e.stopPropagation();
-        setIsOpen(!isOpen);
+        const newIsOpen = !isOpen;
+        setIsOpen(newIsOpen);
+
+        // Update Redux state
+        if (newIsOpen) {
+            dispatch(addExpandedPath(item.path));
+        } else {
+            dispatch(removeExpandedPath(item.path));
+        }
     };
 
     const handleSelect = () => {
@@ -229,21 +259,24 @@ const FileTreeItem = ({
 
 export default function FileExplorer() {
     const { data: session } = useSession();
-    const [rootDirectory, setRootDirectory] = useState<FileNode | null>(null);
+    const dispatch = useDispatch();
+
+    // Replace local state with Redux state
+    const {
+        rootDirectory,
+        selectedItem,
+        currentPath,
+        breadcrumbs,
+        searchQuery,
+        fileContent
+    } = useSelector((state: RootState) => state.workbench.fileExplorer);
+
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedItem, setSelectedItem] = useState<FileNode | null>(null);
-    const [currentPath, setCurrentPath] = useState('/agent_home');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [fileContent, setFileContent] = useState<string | null>(null);
     const [isContentLoading, setIsContentLoading] = useState(false);
     const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
     const [isNewFileOpen, setIsNewFileOpen] = useState(false);
     const [newItemName, setNewItemName] = useState('');
     const agentHomePath = process.env.NEXT_PUBLIC_AGENT_HOME_PATH || '/app/agent_home';
-    console.log("=============agentHomePath", agentHomePath);
-    const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([
-        { name: 'agent_home', path: agentHomePath }
-    ]);
     const newItemInputRef = useRef<HTMLInputElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const t = useTranslations("Workbench");
@@ -262,7 +295,7 @@ export default function FileExplorer() {
             setIsLoading(true);
             try {
                 const result = await fetchFileStructure();
-                setRootDirectory(result);
+                dispatch(setRootDirectory(result));
             } catch (error) {
                 toaster.create({
                     title: t("error"),
@@ -277,11 +310,11 @@ export default function FileExplorer() {
         if (session) {
             loadRootDirectory();
         }
-    }, [session]);
+    }, [session, dispatch, t]);
 
     // Handle item selection
     const handleSelectItem = async (item: FileNode) => {
-        setSelectedItem(item);
+        dispatch(setSelectedItem(item));
 
         // Update breadcrumbs
         const pathParts = item.path.split('/').filter(Boolean);
@@ -296,17 +329,17 @@ export default function FileExplorer() {
             });
         }
 
-        setBreadcrumbs(newBreadcrumbs);
-        setCurrentPath(item.path);
+        dispatch(setBreadcrumbs(newBreadcrumbs));
+        dispatch(setCurrentPath(item.path));
 
         // If it's a file, try to load content
         if (item.type === 'file') {
             setIsContentLoading(true);
-            setFileContent(null);
+            dispatch(setFileContent(null));
 
             try {
                 const { content } = await fetchFileContent(item.path);
-                setFileContent(content);
+                dispatch(setFileContent(content));
             } catch (error) {
                 console.error('Failed to load file content:', error);
                 // Don't show error toast here as some files are not meant to be viewed as text
@@ -393,11 +426,11 @@ export default function FileExplorer() {
         setIsLoading(true);
         try {
             const result = await fetchFileStructure(currentPath);
-            setSelectedItem(result);
+            dispatch(setSelectedItem(result));
 
             // If we're at the root, update the root directory
             if (currentPath === '/agent_home') {
-                setRootDirectory(result);
+                dispatch(setRootDirectory(result));
             }
         } catch (error) {
             toaster.create({
@@ -442,6 +475,11 @@ export default function FileExplorer() {
         closeNewFileDialog();
     };
 
+    // Update search query handler
+    const handleSearchQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch(setSearchQuery(e.target.value));
+    };
+
     return (
         <Box height="100%" width="100%" bg={mainBg} position="relative">
             <Heading as="h1" size="lg" mb={6} color={textColorHeading} px={6} pt={6}>
@@ -463,7 +501,7 @@ export default function FileExplorer() {
                             <Input
                                 placeholder={t("search_files")}
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={handleSearchQueryChange}
                                 pr="2.5rem"
                             />
                             <Box position="absolute" right="8px" top="50%" transform="translateY(-50%)">

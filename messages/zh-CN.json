@@ -15,7 +15,9 @@
     "signout_success": "登出成功",
     "signout_success_description": "已成功登出",
     "admin_panel": "管理面板",
-    "plans": "计划"
+    "plans": "计划",
+    "workbench": "工作台",
+    "trust_mode": "信任模式"
   },
   "Home": {
     "welcome": "欢迎来到onlysaid",
@@ -232,7 +234,8 @@
     "log_type_plan_terminated": "计划已终止",
     "plan_was_created": "计划已创建",
     "log_type_performing_skill": "执行技能中",
-    "log_type_skill_executed": "技能已执行"
+    "log_type_skill_executed": "技能已执行",
+    "trust_mode": "信任模式"
   },
   "Plans": {
     "plans": "计划",
@@ -546,5 +549,49 @@
     "redirecting_in": "将在",
     "seconds": "秒",
     "to_home": "返回主页"
+  },
+  "Workbench": {
+    "workbench": "工作台",
+    "under_development": "此功能正在开发中",
+    "workbench_coming_soon": "工作台将会在不久的将来推出",
+    "workflow": "工作流",
+    "file_explorer": "文件浏览器",
+    "error": "错误",
+    "failed_to_load_files": "无法加载文件",
+    "search_files": "搜索文件",
+    "add_new": "新增",
+    "new_folder": "新建文件夹",
+    "new_file": "新建文件",
+    "upload_file": "上传文件",
+    "no_files_found": "未找到文件",
+    "refresh": "刷新",
+    "select_file_or_folder": "选择文件或文件夹",
+    "file_explorer_description": "浏览和管理您的文件",
+    "create_new_folder": "创建新文件夹",
+    "folder_name": "文件夹名称",
+    "enter_folder_name": "输入文件夹名称",
+    "cancel": "取消",
+    "create": "创建",
+    "create_new_file": "创建新文件",
+    "file_name": "文件名称",
+    "enter_file_name": "输入文件名称",
+    "download": "下载",
+    "file_details": "文件详情",
+    "file_content": "文件内容",
+    "file_not_found": "文件未找到",
+    "file_uploaded": "文件已上传",
+    "file_uploaded_successfully": "文件上传成功",
+    "file_upload_failed": "文件上传失败",
+    "file_upload_cancelled": "文件上传已取消",
+    "file_preview_not_available": "文件预览不可用",
+    
+    "welcome_to_workbench": "欢迎使用工作台",
+    "workbench_description": "工作台是一个强大的工具，可以帮助您管理和执行各种任务",
+    "explore_files": "浏览文件",
+    "view_workflows": "查看工作流",
+    "available_tools": "可用工具",
+    "workflow_description": "创建和管理自动化工作流程",
+    "code_editor": "代码编辑器",
+    "code_editor_description": "编写和执行代码"
   }
 } 

@@ -23,7 +23,8 @@
       "sign_in": "로그인",
       "signout_success": "로그아웃 성공",
       "signout_success_description": "성공적으로 로그아웃되었습니다",
-      "admin_panel": "관리자 패널"
+      "admin_panel": "관리자 패널",
+      "workbench": "워크벤치"
     },
     "Signup": {
       "signup": "회원가입",
@@ -495,11 +496,11 @@
       "please_wait_while_we_verify_your_account": "계정을 확인하는 중입니다. 시간이 오래 걸리면 나중에 다시 시도하세요."
     },
     "Errors": {
-      "access_denied": "접근이 거부되었습니다",
+      "access_denied": "접근 거부됨",
       "no_permission": "이 페이지에 접근할 권한이 없습니다",
       "owner_access_required": "이 페이지에 접근하려면 관리자 권한이 필요합니다",
       "default_no_access": "이 페이지에 접근할 권한이 없습니다",
-      "redirecting_in": "리다이렉트까지",
+      "redirecting_in": "리다이렉트 중",
       "seconds": "초",
       "to_home": "홈으로 돌아가기"
     },
@@ -614,5 +615,49 @@
       "no_kb_selected_warning": "선택된 지식 베이스가 없습니다. 쿼리가 덜 효과적일 수 있습니다",
       "knowledge_bases": "지식 베이스",
       "no_knowledge_bases": "구성된 지식 베이스가 없습니다. 특정 지식이 필요한 쿼리는 덜 효과적일 수 있습니다"
+    },
+    "Workbench": {
+      "workbench": "워크벤치",
+      "under_development": "이 기능은 개발 중입니다",
+      "workbench_coming_soon": "워크벤치는 곧 출시될 예정입니다",
+      "workflow": "워크플로우",
+      "file_explorer": "파일 탐색기",
+      "error": "오류",
+      "failed_to_load_files": "파일을 불러오지 못했습니다",
+      "search_files": "파일 검색",
+      "add_new": "새로 추가",
+      "new_folder": "새 폴더",
+      "new_file": "새 파일",
+      "upload_file": "파일 업로드",
+      "no_files_found": "파일을 찾을 수 없습니다",
+      "refresh": "새로고침",
+      "select_file_or_folder": "파일 또는 폴더 선택",
+      "file_explorer_description": "파일 탐색 및 관리",
+      "create_new_folder": "새 폴더 만들기",
+      "folder_name": "폴더 이름",
+      "enter_folder_name": "폴더 이름 입력",
+      "cancel": "취소",
+      "create": "생성",
+      "create_new_file": "새 파일 만들기",
+      "file_name": "파일 이름",
+      "enter_file_name": "파일 이름 입력",
+      "download": "다운로드",
+      "file_details": "파일 세부정보",
+      "file_content": "파일 내용",
+      "file_not_found": "파일을 찾을 수 없습니다",
+      "file_uploaded": "파일이 업로드됨",
+      "file_uploaded_successfully": "파일이 성공적으로 업로드됨",
+      "file_upload_failed": "파일 업로드 실패",
+      "file_upload_cancelled": "파일 업로드가 취소됨",
+      "file_preview_not_available": "파일 미리보기를 사용할 수 없음",
+      
+      "welcome_to_workbench": "워크벤치에 오신 것을 환영합니다",
+      "workbench_description": "워크벤치는 다양한 작업을 관리하고 실행하는 데 도움이 되는 강력한 도구입니다",
+      "explore_files": "파일 탐색",
+      "view_workflows": "워크플로우 보기",
+      "available_tools": "사용 가능한 도구",
+      "workflow_description": "자동화된 워크플로우 생성 및 관리",
+      "code_editor": "코드 에디터",
+      "code_editor_description": "코드 작성 및 실행"
     }
 }
