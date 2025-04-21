@@ -13,21 +13,21 @@ Onlysaid aims to provide an easy-to-use integrated platform where you and your t
 ## 🌟 Features
 
 - 🗣️ Complete any tasks with your team with only natural language without setting up complicated environments
-- 🔄 All-in-one A2A/MCP stack with highly configurable and extensible client & servers
+- 🔌 Ready-to-use A2A/MCP agentic stack with highly configurable and extensible client & servers
 - 🧠 Intelligent planning and execution system with full natural-langugage support
 - 🛠️ Workbench interface for file management, workflow management, and learning skills
 - 📚 The more tasks Onlysaid agents solve for you, the more knowledge they will gain
 - 🔒 Toggle the `trust` mode to adjust control over agents
 - 🌐 Support multiple languages, Chinese, English, Japanese, Korean, and more
 
-## 🤖 Agents
+## 🤖 Available Agents
 
 - `agent`: Master agent that performs planning and executions
 - `openai`: LLM agents with strong foundation knowledge
 - `rag`: Agents to answer queries with growing knowledge base
 - `summarizer`: Agent to summarize the plan execution
 
-## 🖥️ MCP Servers Available
+## 🖥️ Available MCP Servers
 
 - `onlysaid_admin`: Onlysaid admin server
 - `web_surfer`: Web surfer server
