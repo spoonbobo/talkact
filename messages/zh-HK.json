@@ -346,7 +346,10 @@
     "save": "保存",
     "no_skills_found": "沒有找到技能",
     "name": "名稱",
-    "enter_name": "輸入名稱"
+    "enter_name": "輸入名稱",
+    "skill_executed": "技能已執行",
+    "log_content": "日誌內容",
+    "plan_approved": "計劃已批准"
   },
   "Learn": {
     "learn": "學習",

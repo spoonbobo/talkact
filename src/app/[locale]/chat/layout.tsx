@@ -162,7 +162,7 @@ const SimplifiedPlanSection = ({
                             : [];
 
                         logsObj[plan.id] = formattedLogs;
-                        console.log("Fetched logs for plan:", plan.id, formattedLogs);
+                        // console.log("Fetched logs for plan:", plan.id, formattedLogs);
                     }
                 } catch (error) {
                     console.error(`Error fetching logs for plan ${plan.id}:`, error);
@@ -302,7 +302,7 @@ const SimplifiedPlanSection = ({
                 const response = await fetch(`/api/plan/get_task?taskId=${log.task_id}`);
                 if (response.ok) {
                     const taskData = await response.json();
-                    console.log("Fetched task data for log:", taskData);
+                    // console.log("Fetched task data for log:", taskData);
 
                     if (taskData.skills && Array.isArray(taskData.skills) && taskData.skills.length > 0) {
                         const allSkills: string[] = [];
@@ -440,6 +440,8 @@ const SimplifiedPlanSection = ({
 
     const handleApprove = async (log: PlanLog) => {
         // First update the log type to approved
+        // FOR testing
+        // TODO: remove this
         const logUpdateResponse = await fetch('/api/plan/update_plan_log', {
             method: 'PUT',
             headers: {

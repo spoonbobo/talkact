@@ -6,6 +6,7 @@ import os
 import datetime
 import json
 from loguru import logger
+import asyncio
 import dotenv
 
 dotenv.load_dotenv()
@@ -770,74 +771,106 @@ class MCPClient:
                     )
     
 
+                skill_ids = []
                 if not skill_id and task is not None:
-                    skill_id = task.get("skills")[0]
+                    skill_ids = task.get("skills")
                 
+                elif isinstance(skill_id, str):
+                    skill_ids = [skill_id]
+
+                if not skill_ids:
+                    return
+            
                 # Get the skill details
-                skill_response = await client.get(
-                    f"{client_url}/api/skill/get_skill?id={skill_id}",
+                logger.info(f"Skill IDs: {skill_ids}")
+                skill_response = await client.post(
+                    f"{client_url}/api/skill/get_skill",
+                    json={"ids": skill_ids},
                     headers={"Content-Type": "application/json"}
                 )
                 skill_response.raise_for_status()
-                skill_data = skill_response.json().get("skill", {})
-                logger.info(f"Skill data: {skill_data}")
+                skill_data = skill_response.json().get("skills", [])
+                
                 plan_id = log_data.get("plan_id")
-                raw_args = skill_data.get("args", {})
-                logger.info(f"Skill data: {skill_data}")
-                
-        #         # Execute the skill using the appropriate MCP server
-                mcp_server = skill_data.get("mcp_server", "onlysaid_admin")
-                tool_name = skill_data.get("name")
-                args = skill_data.get("args", {})
-                logger.info(f"Executing skill {tool_name} on server {mcp_server} with args: {args}")
-                
-                await client.post(
-                    f"{client_url}/api/plan/create_plan_log",
-                    json={
+                raw_args = {}
+                for skill in skill_data:
+                    raw_args[skill.get("id")] = {
+                        "mcp_server": skill.get("mcp_server"),
+                        "tool_name": skill.get("name"),
+                        "args": skill.get("args", {})
+                    }
+                logger.info(f"Raw args: {raw_args}")
+
+                resp = await asyncio.gather(*[
+                    client.post(
+                        f"{client_url}/api/plan/create_plan_log",
+                        json={
                         "id": str(uuid4()),
                         "type": "performing_skill",
-                        "content": f"Skill {tool_name} started execution",
+                        "content": f"Skill {skill_args.get('tool_name')} started execution",
                         "plan_id": plan_id,
-                    },
-                    headers={"Content-Type": "application/json"}
-                )
+                        },
+                        headers={"Content-Type": "application/json"}
+                    )
+                    for skill_id, skill_args in raw_args.items()
+                ])
                 
+                                
                 # Transform args to the format expected by the tool execution
                 # From: {'plan_id': {'type': 'string', 'title': 'Plan Id', 'value': '8663356e-6e03-4f35-b26d-c9eb1cc082e8', 'description': ''}}
                 # To: {'plan_id': '8663356e-6e03-4f35-b26d-c9eb1cc082e8'}
-                args = {}
-                if isinstance(raw_args, dict):
-                    for key, arg in raw_args.items():
+                skill_args = {}
+                for skill_id, skill_arg in raw_args.items():
+                    logger.info(f"Skill arg: {skill_arg}")
+                    skill_args[skill_id] = {
+                        "args": {},
+                        "tool_name": skill_arg.get("tool_name"),
+                        "mcp_server": skill_arg.get("mcp_server"),
+                    }
+                    args = skill_arg.get("args")
+                    for key, arg in args.items():
                         if isinstance(arg, dict) and 'value' in arg:
-                            args[key] = arg['value']
+                            skill_args[skill_id]["args"][key] = arg['value']
                         else:
-                            args[key] = arg
+                            skill_args[skill_id]["args"][key] = arg
+                    
 
-                result = await self.servers[mcp_server].call_tool(tool_name, args)
-                logger.info(f"Skill result: {result}")
-                resp = await client.post(
-                    f"{client_url}/api/plan/create_plan_log",
-                    json={
-                        "id": str(uuid4()),
-                        "type": "skill_executed",
-                        # TODO: refine it.
-                        "content": f"Skill {tool_name} was performed. Result: {result}",
-                        "plan_id": plan_id,
-                    },
-                    headers={"Content-Type": "application/json"}
-                )
-                resp.raise_for_status()
+
+                #  Skill args: {'f86b5f77-fc7e-496c-a193-dcf6bff4805e': {'query': 'latest news on artificial intelligence'},
+                # '1dcd037e-a4f4-4750-8025-6e76d3e68263': {'query': 'current trends in renewable energy'}}
+                results = await asyncio.gather(*[
+                    self.servers[args.get("mcp_server")].call_tool(args.get("tool_name"), args.get("args"))
+                    for _, args in skill_args.items()
+                ])
+    
+                # REPORT the work
+                # TODO: add more details
+                resp = await asyncio.gather(*[
+                    client.post(
+                        f"{client_url}/api/plan/create_plan_log",
+                        json={
+                            "id": str(uuid4()),
+                            "type": "skill_executed",
+                            "content": result.content[0].text,
+                            "plan_id": plan_id,
+                        },
+                        headers={"Content-Type": "application/json"}
+                    )
+                    for result in results
+                ])
+            
+                
                 # logger.info(f"Skill result: {result}")
                 task_id = log_data.get("task_id")
                 if task is None:
                     return
                 step_number = task.get("step_number")
                 
-                success = not result.isError
+                success = all(not result.isError for result in results)
                 logger.info(f"Success: {success}")
                 
                 # 1. update the progress of the task
-                await client.put(
+                resp = await client.put(
                     f"{client_url}/api/plan/update_task",
                     json={
                         "id": task_id, 
@@ -845,6 +878,7 @@ class MCPClient:
                     },
                     headers={"Content-Type": "application/json"}
                 )
+
                 # 2. update the progress of the plan
                 # determine how many tasks are there.
                 tasks = await client.get(
@@ -872,8 +906,7 @@ class MCPClient:
                     headers={"Content-Type": "application/json"}
                 )
                 update_response.raise_for_status()
-                logger.info(f"Plan progress update response: {update_response.status_code}")
-                
+
                 # Log the updated plan to verify changes
                 updated_plan = await client.get(
                     f"{client_url}/api/plan/get_plan_by_id?id={plan_id}",
@@ -882,181 +915,163 @@ class MCPClient:
                 updated_plan.raise_for_status()
                 updated_plan_data = updated_plan.json()
                 logger.info(f"Updated plan data: progress={updated_plan_data.get('progress')}, status={updated_plan_data.get('status')}")
-                
-                # 3. determine if the plan is completed, if not, prepare the skill and, proceed to next step with background ctx
-                async with httpx.AsyncClient() as client:
-                    user_response = await client.get(
-                        f"{client_url}/api/user/get_user_by_username?username=agent",
-                        headers={"Content-Type": "application/json"}
-                    )
-                    user_response.raise_for_status()
-                    agent = user_response.json()
-                    plan_response = await client.get(
-                        f"{client_url}/api/plan/get_plan_by_id?id={plan_id}",
-                        headers={"Content-Type": "application/json"}
-                    )
-                    plan_response.raise_for_status()
-                    plan_data = plan_response.json()
-                    logger.info(f"Plan data: {plan_data}")
-                    room_id = plan_data.get("room_id")
-                    logger.info(f"Room id: {room_id}")
-        
-                    if progress == 100:
-                        # create a plan log
-                        success_plan_log = await client.post(
-                            f"{client_url}/api/plan/create_plan_log",
-                            json={
-                                "id": str(uuid4()),
-                                "type": "plan_completed",
-                                "content": f"✅ I've successfully completed the plan! Mission accomplished: {result}!",
-                                "plan_id": plan_id,
-                            },
-                            headers={"Content-Type": "application/json"}
-                        )
-                        success_plan_log.raise_for_status()
-                        
-                        # summarize the plan
-                        plan_logs_response = await client.get(
-                            f"{client_url}/api/plan/get_plan_log?planId={plan_id}",
-                            headers={"Content-Type": "application/json"}
-                        )
-                        plan_logs_response.raise_for_status()
-                        plan_logs = plan_logs_response.json()
-                        formatted_plan_logs = self._format_plan_logs(plan_logs)
-                        
-                        user_prompt = SUMMARIZATION_PLAN_USER_PROMPT.format(
-                            plan_overview=plan_data.get("plan_overview"),
-                            plan_context=plan_data.get("plan_context"),
-                            logs=formatted_plan_logs
-                        )
-                        
-                        logger.info(f"User prompt: {user_prompt}")
-                        
-                        summarization = self.openai_client.chat.completions.create(
-                            model="deepseek-chat",
-                            messages=[
-                                {"role": "system", "content": SUMMARIZATION_PLAN_SYSTEM_PROMPT}, 
-                                {"role": "user", "content": user_prompt}
-                            ],
-                        )
-                        summarization = summarization.choices[0].message.content
-                        logger.info(f"Summarization: {summarization}")
-                        
-                        # send msg to chat
-                        await self.socket_client.send_message(
-                            {
-                                "id": str(uuid4()),
-                                "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(),
-                                "sender": agent["user"],
-                                "content": summarization,
-                                "avatar": agent["user"].get("avatar", None),
-                                "room_id": room_id,
-                                "mentions": []
-                            }
-                        )
-                        return
-                    
-                    next_step_number = step_number + 1
-                    # TODO: may optimize them
-                    response = await client.get(
-                        f"{client_url}/api/plan/get_tasks?planId={plan_id}",
-                        headers={"Content-Type": "application/json"}
-                    )
-                    response.raise_for_status()
-                    tasks = response.json()
-                    next_task = next((task for task in tasks if task["step_number"] == next_step_number), None)
-                    if next_task is None:
-                        return
-                    system_prompt = MCP_REQUEST_SYSTEM_PROMPT.format(
-                        mcp_server_speciality=self.server_descriptions_dict[mcp_server]
-                    )
-                    # TODO: Refine it later.
-                    background_information = prepare_background_information_from_dict(plan_data, next_task.get("step_number"))
-                    user_prompt = MCP_REQUEST_PROMPT.format(
-                        plan_name=plan_data.get("plan_name"),
-                        plan_overview=plan_data.get("plan_overview"),
-                        background_information=background_information,
-                        task=next_task.get("task_name"),
-                        reason=next_task.get("task_explanation"),
-                        expectation=next_task.get("expected_result")
-                    )
-                    skills = self.mcp_tools_dict[mcp_server]
-                    
-                    tools = self.openai_client.chat.completions.create(
-                        model="deepseek-chat",
-                        messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
-                        tools=skills,
-                        tool_choice="required"
-                    )
-                    skills = parse_mcp_tools(tools, mcp_server, self.mcp_tools_dict)
-                    logger.info(f"Skills: {skills}")
-                    
-                    # task_id = step_1.get('task_id')
-                    skills_data = [skill.model_dump() for skill in skills]
-                    
-                    # 1. create_skills
-                    skill_ids = []
-                    for skill in skills_data:
-                        skill_response = await client.post(
-                            f"{client_url}/api/skill/create_skill",
-                            json=skill,
-                            headers={"Content-Type": "application/json"}
-                        )
-                        skill_response.raise_for_status()
-                        skill_ids.append(skill_response.json()["skill"]["id"])
-                    
-                    logger.info(f"Skill IDs: {skill_ids}")
 
-                    # 2. update the task to pending and include skills
-                    task_update_data = {
-                        "id": next_task.get('id'),  # Make sure we're using the correct task ID
-                        "status": "pending",
-                        "skills": skill_ids
-                    }
-                    plan_log_id = str(uuid4())
-                    
-                    response = await client.put(
-                        f"{client_url}/api/plan/update_task",
-                        json=task_update_data,
+                # 3. determine if the plan is completed, if not, prepare the skill and, proceed to next step with background ctx
+                user_response = await client.get(
+                    f"{client_url}/api/user/get_user_by_username?username=agent",
+                    headers={"Content-Type": "application/json"}
+                )
+                user_response.raise_for_status()
+                agent = user_response.json()
+                plan_response = await client.get(
+                    f"{client_url}/api/plan/get_plan_by_id?id={plan_id}",
+                    headers={"Content-Type": "application/json"}
+                )
+                plan_response.raise_for_status()
+                plan_data = plan_response.json()
+                logger.info(f"Plan data: {plan_data}")
+                room_id = plan_data.get("room_id")
+                logger.info(f"Room id: {room_id}")
+    
+                if progress == 100:
+                    # summarize the plan
+                    plan_logs_response = await client.get(
+                        f"{client_url}/api/plan/get_plan_log?planId={plan_id}",
                         headers={"Content-Type": "application/json"}
                     )
-                                
-                    response.raise_for_status()
+                    plan_logs_response.raise_for_status()
+                    plan_logs = plan_logs_response.json()
+                    formatted_plan_logs = self._format_plan_logs(plan_logs)
                     
+                    user_prompt = SUMMARIZATION_PLAN_USER_PROMPT.format(
+                        plan_overview=plan_data.get("plan_overview"),
+                        plan_context=plan_data.get("plan_context"),
+                        logs=formatted_plan_logs
+                    )
                     
-                    # 3. prepare a plan log
-                    plan_log = {
-                        "id": plan_log_id,
-                        "plan_id": plan_id,
-                        "task_id": next_task.get('id'),
-                        "type": "approval_requested",
-                        "content": f"Task {next_task.get('task_name')} is ready for approval",
-                        "created_at": datetime.datetime.now().isoformat()
-                    }
-                    await client.post(
-                        f"{client_url}/api/plan/create_plan_log",
-                        json=plan_log,
+                    logger.info(f"User prompt: {user_prompt}")
+                    
+                    summarization = self.openai_client.chat.completions.create(
+                        model="deepseek-chat",
+                        messages=[
+                            {"role": "system", "content": SUMMARIZATION_PLAN_SYSTEM_PROMPT}, 
+                            {"role": "user", "content": user_prompt}
+                        ],
+                    )
+                    summarization = summarization.choices[0].message.content
+                    logger.info(f"Summarization: {summarization}")
+                    
+                    # send msg to chat
+                    await self.socket_client.send_message(
+                        {
+                            "id": str(uuid4()),
+                            "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(),
+                            "sender": agent["user"],
+                            "content": summarization,
+                            "avatar": agent["user"].get("avatar", None),
+                            "room_id": room_id,
+                            "mentions": []
+                        }
+                    )
+                    return
+                
+                next_step_number = step_number + 1
+                # TODO: may optimize them
+                response = await client.get(
+                    f"{client_url}/api/plan/get_tasks?planId={plan_id}",
+                    headers={"Content-Type": "application/json"}
+                )
+                response.raise_for_status()
+                tasks = response.json()
+                next_task = next((task for task in tasks if task["step_number"] == next_step_number), None)
+                if next_task is None:
+                    return
+                next_mcp_server = next_task.get("mcp_server")
+                system_prompt = MCP_REQUEST_SYSTEM_PROMPT.format(
+                    mcp_server_speciality=self.server_descriptions_dict[next_mcp_server]
+                )
+
+                # TODO: Refine it later.
+                background_information = prepare_background_information_from_dict(plan_data, next_task.get("step_number"))
+                user_prompt = MCP_REQUEST_PROMPT.format(
+                    plan_name=plan_data.get("plan_name"),
+                    plan_overview=plan_data.get("plan_overview"),
+                    background_information=background_information,
+                    task=next_task.get("task_name"),
+                    reason=next_task.get("task_explanation"),
+                    expectation=next_task.get("expected_result")
+                )
+                skills = self.mcp_tools_dict[next_mcp_server]
+                
+                tools = self.openai_client.chat.completions.create(
+                    model="deepseek-chat",
+                    messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
+                    tools=skills,
+                    tool_choice="required"
+                )
+                skills = parse_mcp_tools(tools, next_mcp_server, self.mcp_tools_dict)                
+                skills_data = [skill.model_dump() for skill in skills]
+                
+                # 1. create_skills
+                skill_ids = []
+                for skill in skills_data:
+                    skill_response = await client.post(
+                        f"{client_url}/api/skill/create_skill",
+                        json=skill,
                         headers={"Content-Type": "application/json"}
                     )
-                    
-                    # 4. notify the client (use mcp_client)
-                    message = seek_task_approval_message(
-                        next_task, 
-                        skills_data,
-                        skill_ids,
-                        plan_log_id
-                    )
-                    await self.socket_client.send_message({
-                        "id": str(uuid4()),
-                        "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(),
-                        "sender": agent["user"],
-                        "content": message,
-                        "avatar": agent["user"].get("avatar", None),
-                        "room_id": room_id,
-                        "mentions": []
-                    })
-                    
-                    return json.dumps({"message": "First task sent to client for approval"})
+                    skill_response.raise_for_status()
+                    skill_ids.append(skill_response.json()["skill"]["id"])
+                
+                # 2. update the task to pending and include skills
+                task_update_data = {
+                    "id": next_task.get('id'),  # Make sure we're using the correct task ID
+                    "status": "pending",
+                    "skills": skill_ids
+                }
+                plan_log_id = str(uuid4())
+                
+                response = await client.put(
+                    f"{client_url}/api/plan/update_task",
+                    json=task_update_data,
+                    headers={"Content-Type": "application/json"}
+                )            
+                response.raise_for_status()
+                
+                
+                # 3. prepare a plan log
+                plan_log = {
+                    "id": plan_log_id,
+                    "plan_id": plan_id,
+                    "task_id": next_task.get('id'),
+                    "type": "approval_requested",
+                    "content": f"Task {next_task.get('task_name')} is ready for approval",
+                    "created_at": datetime.datetime.now().isoformat()
+                }
+                await client.post(
+                    f"{client_url}/api/plan/create_plan_log",
+                    json=plan_log,
+                    headers={"Content-Type": "application/json"}
+                )
+                
+                # 4. notify the client (use mcp_client)
+                message = seek_task_approval_message(
+                    next_task, 
+                    skills_data,
+                    skill_ids,
+                    plan_log_id
+                )
+                await self.socket_client.send_message({
+                    "id": str(uuid4()),
+                    "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(),
+                    "sender": agent["user"],
+                    "content": message,
+                    "avatar": agent["user"].get("avatar", None),
+                    "room_id": room_id,
+                    "mentions": []
+                })
+                
+                return json.dumps({"message": "First task sent to client for approval"})
                     
                             
         except Exception as e:

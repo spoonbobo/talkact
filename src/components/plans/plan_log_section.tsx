@@ -118,10 +118,10 @@ const PlanLogSection = ({
     // Update logs when initialLogs changes
     useEffect(() => {
         if (initialLogs && initialLogs.length > 0) {
-            console.log("Initial logs provided:", initialLogs);
+            // console.log("Initial logs provided:", initialLogs);
             try {
                 const normalized = initialLogs.map(normalizeLogData);
-                console.log("Normalized logs:", normalized);
+                // console.log("Normalized logs:", normalized);
                 setLogs(normalized);
             } catch (error) {
                 console.error("Error normalizing logs:", error, initialLogs);

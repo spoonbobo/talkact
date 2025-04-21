@@ -113,6 +113,8 @@ export default function PlanLogModal({
     const [fetchedSkills, setFetchedSkills] = useState<Record<string, any>>({});
     const [isLoadingSkillDetails, setIsLoadingSkillDetails] = useState(false);
     const [expandedSkills, setExpandedSkills] = useState<Set<string>>(new Set());
+    const [editingMultipleSkills, setEditingMultipleSkills] = useState(false);
+    const [currentSkillIndex, setCurrentSkillIndex] = useState(0);
 
     // Ref hooks
     const skillNameInputRef = useRef<HTMLInputElement>(null);
@@ -220,22 +222,36 @@ export default function PlanLogModal({
     const handleEditSkill = (skill: any) => {
         console.log("Editing skill:", skill);
 
-        // If skill is an array of skill IDs, we need to fetch the first skill
+        // If skill is an array of skill IDs, we need to fetch all skills
         if (Array.isArray(skill) && skill.length > 0) {
-            const fetchSkillDetails = async () => {
-                try {
-                    const response = await fetch(`/api/skill/get_skill?id=${skill[0]}`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        console.log("Fetched skill details:", data.skill);
-                        initializeSkillForm(data.skill);
-                    }
-                } catch (error) {
-                    console.error("Error fetching skill details:", error);
-                }
-            };
+            // We already have the skills in fetchedSkills, so we can use that
+            if (Object.keys(fetchedSkills).length > 0) {
+                // Get the first skill to initialize the form
+                const firstSkillId = Object.keys(fetchedSkills)[0];
+                const firstSkill = fetchedSkills[firstSkillId];
 
-            fetchSkillDetails();
+                // Initialize with the first skill, but mark that we're editing multiple
+                initializeSkillForm(firstSkill, firstSkillId);
+
+                // Set a flag or state to indicate we're editing multiple skills
+                setEditingMultipleSkills(true);
+            } else {
+                // If fetchedSkills is empty, fetch the first skill
+                const fetchSkillDetails = async () => {
+                    try {
+                        const response = await fetch(`/api/skill/get_skill?id=${skill[0]}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log("Fetched skill details:", data.skill);
+                            initializeSkillForm(data.skill, skill[0]);
+                        }
+                    } catch (error) {
+                        console.error("Error fetching skill details:", error);
+                    }
+                };
+
+                fetchSkillDetails();
+            }
             return;
         }
 
@@ -300,6 +316,8 @@ export default function PlanLogModal({
         setToolParams({});
         setParamTypes({});
         setErrors({});
+        setEditingMultipleSkills(false);
+        setCurrentSkillIndex(0);
     };
 
     const validateForm = () => {
@@ -318,6 +336,10 @@ export default function PlanLogModal({
     };
 
     const handleSaveSkill = async () => {
+        if (!validateForm()) {
+            return;
+        }
+
         setIsLoading(true);
 
         try {
@@ -368,14 +390,37 @@ export default function PlanLogModal({
                 setFetchedSkills(updatedSkills);
             }
 
+            // If we're not editing multiple skills, reset editing state
+            if (!editingMultipleSkills) {
+                setEditingSkill(null);
+                if (onSkillUpdated) {
+                    onSkillUpdated();
+                }
+            }
+
             // Show success message
 
-            // Reset editing state
-            setEditingSkill(null);
+
         } catch (error) {
             console.error("Error updating skill:", error);
+
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    // Function to save all skills and exit edit mode
+    const handleSaveAllSkills = async () => {
+        // First save the current skill
+        await handleSaveSkill();
+
+        // Then exit edit mode
+        setEditingSkill(null);
+        setEditingMultipleSkills(false);
+        setCurrentSkillIndex(0);
+
+        if (onSkillUpdated) {
+            onSkillUpdated();
         }
     };
 
@@ -540,6 +585,94 @@ export default function PlanLogModal({
         return null;
     };
 
+    // Function to navigate to the next skill when editing multiple skills
+    const handleNextSkill = async () => {
+        // First save the current skill
+        await handleSaveSkill();
+
+        // Then move to the next skill
+        const skillIds = Object.keys(fetchedSkills);
+        const nextIndex = (currentSkillIndex + 1) % skillIds.length;
+        setCurrentSkillIndex(nextIndex);
+
+        // Initialize the form with the next skill
+        const nextSkillId = skillIds[nextIndex];
+        const nextSkill = fetchedSkills[nextSkillId];
+        initializeSkillForm(nextSkill, nextSkillId);
+    };
+
+    // Function to navigate to the previous skill when editing multiple skills
+    const handlePrevSkill = async () => {
+        // First save the current skill
+        await handleSaveSkill();
+
+        // Then move to the previous skill
+        const skillIds = Object.keys(fetchedSkills);
+        const prevIndex = (currentSkillIndex - 1 + skillIds.length) % skillIds.length;
+        setCurrentSkillIndex(prevIndex);
+
+        // Initialize the form with the previous skill
+        const prevSkillId = skillIds[prevIndex];
+        const prevSkill = fetchedSkills[prevSkillId];
+        initializeSkillForm(prevSkill, prevSkillId);
+    };
+
+    // Add this helper function to detect and parse JSON content
+    const tryParseJSON = (content: string) => {
+        try {
+            return JSON.parse(content);
+        } catch (e) {
+            return null;
+        }
+    };
+
+    // Add this function to render JSON content in a structured way
+    const renderJsonContent = (jsonData: any) => {
+        if (!jsonData) return null;
+
+        if (Array.isArray(jsonData)) {
+            return (
+                <Stack gap={3}>
+                    {jsonData.map((item, index) => (
+                        <Box
+                            key={index}
+                            p={3}
+                            borderRadius="md"
+                            bg={useColorModeValue('gray.50', 'gray.700')}
+                            borderWidth="1px"
+                            borderColor={borderColor}
+                        >
+                            {typeof item === 'object' ? renderJsonContent(item) : (
+                                <Text color={textColor}>{String(item)}</Text>
+                            )}
+                        </Box>
+                    ))}
+                </Stack>
+            );
+        }
+
+        return (
+            <Stack gap={2}>
+                {Object.entries(jsonData).map(([key, value]) => (
+                    <Box key={key}>
+                        <Text fontWeight="semibold" fontSize="sm" color={textColorStrong}>
+                            {key}:
+                        </Text>
+                        {typeof value === 'object' ? (
+                            <Box pl={4} borderLeftWidth="2px" borderColor={accentColor} mt={1}>
+                                {renderJsonContent(value)}
+                            </Box>
+                        ) : (
+                            <Text color={textColor} pl={4}>
+                                {String(value)}
+                            </Text>
+                        )}
+                    </Box>
+                ))}
+            </Stack>
+        );
+    };
+
     return (
         <Dialog.Root
             open={isOpen}
@@ -571,6 +704,34 @@ export default function PlanLogModal({
                                 </Flex>
                             ) : editingSkill ? (
                                 <Stack gap={4}>
+                                    {/* Add navigation controls when editing multiple skills */}
+                                    {editingMultipleSkills && (
+                                        <Flex justify="space-between" align="center" mb={2}>
+                                            <Text color={textColorStrong} fontWeight="medium">
+                                                {t("editing_skill")} {currentSkillIndex + 1} {t("of")} {Object.keys(fetchedSkills).length}
+                                            </Text>
+                                            <HStack gap={2}>
+                                                <IconButton
+                                                    aria-label={t("previous_skill")}
+                                                    size="sm"
+                                                    onClick={handlePrevSkill}
+                                                    disabled={isLoading}
+                                                >
+                                                    <Icon as={FiChevronUp} />
+                                                </IconButton>
+                                                <IconButton
+                                                    aria-label={t("next_skill")}
+                                                    // icon={<FiChevronDown />}
+                                                    size="sm"
+                                                    onClick={handleNextSkill}
+                                                    disabled={isLoading}
+                                                >
+                                                    <Icon as={FiChevronDown} />
+                                                </IconButton>
+                                            </HStack>
+                                        </Flex>
+                                    )}
+
                                     <Field.Root invalid={!!errors.skillName}>
                                         <Field.Label color={textColorStrong}>{t("name")}</Field.Label>
                                         <Input
@@ -835,6 +996,104 @@ export default function PlanLogModal({
                                             </Box>
                                         </Box>
 
+                                        {/* Log Content */}
+                                        {log.content && log.content !== getPlanOverview() && (
+                                            <Box>
+                                                <Text fontWeight="semibold" color={textColorStrong} mb={1}>
+                                                    {t("log_content")}
+                                                </Text>
+                                                <Box
+                                                    p={3}
+                                                    borderRadius="md"
+                                                    bg={contentBoxBg}
+                                                    border="1px"
+                                                    borderColor={borderColor}
+                                                    boxShadow="sm"
+                                                    transition="all 0.2s"
+                                                    _hover={{ boxShadow: "md" }}
+                                                >
+                                                    {(() => {
+                                                        // Try to parse as JSON first
+                                                        const jsonData = tryParseJSON(log.content);
+
+                                                        if (jsonData) {
+                                                            // If it's valid JSON, render it in a structured way
+                                                            return renderJsonContent(jsonData);
+                                                        } else if (log.content) {
+                                                            // If there's formatted content, use that
+                                                            return (
+                                                                <Text
+                                                                    color={textColor}
+                                                                    whiteSpace="pre-wrap"
+                                                                    css={{
+                                                                        lineHeight: "1.6",
+                                                                        fontSize: "0.95rem",
+                                                                        fontFamily: "system-ui, sans-serif",
+                                                                        '& strong, & b': { color: textColorStrong, fontWeight: "600" },
+                                                                        '& ul, & ol': { paddingLeft: '1.5rem', marginY: '0.5rem' },
+                                                                        '& li': { marginY: '0.25rem' },
+                                                                        '& code': {
+                                                                            bg: codeBackgroundColor,
+                                                                            px: 1,
+                                                                            py: 0.5,
+                                                                            borderRadius: 'sm',
+                                                                            fontSize: '0.9em',
+                                                                            fontFamily: 'monospace'
+                                                                        },
+                                                                        '& pre': {
+                                                                            bg: codeBackgroundColor,
+                                                                            p: 2,
+                                                                            borderRadius: 'md',
+                                                                            overflowX: 'auto',
+                                                                            my: 2
+                                                                        }
+                                                                    }}
+                                                                    dangerouslySetInnerHTML={{ __html: log.content }}
+                                                                />
+                                                            );
+                                                        } else {
+                                                            // Otherwise, just show the raw content
+                                                            return (
+                                                                <Text
+                                                                    color={textColor}
+                                                                    whiteSpace="pre-wrap"
+                                                                    css={{
+                                                                        lineHeight: "1.6",
+                                                                        fontSize: "0.95rem",
+                                                                        fontFamily: "system-ui, sans-serif",
+                                                                        '& strong, & b': { color: textColorStrong, fontWeight: "600" },
+                                                                        '& ul, & ol': { paddingLeft: '1.5rem', marginY: '0.5rem' },
+                                                                        '& li': { marginY: '0.25rem' },
+                                                                        '& code': {
+                                                                            bg: codeBackgroundColor,
+                                                                            px: 1,
+                                                                            py: 0.5,
+                                                                            borderRadius: 'sm',
+                                                                            fontSize: '0.9em',
+                                                                            fontFamily: 'monospace'
+                                                                        },
+                                                                        '& pre': {
+                                                                            bg: codeBackgroundColor,
+                                                                            p: 2,
+                                                                            borderRadius: 'md',
+                                                                            overflowX: 'auto',
+                                                                            my: 2
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    {log.content}
+                                                                </Text>
+                                                            );
+                                                        }
+                                                    })()}
+                                                </Box>
+                                            </Box>
+                                        )}
+
+                                        {/* Add Separator before Task Details if both plan and task info exist */}
+                                        {(log.planName || getPlanOverview()) && (log.task_id || taskDetails) && (
+                                            <Separator my={4} borderColor={borderColor} />
+                                        )}
 
                                         {/* Task ID if available */}
                                         {log.task_id && (
@@ -885,16 +1144,43 @@ export default function PlanLogModal({
                                     >
                                         {t("cancel")}
                                     </Button>
-                                    <Button
-                                        onClick={handleSaveSkill}
-                                        colorScheme="blue"
-                                        flex="1"
-                                        loading={isLoading}
-                                        bg={plansColors.blueBgColor}
-                                        _hover={{ bg: plansColors.blueHoverBgColor }}
-                                    >
-                                        {t("save")}
-                                    </Button>
+                                    {editingMultipleSkills ? (
+                                        <>
+                                            <Button
+                                                onClick={handleNextSkill}
+                                                colorScheme="blue"
+                                                variant="outline"
+                                                flex="1"
+                                                borderColor={plansColors.blueBgColor}
+                                                color={plansColors.blueBgColor}
+                                                _hover={{ bg: buttonHoverBgColor }}
+                                                loading={isLoading}
+                                            >
+                                                {t("save_and_next")}
+                                            </Button>
+                                            <Button
+                                                onClick={handleSaveAllSkills}
+                                                colorScheme="blue"
+                                                flex="1"
+                                                bg={plansColors.blueBgColor}
+                                                _hover={{ bg: plansColors.blueHoverBgColor }}
+                                                loading={isLoading}
+                                            >
+                                                {t("save_all")}
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <Button
+                                            onClick={handleSaveSkill}
+                                            colorScheme="blue"
+                                            flex="1"
+                                            loading={isLoading}
+                                            bg={plansColors.blueBgColor}
+                                            _hover={{ bg: plansColors.blueHoverBgColor }}
+                                        >
+                                            {t("save")}
+                                        </Button>
+                                    )}
                                 </Stack>
                             ) : isConfirmation ? (
                                 <Stack direction="row" gap={4} width="100%">
