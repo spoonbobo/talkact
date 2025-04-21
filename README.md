@@ -33,3 +33,7 @@
 ## 👥 Contribution
 
 - We welcome any contributions to the project. Please feel free to submit a PR.
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=spoonbobo/onlysaid&type=Date)](https://www.star-history.com/#spoonbobo/onlysaid&Date)
