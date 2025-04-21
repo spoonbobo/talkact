@@ -13,6 +13,7 @@ import { Box, Heading, Icon, Container, Center, Text, VStack, SimpleGrid, Button
 import { FaHome, FaTools, FaFolder, FaCode, FaRocket } from "react-icons/fa";
 import { FaNetworkWired } from "react-icons/fa6";
 import { useColorModeValue } from "@/components/ui/color-mode";
+import { useSettingsColors } from "@/utils/colors";
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -24,17 +25,15 @@ const FeatureCard = ({ icon, title, description, onClick }: {
   description: string;
   onClick?: () => void;
 }) => {
-  const cardBg = useColorModeValue("white", "gray.700");
-  const cardBorder = useColorModeValue("gray.200", "gray.600");
-  const iconColor = useColorModeValue("blue.500", "blue.300");
+  const colors = useSettingsColors();
 
   return (
     <MotionBox
       p={6}
       borderWidth="1px"
-      borderColor={cardBorder}
+      borderColor={colors.borderColor}
       borderRadius="lg"
-      bg={cardBg}
+      bg={colors.cardBg}
       boxShadow="sm"
       whileHover={{ y: -5, boxShadow: "0 10px 30px -10px rgba(0,0,0,0.2)" }}
       transition={{ duration: 0.2 }}
@@ -42,9 +41,9 @@ const FeatureCard = ({ icon, title, description, onClick }: {
       onClick={onClick}
       height="100%"
     >
-      <Icon as={icon} fontSize="3xl" color={iconColor} mb={4} />
-      <Heading size="md" mb={3}>{title}</Heading>
-      <Text fontSize="sm">{description}</Text>
+      <Icon as={icon} fontSize="3xl" color={colors.accentColor} mb={4} />
+      <Heading size="md" mb={3} color={colors.textColorHeading}>{title}</Heading>
+      <Text fontSize="sm" color={colors.textColorMuted}>{description}</Text>
     </MotionBox>
   );
 };
@@ -57,11 +56,10 @@ export default function DashboardPage() {
     (state: RootState) => state.user
   );
 
-  // Color mode values
-  const textColorHeading = useColorModeValue("gray.800", "gray.100");
-  const textColor = useColorModeValue("gray.600", "gray.400");
-  const bgColor = useColorModeValue("gray.50", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
+  // Use the colors utility
+  const colors = useSettingsColors();
+
+  // Gradient background
   const gradientBg = useColorModeValue(
     "linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%)",
     "linear-gradient(135deg, #2d3748 0%, #1a202c 100%)"
@@ -121,19 +119,19 @@ export default function DashboardPage() {
         overflow="hidden"
         position="relative"
       >
-        <Heading size="lg" mb={6} display="flex" alignItems="center" color={textColorHeading}>
-          <Icon as={FaTools} mr={3} color="blue.500" />
+        <Heading size="lg" mb={6} display="flex" alignItems="center" color={colors.textColorHeading}>
+          <Icon as={FaTools} mr={3} color={colors.accentColor} />
           {t("workbench")}
         </Heading>
 
         <Box
           p={8}
-          bg={bgColor}
+          bg={colors.bgColor}
           borderRadius="lg"
           boxShadow="sm"
           height="calc(100vh - 200px)"
           borderWidth="1px"
-          borderColor={borderColor}
+          borderColor={colors.borderColor}
           overflow="auto"
           position="relative"
         >
@@ -150,15 +148,14 @@ export default function DashboardPage() {
           >
             <Flex direction={{ base: "column", md: "row" }} align="center">
               <Box flex="1" pr={{ base: 0, md: 8 }} mb={{ base: 6, md: 0 }}>
-                <Heading size="xl" mb={4} lineHeight="1.2">
+                <Heading size="xl" mb={4} lineHeight="1.2" color={colors.textColorHeading}>
                   {t("welcome_to_workbench")}
                 </Heading>
-                <Text fontSize="lg" mb={6} color={textColor}>
+                <Text fontSize="lg" mb={6} color={colors.textColorMuted}>
                   {t("workbench_description")}
                 </Text>
                 <Flex gap={4} flexWrap="wrap">
                   <Button
-                    // leftIcon={<FaFolder />}
                     colorScheme="blue"
                     size="lg"
                     onClick={navigateToFileExplorer}
@@ -169,13 +166,13 @@ export default function DashboardPage() {
                 </Flex>
               </Box>
               <Center flex="1">
-                <Icon as={FaRocket} fontSize="9xl" color="blue.400" />
+                <Icon as={FaRocket} fontSize="9xl" color={colors.accentColor} />
               </Center>
             </Flex>
           </MotionBox>
 
           {/* Features section */}
-          <Heading size="md" mb={6} color={textColorHeading}>
+          <Heading size="md" mb={6} color={colors.textColorHeading}>
             {t("available_tools")}
           </Heading>
 
@@ -225,9 +222,9 @@ export default function DashboardPage() {
             p={6}
             borderRadius="lg"
             borderWidth="1px"
-            borderColor={borderColor}
-            bg={useColorModeValue("blue.50", "blue.900")}
-            color={useColorModeValue("blue.600", "blue.200")}
+            borderColor={colors.borderColor}
+            bg={colors.subtleSelectedItemBg}
+            color={colors.accentColor}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.5 }}
@@ -236,7 +233,7 @@ export default function DashboardPage() {
               <Icon as={FaTools} mr={2} />
               <Heading size="sm">{t("under_development")}</Heading>
             </Flex>
-            <Text fontSize="sm">
+            <Text fontSize="sm" color={colors.textColorMuted}>
               {t("currently_only_file_browsing")} {/* You may need to add this translation */}
             </Text>
           </MotionBox>

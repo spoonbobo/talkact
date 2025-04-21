@@ -11,6 +11,11 @@ const textFileExtensions = [
     '.c', '.cpp', '.h', '.php', '.rb', '.sh', '.bat', '.log'
 ];
 
+// List of supported image file extensions
+const imageFileExtensions = [
+    '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'
+];
+
 export async function GET(req: NextRequest) {
     try {
         // Check authentication
@@ -55,32 +60,56 @@ export async function GET(req: NextRequest) {
         // Get file extension
         const ext = path.extname(fullPath).toLowerCase();
 
-        // Check if it's a text file
-        if (!textFileExtensions.includes(ext)) {
+        // Check if it's a text file or an image file
+        if (textFileExtensions.includes(ext)) {
+            // Read file content (with size limit for safety)
+            const MAX_SIZE = 1024 * 1024; // 1MB limit
+            if (stats.size > MAX_SIZE) {
+                return NextResponse.json({
+                    error: 'File too large',
+                    message: 'File is too large to preview'
+                }, { status: 400 });
+            }
+
+            const content = fs.readFileSync(fullPath, 'utf8');
+
             return NextResponse.json({
-                error: 'Not a text file',
-                message: 'This file type cannot be previewed as text'
+                content,
+                name: path.basename(fullPath),
+                extension: ext.slice(1), // Remove the dot
+                size: stats.size,
+                lastModified: stats.mtime,
+                type: 'text'
+            });
+        } else if (imageFileExtensions.includes(ext)) {
+            // Handle image files
+            const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB limit for images
+            if (stats.size > MAX_IMAGE_SIZE) {
+                return NextResponse.json({
+                    error: 'File too large',
+                    message: 'Image is too large to preview'
+                }, { status: 400 });
+            }
+
+            // Read image as base64
+            const imageBuffer = fs.readFileSync(fullPath);
+            const base64Image = imageBuffer.toString('base64');
+            const mimeType = `image/${ext === '.jpg' ? 'jpeg' : ext.slice(1)}`;
+
+            return NextResponse.json({
+                content: `data:${mimeType};base64,${base64Image}`,
+                name: path.basename(fullPath),
+                extension: ext.slice(1),
+                size: stats.size,
+                lastModified: stats.mtime,
+                type: 'image'
+            });
+        } else {
+            return NextResponse.json({
+                error: 'Unsupported file type',
+                message: 'This file type cannot be previewed'
             }, { status: 400 });
         }
-
-        // Read file content (with size limit for safety)
-        const MAX_SIZE = 1024 * 1024; // 1MB limit
-        if (stats.size > MAX_SIZE) {
-            return NextResponse.json({
-                error: 'File too large',
-                message: 'File is too large to preview'
-            }, { status: 400 });
-        }
-
-        const content = fs.readFileSync(fullPath, 'utf8');
-
-        return NextResponse.json({
-            content,
-            name: path.basename(fullPath),
-            extension: ext.slice(1), // Remove the dot
-            size: stats.size,
-            lastModified: stats.mtime
-        });
     } catch (error) {
         console.error('Error in file content retrieval:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

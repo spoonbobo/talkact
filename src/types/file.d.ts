@@ -16,5 +16,9 @@ export interface Breadcrumb {
 // Interface for file content response
 export interface FileContentResponse {
     content: string;
+    name: string;
     extension: string;
+    size: number;
+    lastModified: string;
+    type: 'text' | 'image';
 }

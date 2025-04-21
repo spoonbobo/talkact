@@ -245,6 +245,9 @@ export const useKnowledgeBaseColors = () => {
         textColorMuted: useColorModeValue("gray.500", "gray.500"),
         cardBg: useColorModeValue("white", "gray.800"),
         cardBorderColor: useColorModeValue("gray.200", "gray.700"),
+        buttonBg: useColorModeValue("gray.100", "gray.700"),
+        buttonHoverBg: useColorModeValue("gray.200", "gray.600"),
+        buttonActiveBg: useColorModeValue("gray.300", "gray.500"),
         itemHoverBg: useColorModeValue("gray.50", "gray.750"),
         inputBg: useColorModeValue("white", "gray.700"),
         inputBorder: useColorModeValue("gray.200", "gray.600"),
@@ -266,6 +269,91 @@ export const useKnowledgeBaseColors = () => {
         cardHoverBorderColor: useColorModeValue("blue.200", "blue.300"),
         cardHeadingColor: useColorModeValue("blue.700", "blue.300"),
         loadingOverlayBg: useColorModeValue("rgba(255,255,255,0.9)", "rgba(26,32,44,0.9)"),
+        accentBg: useColorModeValue("blue.500", "blue.500"),
+        accentHoverBg: useColorModeValue("blue.600", "blue.400"),
+    };
+};
+
+// Workbench colors
+export const useWorkbenchColors = () => {
+    const { colorMode } = useColorMode();
+    const isDarkMode = colorMode === "dark";
+
+    return {
+        // Base colors
+        accentColor: "blue.500",
+        accentColorHover: useColorModeValue("blue.600", "blue.400"),
+        bgColor: useColorModeValue("bg.subtle", "gray.800"),
+        borderColor: useColorModeValue("gray.200", "gray.700"),
+        hoverBg: useColorModeValue("gray.50", "gray.700"),
+
+        // Text colors
+        textColor: useColorModeValue("gray.700", "gray.300"),
+        textColorHeading: useColorModeValue("gray.800", "gray.100"),
+        textColorMuted: useColorModeValue("gray.600", "gray.400"),
+        textColorStrong: useColorModeValue("gray.800", "gray.100"),
+
+        // Card and container colors
+        cardBg: useColorModeValue("white", "gray.800"),
+        cardBorderColor: useColorModeValue("gray.200", "gray.700"),
+        cardShadow: useColorModeValue("0 2px 5px rgba(0,0,0,0.05)", "0 2px 5px rgba(0,0,0,0.3)"),
+
+        // File explorer specific
+        fileIconColor: useColorModeValue("blue.500", "blue.300"),
+        folderIconColor: "yellow.400",
+        selectedItemBg: useColorModeValue("blue.50", "blue.900"),
+        selectedItemBorder: useColorModeValue("blue.300", "blue.600"),
+        fileTreeHoverBg: useColorModeValue("gray.50", "gray.700"),
+
+        // Input and form elements
+        inputBg: useColorModeValue("white", "gray.700"),
+        inputBorder: useColorModeValue("gray.200", "gray.600"),
+        inputFocusBorder: useColorModeValue("blue.500", "blue.300"),
+
+        // Button colors
+        buttonBg: useColorModeValue("gray.100", "gray.700"),
+        buttonHoverBg: useColorModeValue("gray.200", "gray.600"),
+        buttonActiveBg: useColorModeValue("gray.300", "gray.500"),
+
+        // Action button colors
+        primaryButtonBg: useColorModeValue("blue.500", "blue.500"),
+        primaryButtonHoverBg: useColorModeValue("blue.600", "blue.400"),
+        dangerButtonBg: useColorModeValue("red.500", "red.500"),
+        dangerButtonHoverBg: useColorModeValue("red.600", "red.400"),
+
+        // Dialog and modal colors
+        dialogBg: useColorModeValue("white", "gray.800"),
+        dialogBorderColor: useColorModeValue("gray.200", "gray.700"),
+
+        // Status indicators
+        loadingSpinnerColor: useColorModeValue("blue.500", "blue.300"),
+        successColor: isDarkMode ? "green.500" : "green.500",
+        errorColor: isDarkMode ? "red.500" : "red.500",
+        warningColor: isDarkMode ? "yellow.500" : "yellow.500",
+
+        // Gradients and special effects
+        heroGradient: useColorModeValue(
+            "linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%)",
+            "linear-gradient(135deg, #2d3748 0%, #1a202c 100%)"
+        ),
+
+        // Code preview
+        codePreviewBg: useColorModeValue("gray.50", "gray.800"),
+        codePreviewBorder: useColorModeValue("gray.200", "gray.700"),
+
+        // Empty state
+        emptyStateBg: useColorModeValue("gray.50", "gray.700"),
+        emptyStateIconColor: useColorModeValue("blue.500", "blue.300"),
+
+        // Breadcrumb
+        breadcrumbColor: useColorModeValue("gray.600", "gray.400"),
+        breadcrumbActiveColor: useColorModeValue("blue.600", "blue.300"),
+        breadcrumbSeparatorColor: useColorModeValue("gray.400", "gray.500"),
+
+        // Scrollbar
+        scrollbarTrackBg: useColorModeValue("#f1f1f1", "#2d3748"),
+        scrollbarThumbBg: useColorModeValue("#c5c5c5", "#4a5568"),
+        scrollbarThumbHoverBg: useColorModeValue("#a8a8a8", "#718096"),
     };
 };
 

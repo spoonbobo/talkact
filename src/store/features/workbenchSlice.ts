@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { FileNode, Breadcrumb } from '@/types/file';
+import { FileNode, Breadcrumb, FileContentResponse } from '@/types/file';
 
 interface WorkbenchState {
     // File explorer state
@@ -9,7 +9,7 @@ interface WorkbenchState {
         currentPath: string;
         breadcrumbs: Breadcrumb[];
         searchQuery: string;
-        fileContent: string | null;
+        fileContent: FileContentResponse | string | null;
         expandedPaths: string[];
     };
     // UI state
@@ -54,7 +54,7 @@ export const workbenchSlice = createSlice({
         setSearchQuery: (state, action: PayloadAction<string>) => {
             state.fileExplorer.searchQuery = action.payload;
         },
-        setFileContent: (state, action: PayloadAction<string | null>) => {
+        setFileContent: (state, action: PayloadAction<FileContentResponse | string | null>) => {
             state.fileExplorer.fileContent = action.payload;
         },
         // Add actions for expanded paths with safety checks

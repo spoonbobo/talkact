@@ -26,6 +26,7 @@ import {
     Tooltip,
     Spinner,
     Code,
+    Image,
 } from "@chakra-ui/react";
 import {
     FaFolder,
@@ -59,6 +60,7 @@ import {
     addExpandedPath,
     removeExpandedPath,
 } from "@/store/features/workbenchSlice";
+import { useSettingsColors, useKnowledgeBaseColors, useCodeSyntaxHighlightColors } from "@/utils/colors";
 
 const MotionBox = motion(Box);
 
@@ -155,9 +157,8 @@ const FileTreeItem = ({
     const isSelected = selectedPath === item.path;
     const t = useTranslations("Workbench");
 
-    const bgHover = useColorModeValue("gray.100", "gray.700");
-    const selectedBg = useColorModeValue("blue.50", "blue.900");
-    const selectedColor = useColorModeValue("blue.600", "blue.200");
+    // Use colors from the utility
+    const colors = useKnowledgeBaseColors();
 
     // Sync local state with Redux expanded paths
     useEffect(() => {
@@ -219,9 +220,9 @@ const FileTreeItem = ({
                 alignItems="center"
                 cursor="pointer"
                 borderRadius="md"
-                bg={isSelected ? selectedBg : "transparent"}
-                color={isSelected ? selectedColor : "inherit"}
-                _hover={{ bg: isSelected ? selectedBg : bgHover }}
+                bg={isSelected ? colors.selectedCategoryBg : "transparent"}
+                color={isSelected ? colors.folderActiveColor : "inherit"}
+                _hover={{ bg: isSelected ? colors.selectedCategoryBg : colors.hoverBg }}
                 onClick={handleSelect}
             >
                 {isDirectory && (
@@ -234,7 +235,7 @@ const FileTreeItem = ({
                     />
                 )}
                 {!isDirectory && <Box w={4} />}
-                <Icon as={FileIcon} mr={2} color={isDirectory ? "yellow.400" : "blue.400"} />
+                <Icon as={FileIcon} mr={2} color={isDirectory ? "yellow.400" : colors.accentColor} />
                 <Text fontSize="sm" lineClamp={1}>{item.name}</Text>
                 {isLoading && <Spinner size="xs" ml={2} />}
             </Flex>
@@ -281,13 +282,10 @@ export default function FileExplorer() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const t = useTranslations("Workbench");
 
-    // Color mode values
-    const mainBg = useColorModeValue("gray.50", "gray.900");
-    const cardBg = useColorModeValue("white", "gray.800");
-    const borderColor = useColorModeValue("gray.200", "gray.700");
-    const textColorHeading = useColorModeValue("gray.800", "gray.100");
-    const textColorStrong = useColorModeValue("gray.700", "gray.300");
-    const textColor = useColorModeValue("gray.600", "gray.400");
+    // Use colors from the utility
+    const colors = useSettingsColors();
+    const kbColors = useKnowledgeBaseColors();
+    const codeColors = useCodeSyntaxHighlightColors();
 
     // Load root directory on component mount
     useEffect(() => {
@@ -338,7 +336,7 @@ export default function FileExplorer() {
             dispatch(setFileContent(null));
 
             try {
-                const { content } = await fetchFileContent(item.path);
+                const content = await fetchFileContent(item.path);
                 dispatch(setFileContent(content));
             } catch (error) {
                 console.error('Failed to load file content:', error);
@@ -481,8 +479,8 @@ export default function FileExplorer() {
     };
 
     return (
-        <Box height="100%" width="100%" bg={mainBg} position="relative">
-            <Heading as="h1" size="lg" mb={6} color={textColorHeading} px={6} pt={6}>
+        <Box height="100%" width="100%" bg={colors.bgColor} position="relative">
+            <Heading as="h1" size="lg" mb={6} color={colors.textColorHeading} px={6} pt={6}>
                 {t("file_explorer")}
             </Heading>
 
@@ -492,7 +490,7 @@ export default function FileExplorer() {
                     width="300px"
                     height="100%"
                     borderRightWidth="1px"
-                    borderColor={borderColor}
+                    borderColor={colors.borderColor}
                     overflowY="auto"
                     p={4}
                 >
@@ -503,9 +501,12 @@ export default function FileExplorer() {
                                 value={searchQuery}
                                 onChange={handleSearchQueryChange}
                                 pr="2.5rem"
+                                bg={kbColors.inputBg}
+                                borderColor={kbColors.inputBorder}
+                                _focus={{ borderColor: kbColors.inputFocusBorder }}
                             />
                             <Box position="absolute" right="8px" top="50%" transform="translateY(-50%)">
-                                <Icon as={FaSearch} color="gray.500" />
+                                <Icon as={FaSearch} color={colors.textColorMuted} />
                             </Box>
                         </Box>
 
@@ -516,24 +517,37 @@ export default function FileExplorer() {
                                     size="sm"
                                     ml={2}
                                     bg="none"
+                                    color={colors.textColor}
+                                    _hover={{ bg: colors.hoverBg }}
                                 >
                                     <Icon as={FaPlus} />
                                 </IconButton>
-
                             </Menu.Trigger>
                             <Portal>
                                 <Menu.Positioner>
-                                    <Menu.Content>
-                                        <Menu.Item value="new-folder" onClick={openNewFolderDialog}>
-                                            <Icon as={FaFolder} mr={2} />
+                                    <Menu.Content bg={colors.cardBg} borderColor={colors.borderColor}>
+                                        <Menu.Item
+                                            value="new-folder"
+                                            disabled={true}
+                                            _hover={{ bg: colors.hoverBg }}
+                                        >
+                                            <Icon as={FaFolder} mr={2} color="yellow.400" />
                                             {t("new_folder")}
                                         </Menu.Item>
-                                        <Menu.Item value="new-file" onClick={openNewFileDialog}>
-                                            <Icon as={FaFile} mr={2} />
+                                        <Menu.Item
+                                            value="new-file"
+                                            disabled={true}
+                                            _hover={{ bg: colors.hoverBg }}
+                                        >
+                                            <Icon as={FaFile} mr={2} color={colors.accentColor} />
                                             {t("new_file")}
                                         </Menu.Item>
-                                        <Menu.Item value="upload-file" onClick={handleUpload}>
-                                            <Icon as={FaUpload} mr={2} />
+                                        <Menu.Item
+                                            value="upload-file"
+                                            onClick={handleUpload}
+                                            _hover={{ bg: colors.hoverBg }}
+                                        >
+                                            <Icon as={FaUpload} mr={2} color={colors.accentColor} />
                                             {t("upload_file")}
                                         </Menu.Item>
                                     </Menu.Content>
@@ -544,7 +558,7 @@ export default function FileExplorer() {
 
                     {isLoading ? (
                         <Center height="200px">
-                            <Spinner />
+                            <Spinner color={colors.accentColor} />
                         </Center>
                     ) : rootDirectory ? (
                         <VStack align="stretch" gap={0}>
@@ -557,7 +571,7 @@ export default function FileExplorer() {
                         </VStack>
                     ) : (
                         <Center height="200px">
-                            <Text color={textColor}>{t("no_files_found")}</Text>
+                            <Text color={colors.textColor}>{t("no_files_found")}</Text>
                         </Center>
                     )}
 
@@ -577,10 +591,10 @@ export default function FileExplorer() {
                         <Flex align="center" overflow="hidden">
                             {breadcrumbs.map((crumb, index) => (
                                 <Flex key={crumb.path} align="center">
-                                    {index > 0 && <Icon as={FaChevronRight} mx={2} fontSize="xs" color={textColor} />}
+                                    {index > 0 && <Icon as={FaChevronRight} mx={2} fontSize="xs" color={colors.textColor} />}
                                     <Text
                                         cursor="pointer"
-                                        color={index === breadcrumbs.length - 1 ? textColorHeading : textColor}
+                                        color={index === breadcrumbs.length - 1 ? colors.textColorHeading : colors.textColor}
                                         fontWeight={index === breadcrumbs.length - 1 ? "bold" : "normal"}
                                         onClick={() => handleBreadcrumbClick(crumb.path)}
                                         lineClamp={1}
@@ -595,6 +609,9 @@ export default function FileExplorer() {
                             size="sm"
                             onClick={refreshCurrentDirectory}
                             loading={isLoading}
+                            bg={kbColors.buttonBg}
+                            color={colors.textColor}
+                            _hover={{ bg: kbColors.buttonHoverBg }}
                         >
                             {t("refresh")}
                         </Button>
@@ -603,7 +620,7 @@ export default function FileExplorer() {
                     {selectedItem ? (
                         selectedItem.type === 'directory' ? (
                             <Box>
-                                <Heading size="sm" mb={4} color={textColorHeading}>
+                                <Heading size="sm" mb={4} color={colors.textColorHeading}>
                                     <Flex align="center">
                                         <Icon as={FaFolderOpen} mr={2} color="yellow.400" />
                                         {selectedItem.name}
@@ -617,29 +634,33 @@ export default function FileExplorer() {
                                                 key={item.path}
                                                 p={3}
                                                 borderWidth="1px"
-                                                borderColor={borderColor}
+                                                borderColor={colors.borderColor}
                                                 borderRadius="md"
                                                 width="120px"
                                                 textAlign="center"
                                                 cursor="pointer"
-                                                _hover={{ bg: cardBg }}
+                                                bg={colors.cardBg}
+                                                _hover={{
+                                                    bg: colors.hoverBg,
+                                                    borderColor: colors.selectedBorder
+                                                }}
                                                 onClick={() => handleSelectItem(item)}
                                             >
                                                 <Icon
                                                     as={item.type === 'directory' ? FaFolder : getFileIcon(item.extension)}
                                                     fontSize="2xl"
                                                     mb={2}
-                                                    color={item.type === 'directory' ? "yellow.400" : "blue.400"}
+                                                    color={item.type === 'directory' ? "yellow.400" : colors.accentColor}
                                                 />
-                                                <Text fontSize="xs" lineClamp={2}>
+                                                <Text fontSize="xs" lineClamp={2} color={colors.textColor}>
                                                     {item.name}
                                                 </Text>
                                             </Box>
                                         ))}
                                     </Flex>
                                 ) : (
-                                    <Center height="200px" borderWidth="1px" borderColor={borderColor} borderRadius="md" bg={cardBg}>
-                                        <Text color={textColor}>
+                                    <Center height="200px" borderWidth="1px" borderColor={colors.borderColor} borderRadius="md" bg={colors.cardBg}>
+                                        <Text color={colors.textColor}>
                                             {t("empty_folder")}
                                         </Text>
                                     </Center>
@@ -647,15 +668,18 @@ export default function FileExplorer() {
                             </Box>
                         ) : (
                             <Box>
-                                <Heading size="sm" mb={4} color={textColorHeading}>
+                                <Heading size="sm" mb={4} color={colors.textColorHeading}>
                                     <Flex align="center" justify="space-between">
                                         <Flex align="center">
-                                            <Icon as={getFileIcon(selectedItem.extension)} mr={2} color="blue.400" />
+                                            <Icon as={getFileIcon(selectedItem.extension)} mr={2} color={colors.accentColor} />
                                             {selectedItem.name}
                                         </Flex>
                                         <Button
                                             size="sm"
                                             onClick={() => handleDownload(selectedItem)}
+                                            bg={kbColors.buttonBg}
+                                            color={colors.textColor}
+                                            _hover={{ bg: kbColors.buttonHoverBg }}
                                         >
                                             <Icon as={FaDownload} mr={2} />
                                             {t("download")}
@@ -666,25 +690,43 @@ export default function FileExplorer() {
                                 <Box
                                     p={4}
                                     borderWidth="1px"
-                                    borderColor={borderColor}
+                                    borderColor={colors.borderColor}
                                     borderRadius="md"
-                                    bg={cardBg}
+                                    bg={colors.cardBg}
                                     height="calc(100% - 60px)"
                                     overflowY="auto"
                                 >
                                     {isContentLoading ? (
                                         <Center height="100px">
-                                            <Spinner />
+                                            <Spinner color={colors.accentColor} />
                                         </Center>
                                     ) : fileContent ? (
-                                        <Box fontFamily="mono" fontSize="sm" whiteSpace="pre-wrap">
-                                            <Code width="100%" p={4} overflowX="auto">
-                                                {fileContent}
-                                            </Code>
-                                        </Box>
+                                        typeof fileContent === 'object' && 'type' in fileContent && fileContent.type === 'image' ? (
+                                            <Center height="100%">
+                                                <Image
+                                                    src={typeof fileContent === 'object' && fileContent ? fileContent.content : ''}
+                                                    alt={selectedItem.name}
+                                                    style={{
+                                                        maxWidth: '100%',
+                                                        maxHeight: '100%',
+                                                        objectFit: 'contain'
+                                                    }}
+                                                />
+                                            </Center>
+                                        ) : (
+                                            <Box fontFamily="mono" fontSize="sm" whiteSpace="pre-wrap">
+                                                <Code width="100%" p={4} overflowX="auto" bg={codeColors.codeBg} borderColor={codeColors.codeBorder}>
+                                                    {typeof fileContent === 'string'
+                                                        ? fileContent
+                                                        : fileContent && typeof fileContent === 'object'
+                                                            ? (fileContent as any).content
+                                                            : ''}
+                                                </Code>
+                                            </Box>
+                                        )
                                     ) : (
                                         <Center height="200px">
-                                            <Text color={textColor}>
+                                            <Text color={colors.textColor}>
                                                 {t("file_preview_not_available")}
                                             </Text>
                                         </Center>
@@ -694,11 +736,11 @@ export default function FileExplorer() {
                         )
                     ) : (
                         <Center height="100%" flexDirection="column" gap={4}>
-                            <Icon as={FaFolderOpen} fontSize="6xl" color="blue.400" />
-                            <Text fontSize="xl" fontWeight="bold" color={textColorHeading}>
+                            <Icon as={FaFolderOpen} fontSize="6xl" color={colors.accentColor} />
+                            <Text fontSize="xl" fontWeight="bold" color={colors.textColorHeading}>
                                 {t("select_file_or_folder")}
                             </Text>
-                            <Text color={textColor} textAlign="center" maxW="md">
+                            <Text color={colors.textColor} textAlign="center" maxW="md">
                                 {t("file_explorer_description")}
                             </Text>
                         </Center>
@@ -711,22 +753,25 @@ export default function FileExplorer() {
                 <Portal>
                     <Dialog.Backdrop />
                     <Dialog.Positioner>
-                        <Dialog.Content>
+                        <Dialog.Content bg={colors.cardBg} borderColor={colors.borderColor}>
                             <Dialog.Header>
-                                <Dialog.Title color={textColorHeading}>{t("create_new_folder")}</Dialog.Title>
+                                <Dialog.Title color={colors.textColorHeading}>{t("create_new_folder")}</Dialog.Title>
                                 <Dialog.CloseTrigger />
                             </Dialog.Header>
 
                             <Dialog.Body>
                                 <Stack gap={4}>
                                     <Field.Root>
-                                        <Field.Label color={textColorStrong}>{t("folder_name")}</Field.Label>
+                                        <Field.Label color={colors.textColor}>{t("folder_name")}</Field.Label>
                                         <Input
                                             ref={newItemInputRef}
                                             value={newItemName}
                                             onChange={(e) => setNewItemName(e.target.value)}
                                             placeholder={t("enter_folder_name")}
-                                            color={textColor}
+                                            color={colors.textColor}
+                                            bg={kbColors.inputBg}
+                                            borderColor={kbColors.inputBorder}
+                                            _focus={{ borderColor: kbColors.inputFocusBorder }}
                                         />
                                     </Field.Root>
                                 </Stack>
@@ -734,13 +779,15 @@ export default function FileExplorer() {
 
                             <Dialog.Footer>
                                 <Dialog.ActionTrigger asChild>
-                                    <Button variant="ghost" onClick={closeNewFolderDialog} color={textColor}>
+                                    <Button variant="ghost" onClick={closeNewFolderDialog} color={colors.textColor}>
                                         {t("cancel")}
                                     </Button>
                                 </Dialog.ActionTrigger>
                                 <Button
                                     colorScheme="blue"
                                     onClick={handleCreateFolder}
+                                    bg={kbColors.accentBg}
+                                    _hover={{ bg: kbColors.accentHoverBg }}
                                 >
                                     {t("create")}
                                 </Button>
@@ -755,22 +802,25 @@ export default function FileExplorer() {
                 <Portal>
                     <Dialog.Backdrop />
                     <Dialog.Positioner>
-                        <Dialog.Content>
+                        <Dialog.Content bg={colors.cardBg} borderColor={colors.borderColor}>
                             <Dialog.Header>
-                                <Dialog.Title color={textColorHeading}>{t("create_new_file")}</Dialog.Title>
+                                <Dialog.Title color={colors.textColorHeading}>{t("create_new_file")}</Dialog.Title>
                                 <Dialog.CloseTrigger />
                             </Dialog.Header>
 
                             <Dialog.Body>
                                 <Stack gap={4}>
                                     <Field.Root>
-                                        <Field.Label color={textColorStrong}>{t("file_name")}</Field.Label>
+                                        <Field.Label color={colors.textColor}>{t("file_name")}</Field.Label>
                                         <Input
                                             ref={newItemInputRef}
                                             value={newItemName}
                                             onChange={(e) => setNewItemName(e.target.value)}
                                             placeholder={t("enter_file_name")}
-                                            color={textColor}
+                                            color={colors.textColor}
+                                            bg={kbColors.inputBg}
+                                            borderColor={kbColors.inputBorder}
+                                            _focus={{ borderColor: kbColors.inputFocusBorder }}
                                         />
                                     </Field.Root>
                                 </Stack>
@@ -778,13 +828,15 @@ export default function FileExplorer() {
 
                             <Dialog.Footer>
                                 <Dialog.ActionTrigger asChild>
-                                    <Button variant="ghost" onClick={closeNewFileDialog} color={textColor}>
+                                    <Button variant="ghost" onClick={closeNewFileDialog} color={colors.textColor}>
                                         {t("cancel")}
                                     </Button>
                                 </Dialog.ActionTrigger>
                                 <Button
                                     colorScheme="blue"
                                     onClick={handleCreateFile}
+                                    bg={kbColors.accentBg}
+                                    _hover={{ bg: kbColors.accentHoverBg }}
                                 >
                                     {t("create")}
                                 </Button>
