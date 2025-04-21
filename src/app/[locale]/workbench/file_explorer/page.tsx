@@ -60,7 +60,7 @@ import {
     addExpandedPath,
     removeExpandedPath,
 } from "@/store/features/workbenchSlice";
-import { useSettingsColors, useKnowledgeBaseColors, useCodeSyntaxHighlightColors } from "@/utils/colors";
+import { useSettingsColors, useKnowledgeBaseColors, useCodeSyntaxHighlightColors, useWorkbenchColors } from "@/utils/colors";
 
 const MotionBox = motion(Box);
 
@@ -157,8 +157,8 @@ const FileTreeItem = ({
     const isSelected = selectedPath === item.path;
     const t = useTranslations("Workbench");
 
-    // Use colors from the utility
-    const colors = useKnowledgeBaseColors();
+    // Use workbench colors instead of knowledge base colors for better contrast
+    const colors = useWorkbenchColors();
 
     // Sync local state with Redux expanded paths
     useEffect(() => {
@@ -220,9 +220,9 @@ const FileTreeItem = ({
                 alignItems="center"
                 cursor="pointer"
                 borderRadius="md"
-                bg={isSelected ? colors.selectedCategoryBg : "transparent"}
-                color={isSelected ? colors.folderActiveColor : "inherit"}
-                _hover={{ bg: isSelected ? colors.selectedCategoryBg : colors.hoverBg }}
+                bg={isSelected ? colors.selectedItemBg : "transparent"}
+                color={isSelected ? colors.textColorStrong : colors.textColor}
+                _hover={{ bg: isSelected ? colors.selectedItemBg : colors.hoverBg }}
                 onClick={handleSelect}
             >
                 {isDirectory && (
@@ -232,12 +232,13 @@ const FileTreeItem = ({
                         onClick={toggleOpen}
                         cursor="pointer"
                         fontSize="xs"
+                        color={colors.textColor}
                     />
                 )}
                 {!isDirectory && <Box w={4} />}
-                <Icon as={FileIcon} mr={2} color={isDirectory ? "yellow.400" : colors.accentColor} />
-                <Text fontSize="sm" lineClamp={1}>{item.name}</Text>
-                {isLoading && <Spinner size="xs" ml={2} />}
+                <Icon as={FileIcon} mr={2} color={isDirectory ? colors.folderIconColor : colors.fileIconColor} />
+                <Text fontSize="sm" lineClamp={1} color={colors.textColor}>{item.name}</Text>
+                {isLoading && <Spinner size="xs" ml={2} color={colors.loadingSpinnerColor} />}
             </Flex>
 
             {isDirectory && isOpen && children && (
@@ -282,8 +283,8 @@ export default function FileExplorer() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const t = useTranslations("Workbench");
 
-    // Use colors from the utility
-    const colors = useSettingsColors();
+    // Use workbench colors for better contrast
+    const colors = useWorkbenchColors();
     const kbColors = useKnowledgeBaseColors();
     const codeColors = useCodeSyntaxHighlightColors();
 
@@ -501,9 +502,10 @@ export default function FileExplorer() {
                                 value={searchQuery}
                                 onChange={handleSearchQueryChange}
                                 pr="2.5rem"
-                                bg={kbColors.inputBg}
-                                borderColor={kbColors.inputBorder}
-                                _focus={{ borderColor: kbColors.inputFocusBorder }}
+                                bg={colors.inputBg}
+                                borderColor={colors.inputBorder}
+                                color={colors.textColor}
+                                _focus={{ borderColor: colors.inputFocusBorder }}
                             />
                             <Box position="absolute" right="8px" top="50%" transform="translateY(-50%)">
                                 <Icon as={FaSearch} color={colors.textColorMuted} />
@@ -529,6 +531,7 @@ export default function FileExplorer() {
                                         <Menu.Item
                                             value="new-folder"
                                             disabled={true}
+                                            color={colors.textColor}
                                             _hover={{ bg: colors.hoverBg }}
                                         >
                                             <Icon as={FaFolder} mr={2} color="yellow.400" />
@@ -537,17 +540,19 @@ export default function FileExplorer() {
                                         <Menu.Item
                                             value="new-file"
                                             disabled={true}
+                                            color={colors.textColor}
                                             _hover={{ bg: colors.hoverBg }}
                                         >
-                                            <Icon as={FaFile} mr={2} color={colors.accentColor} />
+                                            <Icon as={FaFile} mr={2} color={colors.fileIconColor} />
                                             {t("new_file")}
                                         </Menu.Item>
                                         <Menu.Item
                                             value="upload-file"
                                             onClick={handleUpload}
+                                            color={colors.textColor}
                                             _hover={{ bg: colors.hoverBg }}
                                         >
-                                            <Icon as={FaUpload} mr={2} color={colors.accentColor} />
+                                            <Icon as={FaUpload} mr={2} color={colors.fileIconColor} />
                                             {t("upload_file")}
                                         </Menu.Item>
                                     </Menu.Content>
@@ -591,10 +596,10 @@ export default function FileExplorer() {
                         <Flex align="center" overflow="hidden">
                             {breadcrumbs.map((crumb, index) => (
                                 <Flex key={crumb.path} align="center">
-                                    {index > 0 && <Icon as={FaChevronRight} mx={2} fontSize="xs" color={colors.textColor} />}
+                                    {index > 0 && <Icon as={FaChevronRight} mx={2} fontSize="xs" color={colors.breadcrumbSeparatorColor} />}
                                     <Text
                                         cursor="pointer"
-                                        color={index === breadcrumbs.length - 1 ? colors.textColorHeading : colors.textColor}
+                                        color={index === breadcrumbs.length - 1 ? colors.breadcrumbActiveColor : colors.breadcrumbColor}
                                         fontWeight={index === breadcrumbs.length - 1 ? "bold" : "normal"}
                                         onClick={() => handleBreadcrumbClick(crumb.path)}
                                         lineClamp={1}
@@ -609,9 +614,9 @@ export default function FileExplorer() {
                             size="sm"
                             onClick={refreshCurrentDirectory}
                             loading={isLoading}
-                            bg={kbColors.buttonBg}
+                            bg={colors.buttonBg}
                             color={colors.textColor}
-                            _hover={{ bg: kbColors.buttonHoverBg }}
+                            _hover={{ bg: colors.buttonHoverBg }}
                         >
                             {t("refresh")}
                         </Button>
@@ -642,7 +647,7 @@ export default function FileExplorer() {
                                                 bg={colors.cardBg}
                                                 _hover={{
                                                     bg: colors.hoverBg,
-                                                    borderColor: colors.selectedBorder
+                                                    borderColor: colors.bgColor
                                                 }}
                                                 onClick={() => handleSelectItem(item)}
                                             >
