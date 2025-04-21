@@ -6,7 +6,11 @@
   </a>
 </div>
 
-## ✨ Features
+## 📖 About this project
+
+Onlysaid aims to provide a platform where you and your team can complete any tasks with only natural language without any setup.
+
+## 🌟 Features
 
 - 🗣️ Complete any tasks with your team with only natural language without any setup
 - 🔄 All-in-one A2A/MCP stack with highly configurable and extensible client & servers
