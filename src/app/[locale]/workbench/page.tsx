@@ -17,7 +17,7 @@ const MotionBox = motion.create(Box);
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const t = useTranslations("Dashboard");
+  const t = useTranslations("Workbench");
   const router = useRouter();
   const { currentUser, isAuthenticated, isLoading, isOwner } = useSelector(
     (state: RootState) => state.user
@@ -80,7 +80,7 @@ export default function DashboardPage() {
       >
         <Heading size="lg" mb={6} display="flex" alignItems="center" color={textColorHeading}>
           <Icon as={FaHome} mr={3} color="blue.500" />
-          {t("dashboard")}
+          {t("workbench")}
         </Heading>
 
         <Center
@@ -98,7 +98,7 @@ export default function DashboardPage() {
               {t("under_development")}
             </Text>
             <Text color={textColor} textAlign="center" maxW="md">
-              {t("dashboard_coming_soon")}
+              {t("workbench_coming_soon")}
             </Text>
             <Box pt={4}>
               <ColorModeButton />

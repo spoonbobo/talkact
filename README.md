@@ -10,9 +10,10 @@
 
 - 🗣️ Complete any tasks with your team with only natural language without any setup
 - 🔄 All-in-one A2A/MCP stack with highly configurable and extensible client & servers
-- 🔒 Toggle the `trust` mode to adjust control over agents
 - 🧠 Intelligent planning and execution system with full natural-langugage support
 - 🌐 Support multiple languages, Chinese, English, Japanese, Korean, and more to come
+- 📚 The more tasks Onlysaid agents solve for you, the more knowledge they will gain
+- 🔒 Toggle the `trust` mode to adjust control over agents
 
 ## 🤖 Agents
 

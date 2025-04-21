@@ -13,6 +13,7 @@ import {
   FaSignOutAlt,
   FaSignInAlt,
   FaUserCog,
+  FaTools,
 } from "react-icons/fa";
 import { useSession } from "next-auth/react";
 import { useColorModeValue } from "@/components/ui/color-mode";
@@ -271,14 +272,14 @@ const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: 
               isExpanded={isExpanded}
             />
 
-            {/* <NavIconButton
-              to="/dashboard"
-              icon={FaChartLine}
-              label="Dashboard"
-              tooltipContent={t("dashboard")}
+            <NavIconButton
+              to="/workbench"
+              icon={FaTools}
+              label="Workbench"
+              tooltipContent={t("workbench")}
               isMobile={isMobile}
               isExpanded={isExpanded}
-            /> */}
+            />
 
             <NavIconButton
               to="/learn"

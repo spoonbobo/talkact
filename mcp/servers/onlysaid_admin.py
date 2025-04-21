@@ -16,9 +16,9 @@ import datetime
 from openai import OpenAI
 
 
-from prompts.mcp_reqeust import MCP_REQUEST_SYSTEM_PROMPT, MCP_REQUEST_PROMPT
-from utils.mcp import prepare_background_information_from_dict, parse_mcp_tools
-from messages.seek_approval import seek_task_approval_message
+from prompts.mcp_reqeust import MCP_REQUEST_SYSTEM_PROMPT, MCP_REQUEST_PROMPT # type: ignore
+from utils.mcp import prepare_background_information_from_dict, parse_mcp_tools # type: ignore
+from messages.seek_approval import seek_task_approval_message # type: ignore
 
 openai = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),

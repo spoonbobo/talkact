@@ -145,9 +145,11 @@ services:
       - NEXT_PUBLIC_MCP_CLIENT_URL=${MCP_CLIENT_URL}
       - NEXT_PUBLIC_OPENAI_API_KEY=${OPENAI_API_KEY}
       - NEXT_PUBLIC_OPENAI_API_BASE_URL=${OPENAI_API_BASE_URL}
+      - AGENT_HOME_PATH=${AGENT_HOME_PATH}
+      - NEXT_PUBLIC_AGENT_HOME_PATH=${AGENT_HOME_PATH}
     volumes:
       - .:/app
-      - ./mcp/agent_home:/agent_home
+      - ./agent_home:/agent_home
     restart: always
     depends_on:
       - onlysaid-chat_server
@@ -171,7 +173,7 @@ services:
     volumes:
       - ./mcp/client:/app
       - ./mcp/servers:/servers
-      - ./mcp/agent_home:/agent_home
+      - ./agent_home:/agent_home
       - ./mcp/client/utils:/servers/utils
       - ./mcp/client/schemas:/servers/schemas
       - ./mcp/client/prompts:/servers/prompts
@@ -196,6 +198,7 @@ services:
     container_name: onlysaid-kb
     volumes:
       - ./knowledge_base:/app
+      - ./agent_home:/agent_home
       - qdrant_data:/qdrant/storage
     ports:
       - "35430:35430"

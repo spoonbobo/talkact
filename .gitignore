@@ -8,7 +8,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-mcp/agent_home/*
+agent_home/*
 
 # dependencies
 /node_modules

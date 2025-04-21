@@ -15,6 +15,7 @@
     "signout_success": "登出成功",
     "signout_success_description": "已成功登出",
     "admin_panel": "管理面板",
+    "workbench": "工作台",
     "plans": "計劃"
   },
   "Home": {
@@ -392,10 +393,31 @@
       "document_details": "文檔詳情"
     }
   },
-  "Dashboard": {
-      "dashboard": "儀表板",
+  "Workbench": {
+      "workbench": "工作台",
       "under_development": "此功能正在開發中",
-      "dashboard_coming_soon": "儀表板將會在不久的將來推出"
+      "workbench_coming_soon": "工作台將會在不久的將來推出",
+      "workflow": "工作流",
+      "file_explorer": "瀏覽文件",
+      "error": "錯誤",
+      "failed_to_load_files": "無法加載文件",
+      "search_files": "搜索文件",
+      "add_new": "新增",
+      "new_folder": "新建文件夾",
+      "new_file": "新建文件",
+      "upload_file": "上傳文件",
+      "no_files_found": "未找到文件",
+      "refresh": "刷新",
+      "select_file_or_folder": "選擇文件或文件夾",
+      "file_explorer_description": "瀏覽和管理您的文件",
+      "create_new_folder": "創建新文件夾",
+      "folder_name": "文件夾名稱",
+      "enter_folder_name": "輸入文件夾名稱",
+      "cancel": "取消",
+      "create": "創建",
+      "create_new_file": "創建新文件",
+      "file_name": "文件名稱",
+      "enter_file_name": "輸入文件名稱"
     },
   "AdminPanel": {
     "admin_panel": "管理面板",
