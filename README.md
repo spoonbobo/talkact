@@ -15,6 +15,7 @@
 - `agent`: Master agent that performs planning and executions
 - `openai`: LLM agents with strong foundation knowledge
 - `rag`: Agents to answer queries with growing knowledge base
+- `summarizer`: Agent to summarize the plan execution
 
 ## MCP Servers Available
 
@@ -28,5 +29,3 @@
 ## Contribution
 
 - We welcome any contributions to the project. Please feel free to submit a PR.
-
-Visit `onlysaid.com` to open the web application.

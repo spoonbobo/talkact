@@ -1,3 +1,4 @@
+# TODO: agent can be loaded in self.
 from contextlib import AsyncExitStack
 from typing import List, Dict
 import httpx
@@ -35,6 +36,7 @@ from utils.mcp import (
 from prompts.plan_create import PLAN_SYSTEM_PROMPT, PLAN_CREATE_PROMPT
 from prompts.mcp_reqeust import MCP_REQUEST_SYSTEM_PROMPT, MCP_REQUEST_PROMPT
 from prompts.onlysaid_admin_prompt import ONLYSAID_ADMIN_PROMPT, ONLYSAID_ADMIN_PROMPT_TEMPLATE
+from prompts.summarize_plan import SUMMARIZATION_PLAN_SYSTEM_PROMPT, SUMMARIZATION_PLAN_USER_PROMPT
 from service.socket_client import SocketClient
 from messages.plan_create import format_plan_created_message
 from messages.seek_approval import seek_approval_message, seek_task_approval_message
@@ -921,14 +923,21 @@ class MCPClient:
                         plan_logs_response.raise_for_status()
                         plan_logs = plan_logs_response.json()
                         formatted_plan_logs = self._format_plan_logs(plan_logs)
-                        logger.info(f"Formatted plan logs: {formatted_plan_logs}")
                         
-                        # TODO: refine it with summarization agent
+                        user_prompt = SUMMARIZATION_PLAN_USER_PROMPT.format(
+                            plan_overview=plan_data.get("plan_overview"),
+                            plan_context=plan_data.get("plan_context"),
+                            logs=formatted_plan_logs
+                        )
+                        
+                        logger.info(f"User prompt: {user_prompt}")
+                        
                         summarization = self.openai_client.chat.completions.create(
                             model="deepseek-chat",
                             messages=[
-                                {"role": "system", "content": "You are a helpful assistant that summarizes logs."}, 
-                                {"role": "user", "content": formatted_plan_logs}],
+                                {"role": "system", "content": SUMMARIZATION_PLAN_SYSTEM_PROMPT}, 
+                                {"role": "user", "content": user_prompt}
+                            ],
                         )
                         summarization = summarization.choices[0].message.content
                         logger.info(f"Summarization: {summarization}")
@@ -939,7 +948,7 @@ class MCPClient:
                                 "id": str(uuid4()),
                                 "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(),
                                 "sender": agent["user"],
-                                "content": f"✨ Plan completed successfully! All tasks have been finished. Summary: \n{summarization}",
+                                "content": summarization,
                                 "avatar": agent["user"].get("avatar", None),
                                 "room_id": room_id,
                                 "mentions": []
@@ -972,6 +981,7 @@ class MCPClient:
                         expectation=next_task.get("expected_result")
                     )
                     skills = self.mcp_tools_dict[mcp_server]
+                    
                     tools = self.openai_client.chat.completions.create(
                         model="deepseek-chat",
                         messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
@@ -1057,7 +1067,9 @@ class MCPClient:
         for server in self.servers:
             await self.exit_stack[server].aclose()
 
+    # TODO: refine it.
     def _format_plan_logs(self, logs):
+        logger.info(f"Logs: {logs}")
         """Format plan logs in a human-readable way."""
         if not logs:
             return "No logs available for this plan."
@@ -1065,37 +1077,16 @@ class MCPClient:
         # Sort logs by creation time
         sorted_logs = sorted(logs, key=lambda log: log.get('created_at', ''))
         
-        # Group logs by type
-        task_logs = []
-        system_logs = []
-        other_logs = []
+        # Group logs by typ
+        log_data = []
         
         for log in sorted_logs:
-            log_type = log.get('type', '')
-            content = log.get('content', '')
-            
-            if log_type.startswith('task_'):
-                task_logs.append(f"- {content}")
-            elif log_type.startswith('system_'):
-                system_logs.append(f"- {content}")
-            else:
-                other_logs.append(f"- {content}")
+            log_data.append(f"[{log.get('created_at')}] {log.get('content')}")
         
         # Build the formatted output
         formatted_output = []
-        
-        if task_logs:
-            formatted_output.append("**Task Activities:**")
-            formatted_output.extend(task_logs)
-            formatted_output.append("")
-        
-        if system_logs:
-            formatted_output.append("**System Events:**")
-            formatted_output.extend(system_logs)
-            formatted_output.append("")
-        
-        if other_logs:
-            formatted_output.append("**Other Activities:**")
-            formatted_output.extend(other_logs)
+        if log_data:
+            formatted_output.append("**Logs*")
+            formatted_output.extend(log_data)
         
         return "\n".join(formatted_output)

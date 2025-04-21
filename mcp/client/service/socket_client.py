@@ -93,17 +93,39 @@ class SocketClient:
             # Rejoin rooms after reconnection
             if self.joined_rooms:
                 logger.info(f"Rejoining {len(self.joined_rooms)} rooms after reconnection")
-                for room_id in self.joined_rooms:
-                    await self.join_room(room_id)
+                for room_id in list(self.joined_rooms):  # Use a copy of the set to avoid modification during iteration
+                    try:
+                        await self.sio.emit("join_room", room_id)
+                        logger.info(f"Rejoined room: {room_id}")
+                    except Exception as e:
+                        logger.error(f"Failed to rejoin room {room_id}: {e}")
+                        # Don't remove from joined_rooms so we can try again later
+                
+                # Wait a bit to ensure room joining is complete
+                await asyncio.sleep(1.0)
                 
                 # Resend any pending messages after rejoining rooms
                 if self.pending_messages:
                     logger.info(f"Resending {len(self.pending_messages)} pending messages")
-                    # Wait a bit to ensure room joining is complete
-                    await asyncio.sleep(0.5)
-                    for message_data in self.pending_messages:
-                        await self.send_message(message_data)
-                    self.pending_messages = []  # Clear the pending messages after sending
+                    pending_copy = self.pending_messages.copy()
+                    self.pending_messages = []  # Clear the list before resending to avoid duplicates
+                    
+                    for message_data in pending_copy:
+                        try:
+                            # Make sure we're in the room for this message
+                            room_id = message_data.get('room_id')
+                            if room_id and room_id not in self.joined_rooms:
+                                await self.sio.emit("join_room", room_id)
+                                logger.info(f"Joined room for pending message: {room_id}")
+                                await asyncio.sleep(0.5)  # Give a moment for the join to take effect
+                            
+                            # Now send the message
+                            await self.sio.emit("message", message_data)
+                            logger.info(f"Resent pending message to room {message_data.get('room_id')}")
+                        except Exception as e:
+                            logger.error(f"Failed to resend pending message: {e}")
+                            # Put it back in the pending list
+                            self.pending_messages.append(message_data)
         
         @self.sio.event
         async def disconnect():
@@ -301,35 +323,65 @@ class SocketClient:
             self.pending_messages.append(message_data)
             raise ConnectionError("Not connected to socket server")
         
-        # Check if client is closed before sending
-        if getattr(self.sio, '_closed', False):
-            logger.warning("Socket client is closed. Attempting to recreate and reconnect.")
-            self.sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=0, logger=False) # type: ignore
-            self._setup_event_handlers()
-            await self.connect()
+        # Check connection health with a ping before sending the actual message
+        try:
+            # Send a lightweight ping to check if the connection is healthy
+            # Don't use timeout parameter as it's not supported
+            await self.sio.emit("ping", {"timestamp": "health_check"})
+            logger.debug("Connection health check passed")
+        except Exception as e:
+            logger.warning(f"Connection health check failed: {e}")
+            # Connection is not healthy, force reconnection
+            self.connected = False
+            
+            # Store the message for later delivery
+            if message_data not in self.pending_messages:
+                self.pending_messages.append(message_data)
+            
+            # Reconnect and make sure we rejoin rooms
+            await self.check_connection()
+            
+            # If we're now connected, make sure we've rejoined the room for this message
+            if self.connected and 'room_id' in message_data:
+                room_id = message_data.get('room_id')
+                if room_id and room_id not in self.joined_rooms:
+                    await self.join_room(room_id)
+                    # Give a moment for the room join to take effect
+                    await asyncio.sleep(0.5)
+            
+            raise ConnectionError("Socket connection failed health check")
+        
+        # Make sure we've joined the room for this message
+        if 'room_id' in message_data:
+            room_id = message_data.get('room_id')
+            if room_id and room_id not in self.joined_rooms:
+                await self.join_room(room_id)
+                # Give a moment for the room join to take effect
+                await asyncio.sleep(0.5)
         
         try:
-            # Add a check for the eio transport state before sending
-            if not hasattr(self.sio, 'eio') or not self.sio.eio or not self.sio.eio.state == 'connected':
-                logger.warning("Socket.io engine transport not connected. Forcing reconnection.")
-                self.connected = False
-                await self.check_connection()
-                if not self.connected:
-                    self.pending_messages.append(message_data)
-                    raise ConnectionError("Socket engine transport not connected")
-            
+            # If we got here, the connection passed the health check
             await self.sio.emit("message", message_data)
             logger.info(f"Sent message to room {message_data.get('room_id')}")
+            
+            # If this was a pending message, remove it from the pending list
+            if message_data in self.pending_messages:
+                self.pending_messages.remove(message_data)
+            
         except Exception as e:
             logger.error(f"Error sending message: {e}")
             if "packet queue is empty" in str(e):
                 logger.warning("Packet queue empty error detected. Attempting to reconnect...")
                 self.connected = False
+                
+                # Store the message for later delivery if not already there
+                if message_data not in self.pending_messages:
+                    self.pending_messages.append(message_data)
+                
                 # Force recreation of the socket.io client
                 self.sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=0, logger=False) # type: ignore
                 self._setup_event_handlers()
-                # Store the message for later delivery
-                self.pending_messages.append(message_data)
+                
                 await self.check_connection()
                 raise ConnectionError("Socket connection was in an invalid state")
             raise
