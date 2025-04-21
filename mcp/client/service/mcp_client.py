@@ -961,6 +961,20 @@ class MCPClient:
                     summarization = summarization.choices[0].message.content
                     logger.info(f"Summarization: {summarization}")
                     
+                    # add plan_completed log
+                    success_log = {
+                        "id": str(uuid4()),
+                        "plan_id": plan_id,
+                        "type": "plan_completed",
+                        "content": f"Plan {plan_data.get('plan_name')} is completed",
+                        "created_at": datetime.datetime.now().isoformat()
+                    }
+                    await client.post(
+                        f"{client_url}/api/plan/create_plan_log",
+                        json=success_log,
+                        headers={"Content-Type": "application/json"}
+                    )
+                    
                     # send msg to chat
                     await self.socket_client.send_message(
                         {
