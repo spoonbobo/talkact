@@ -213,7 +213,26 @@
       "no_skill_action": "스킬 액션 없음",
       "pending": "대기 중",
       "needs_confirmation": "확인 필요",
-      "latest_skills": "최신 스킬"
+      "latest_skills": "최신 스킬",
+      "add_standard_ai_assistant": "Onlysaid AI 어시스턴트 초대",
+      "add_deepseek_ai_assistant": "Deepseek AI 어시스턴트 초대",
+      "add_ai_assistants": "AI 어시스턴트 초대",
+      "log_type_plan_created": "플랜 생성됨",
+      "log_type_task_created": "태스크 생성됨",
+      "log_type_task_completed": "태스크 완료됨",
+      "log_type_plan_completed": "플랜 완료됨",
+      "log_type_plan_failed": "플랜 실패",
+      "log_type_approval_requested": "승인 요청됨",
+      "log_type_approved": "승인됨",
+      "log_type_denied": "거부됨",
+      "log_type_ask_for_plan_approval": "플랜 승인 요청",
+      "log_type_skill_executed": "스킬 실행됨",
+      "log_type_performing_skill": "스킬 수행 중",
+      "plan_was_created": "플랜이 생성되었습니다",
+      "log_type_plan_approved": "플랜 승인됨",
+      "log_type_plan_terminated": "플랜 종료됨",
+      "skills": "스킬",
+      "skill_executed": "스킬 실행됨"
     },
     "Tasks": {
       "tasks": "태스크",
@@ -450,7 +469,14 @@
       "reinitialize": "재초기화",
       "deleting": "삭제 중",
       "confirm_reinitialize": "지식 베이스를 재초기화하시겠습니까?",
-      "confirm_reinitialize_description": "지식 베이스를 재설정하면 기존 지식 베이스가 삭제되고 재초기화되며, 사용하기까지 시간이 걸릴 수 있습니다."
+      "confirm_reinitialize_description": "지식 베이스를 재설정하면 기존 지식 베이스가 삭제되고 재초기화되며, 사용하기까지 시간이 걸릴 수 있습니다.",
+      "cancel": "취소",
+      "source_placeholder": "출처 URL 또는 경로 입력",
+      "api_key_placeholder": "API 키 입력",
+      "optional": "선택 사항",
+      "api_url_placeholder": "API URL 입력",
+      "source_type": "출처 유형",
+      "configure_knowledge_base": "지식 베이스 구성"
     },
     "Loading": {
       "loading": "로딩 중...",
@@ -565,7 +591,8 @@
       "plan_id": "플랜 ID",
       "open_plan": "플랜 열기",
       "timestamp": "타임스탬프",
-      "content": "내용"
+      "content": "내용",
+      "no_skills_found": "스킬을 찾을 수 없습니다"
     },
     "Notification": {
       "notifications": "알림",

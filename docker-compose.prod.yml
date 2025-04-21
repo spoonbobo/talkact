@@ -147,6 +147,8 @@ services:
       - NEXT_PUBLIC_OPENAI_API_BASE_URL=${OPENAI_API_BASE_URL}
     # volumes:
     #   - .:/app
+    volumes:
+      - ./mcp/agent_home:/agent_home
     restart: always
     command: sh -c "npm run build && npm start"
     depends_on:
