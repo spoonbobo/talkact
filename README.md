@@ -8,11 +8,11 @@
 
 ## 📖 About this project
 
-Onlysaid aims to provide a platform where you and your team can complete any tasks with only natural language without any setup.
+Onlysaid aims to provide an easy-to-use integrated platform where you and your team can complete any tasks with only natural language.
 
 ## 🌟 Features
 
-- 🗣️ Complete any tasks with your team with only natural language without any setup
+- 🗣️ Complete any tasks with your team with only natural language without setting up complicated environments
 - 🔄 All-in-one A2A/MCP stack with highly configurable and extensible client & servers
 - 🧠 Intelligent planning and execution system with full natural-langugage support
 - 🛠️ Workbench interface for file management, workflow management, and learning skills
