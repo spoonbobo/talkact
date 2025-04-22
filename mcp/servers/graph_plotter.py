@@ -12,7 +12,7 @@ mcp = FastMCP("graph_plotter")
 async def plot_time_series(
     timestamps: List[str],
     values: List[float],
-    output_path: str = "plot.html",
+    output_path: str,
     title: str = "Time Series Plot",
     xaxis_title: str = "Time",
     yaxis_title: str = "Value",
@@ -24,7 +24,7 @@ async def plot_time_series(
     Args:
         timestamps: List of YYYY-MM-DD formatted date strings
         values: List of float values for y-axis
-        output_path: Where to save the plot (default: `/<storage_location>/plot.html`)
+        output_path: Where to save the plot (default: `/agent_home/<plot>.html`)
         title: Plot title (default: "Time Series Plot")
         xaxis_title: X-axis label (default: "Time")
         yaxis_title: Y-axis label (default: "Value")

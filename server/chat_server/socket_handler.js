@@ -13,7 +13,7 @@ function setupSocketIO(io, client) {
     try {
       // Get user information from auth
       const user = socket.handshake.auth.user;
-      console.log("user", user);
+  
       if (!user || !user.id) {
         console.log("Socket connection rejected: No valid user provided");
         socket.disconnect(true);

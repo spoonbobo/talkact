@@ -27,6 +27,10 @@ import {
     Spinner,
     Code,
     Image,
+    Table,
+    Select,
+    createListCollection,
+    Tabs,
 } from "@chakra-ui/react";
 import {
     FaFolder,
@@ -46,6 +50,7 @@ import {
     FaUpload,
     FaTrash,
     FaEdit,
+    FaFilePowerpoint,
 } from "react-icons/fa";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { toaster } from "@/components/ui/toaster";
@@ -124,6 +129,17 @@ const getFileIcon = (extension?: string) => {
         case 'tar':
         case 'gz':
             return FaFileArchive;
+        case 'ppt':
+        case 'pptx':
+        case 'pptm':
+        case 'ppsx':
+        case 'pps':
+            return FaFilePowerpoint;
+        case 'doc':
+        case 'docx':
+        case 'docm':
+        case 'dotx':
+            return FaFileAlt;
         default:
             return FaFileAlt;
     }
@@ -208,13 +224,13 @@ const FileTreeItem = ({
     };
 
     const FileIcon = isDirectory
-        ? (isOpen ? FaFolderOpen : FaFolder)
+        ? (isOpen ? FaChevronDown : FaChevronRight)
         : getFileIcon(item.extension);
 
     return (
         <Box>
             <Flex
-                pl={level * 4}
+                pl={level > 1 ? (level - 1) * 16 + 20 : 0}
                 py={1}
                 px={2}
                 alignItems="center"
@@ -225,18 +241,24 @@ const FileTreeItem = ({
                 _hover={{ bg: isSelected ? colors.selectedItemBg : colors.hoverBg }}
                 onClick={handleSelect}
             >
-                {isDirectory && (
-                    <Icon
-                        as={isOpen ? FaChevronDown : FaChevronRight}
-                        mr={1}
-                        onClick={toggleOpen}
-                        cursor="pointer"
-                        fontSize="xs"
-                        color={colors.textColor}
-                    />
-                )}
-                {!isDirectory && <Box w={4} />}
-                <Icon as={FileIcon} mr={2} color={isDirectory ? colors.folderIconColor : colors.fileIconColor} />
+                <Box
+                    width="20px"
+                    display="flex"
+                    justifyContent="center"
+                    alignItems="center"
+                    flexShrink={0}
+                >
+                    {isDirectory ? (
+                        <Icon
+                            as={FileIcon}
+                            onClick={toggleOpen}
+                            cursor="pointer"
+                            fontSize="xs"
+                            color={colors.textColor}
+                        />
+                    ) : null}
+                </Box>
+                <Icon as={getFileIcon(item.extension)} mr={2} color={isDirectory ? colors.folderIconColor : colors.fileIconColor} />
                 <Text fontSize="sm" lineClamp={1} color={colors.textColor}>{item.name}</Text>
                 {isLoading && <Spinner size="xs" ml={2} color={colors.loadingSpinnerColor} />}
             </Flex>
@@ -706,28 +728,302 @@ export default function FileExplorer() {
                                             <Spinner color={colors.accentColor} />
                                         </Center>
                                     ) : fileContent ? (
-                                        typeof fileContent === 'object' && 'type' in fileContent && fileContent.type === 'image' ? (
-                                            <Center height="100%">
-                                                <Image
-                                                    src={typeof fileContent === 'object' && fileContent ? fileContent.content : ''}
-                                                    alt={selectedItem.name}
-                                                    style={{
-                                                        maxWidth: '100%',
-                                                        maxHeight: '100%',
-                                                        objectFit: 'contain'
-                                                    }}
-                                                />
-                                            </Center>
+                                        typeof fileContent === 'object' && 'type' in fileContent ? (
+                                            fileContent.type === 'image' ? (
+                                                <Center height="100%">
+                                                    <Image
+                                                        src={fileContent.content as string}
+                                                        alt={selectedItem.name}
+                                                        style={{
+                                                            maxWidth: '100%',
+                                                            maxHeight: '100%',
+                                                            objectFit: 'contain'
+                                                        }}
+                                                    />
+                                                </Center>
+                                            ) : fileContent.type === 'excel' ? (
+                                                <Box>
+                                                    {fileContent.sheetNames && fileContent.sheetNames.length > 0 && (
+                                                        <Box mb={4}>
+                                                            <Text color={colors.textColorMuted} fontSize="sm" fontStyle="italic">
+                                                                {t("excel_file_with_sheets", { count: fileContent.sheetNames.length })}: {fileContent.sheetNames.join(", ")}
+                                                            </Text>
+                                                        </Box>
+                                                    )}
+
+                                                    <Table.Root variant="outline" size="sm">
+                                                        <Table.Header>
+                                                            <Table.Row>
+                                                                {Array.isArray(fileContent.content) &&
+                                                                    fileContent.content[0] &&
+                                                                    fileContent.content[0].map((cell, idx) => (
+                                                                        <Table.ColumnHeader key={idx} color={colors.textColorHeading} fontFamily="'Calibri', sans-serif" fontWeight="bold">
+                                                                            {cell}
+                                                                        </Table.ColumnHeader>
+                                                                    ))}
+                                                            </Table.Row>
+                                                        </Table.Header>
+                                                        <Table.Body>
+                                                            {Array.isArray(fileContent.content) &&
+                                                                fileContent.content.slice(1, 100).map((row, idx) => (
+                                                                    <Table.Row key={idx} _hover={{ bg: colors.hoverBg }}>
+                                                                        {row.map((cell, cellIdx) => (
+                                                                            <Table.Cell key={cellIdx} color={colors.textColor} fontFamily="'Calibri', sans-serif">
+                                                                                {cell}
+                                                                            </Table.Cell>
+                                                                        ))}
+                                                                    </Table.Row>
+                                                                ))}
+                                                        </Table.Body>
+                                                    </Table.Root>
+
+                                                    {Array.isArray(fileContent.content) && fileContent.content.length > 100 && (
+                                                        <Text mt={2} fontStyle="italic" color={colors.textColorMuted}>
+                                                            {t("showing_first_rows", { count: 100, total: fileContent.content.length })}
+                                                        </Text>
+                                                    )}
+                                                </Box>
+                                            ) : fileContent.type === 'powerpoint' ? (
+                                                <Box>
+                                                    <Text color={colors.textColorMuted} fontSize="sm" fontStyle="italic" mb={4}>
+                                                        {t("powerpoint_file", { count: fileContent.content.length })}
+                                                    </Text>
+
+                                                    <Box
+                                                        p={6}
+                                                        borderWidth="1px"
+                                                        borderColor={colors.borderColor}
+                                                        borderRadius="md"
+                                                        bg={colors.cardBg}
+                                                        textAlign="center"
+                                                    >
+                                                        <Icon as={FaFilePowerpoint} fontSize="5xl" color="orange.400" mb={4} />
+
+                                                        {Array.isArray(fileContent.content) && fileContent.content.length > 0 ? (
+                                                            <VStack gap={3} align="center">
+                                                                {fileContent.content.map((text, index) => (
+                                                                    <Text key={index} color={colors.textColor}>
+                                                                        {text}
+                                                                    </Text>
+                                                                ))}
+                                                            </VStack>
+                                                        ) : (
+                                                            <Text color={colors.textColorMuted}>
+                                                                {t("no_slide_content_extracted")}
+                                                            </Text>
+                                                        )}
+
+                                                        <Button
+                                                            mt={6}
+                                                            onClick={() => handleDownload(selectedItem)}
+                                                            bg={kbColors.buttonBg}
+                                                            color={colors.textColor}
+                                                            _hover={{ bg: kbColors.buttonHoverBg }}
+                                                        >
+                                                            <Icon as={FaDownload} mr={2} />
+                                                            {t("download_to_view")}
+                                                        </Button>
+                                                    </Box>
+                                                </Box>
+                                            ) : fileContent.type === 'word' ? (
+                                                <Box>
+                                                    <Text color={colors.textColorMuted} fontSize="sm" fontStyle="italic" mb={4}>
+                                                        {t("word_document_preview")}
+                                                    </Text>
+
+                                                    <Box
+                                                        borderWidth="1px"
+                                                        borderColor={colors.borderColor}
+                                                        borderRadius="md"
+                                                        bg={colors.cardBg}
+                                                        p={0}
+                                                        overflow="hidden"
+                                                    >
+                                                        <Flex
+                                                            bg="blue.600"
+                                                            color="white"
+                                                            p={2}
+                                                            alignItems="center"
+                                                            borderBottomWidth="1px"
+                                                            borderColor={colors.borderColor}
+                                                        >
+                                                            <Icon as={FaFileAlt} mr={2} />
+                                                            <Text fontWeight="medium">{selectedItem.name}</Text>
+                                                        </Flex>
+
+                                                        <Box
+                                                            p={6}
+                                                            maxH="500px"
+                                                            overflowY="auto"
+                                                            css={{
+                                                                // Word document styling
+                                                                '& > div': {
+                                                                    fontFamily: "'Calibri', 'Segoe UI', sans-serif",
+                                                                    fontSize: "md",
+                                                                    lineHeight: "1.5",
+                                                                    color: colors.textColor
+                                                                }
+                                                            }}
+                                                        >
+                                                            {Array.isArray(fileContent.content) && fileContent.content.length > 0 ? (
+                                                                <VStack align="stretch" gap={4}>
+                                                                    {fileContent.content.map((paragraph, index) => (
+                                                                        <Text key={index}>{paragraph}</Text>
+                                                                    ))}
+                                                                </VStack>
+                                                            ) : (
+                                                                <Center p={8}>
+                                                                    <Text color={colors.textColorMuted}>
+                                                                        {t("no_document_content_extracted")}
+                                                                    </Text>
+                                                                </Center>
+                                                            )}
+                                                        </Box>
+
+                                                        <Flex
+                                                            justifyContent="center"
+                                                            p={4}
+                                                            borderTopWidth="1px"
+                                                            borderColor={colors.borderColor}
+                                                            bg={colors.cardBg}
+                                                        >
+                                                            <Button
+                                                                onClick={() => handleDownload(selectedItem)}
+                                                                bg={kbColors.buttonBg}
+                                                                color={colors.textColor}
+                                                                _hover={{ bg: kbColors.buttonHoverBg }}
+                                                            // leftIcon={<Icon as={FaDownload} />}
+                                                            >
+                                                                {t("download_for_full_view")}
+                                                            </Button>
+                                                        </Flex>
+                                                    </Box>
+                                                </Box>
+                                            ) : fileContent.type === 'html' ? (
+                                                <Box>
+                                                    <Text color={colors.textColorMuted} fontSize="sm" fontStyle="italic" mb={4}>
+                                                        {t("html_preview")}
+                                                    </Text>
+
+                                                    <Box
+                                                        borderWidth="1px"
+                                                        borderColor={colors.borderColor}
+                                                        borderRadius="md"
+                                                        overflow="hidden"
+                                                    >
+                                                        {/* HTML Preview Tabs */}
+                                                        <Tabs.Root defaultValue="rendered">
+                                                            <Tabs.List bg={colors.cardBg} borderBottomColor={colors.borderColor}>
+                                                                <Tabs.Trigger
+                                                                    value="rendered"
+                                                                    color={colors.textColor}
+                                                                    _selected={{
+                                                                        color: colors.textColorStrong,
+                                                                        bg: colors.bgColor,
+                                                                        borderColor: colors.borderColor,
+                                                                        borderBottomColor: colors.bgColor
+                                                                    }}
+                                                                >
+                                                                    {t("rendered")}
+                                                                </Tabs.Trigger>
+                                                                <Tabs.Trigger
+                                                                    value="source"
+                                                                    color={colors.textColor}
+                                                                    _selected={{
+                                                                        color: colors.textColorStrong,
+                                                                        bg: colors.bgColor,
+                                                                        borderColor: colors.borderColor,
+                                                                        borderBottomColor: colors.bgColor
+                                                                    }}
+                                                                >
+                                                                    {t("source")}
+                                                                </Tabs.Trigger>
+                                                            </Tabs.List>
+
+                                                            {/* Rendered HTML Preview */}
+                                                            <Tabs.Content value="rendered" p={0}>
+                                                                <Box
+                                                                    p={0}
+                                                                    height="500px"
+                                                                    width="100%"
+                                                                    bg="white"
+                                                                    position="relative"
+                                                                    overflow="auto"
+                                                                >
+                                                                    <iframe
+                                                                        srcDoc={typeof fileContent.content === 'string' ? fileContent.content : ''}
+                                                                        title={selectedItem.name}
+                                                                        style={{
+                                                                            width: '100%',
+                                                                            height: '100%',
+                                                                            border: 'none',
+                                                                            backgroundColor: 'white'
+                                                                        }}
+                                                                        sandbox="allow-same-origin"
+                                                                    />
+                                                                </Box>
+                                                            </Tabs.Content>
+
+                                                            {/* Source Code View */}
+                                                            <Tabs.Content value="source" p={0}>
+                                                                <Box
+                                                                    p={4}
+                                                                    maxH="500px"
+                                                                    overflowY="auto"
+                                                                    bg={codeColors.codeBg}
+                                                                    fontFamily="mono"
+                                                                    fontSize="sm"
+                                                                >
+                                                                    <Code
+                                                                        width="100%"
+                                                                        p={4}
+                                                                        overflowX="auto"
+                                                                        bg={codeColors.codeBg}
+                                                                        borderColor={codeColors.codeBorder}
+                                                                        whiteSpace="pre-wrap"
+                                                                    >
+                                                                        {typeof fileContent.content === 'string' ? fileContent.content : ''}
+                                                                    </Code>
+                                                                </Box>
+                                                            </Tabs.Content>
+                                                        </Tabs.Root>
+
+                                                        <Flex
+                                                            justifyContent="center"
+                                                            p={4}
+                                                            borderTopWidth="1px"
+                                                            borderColor={colors.borderColor}
+                                                            bg={colors.cardBg}
+                                                        >
+                                                            <Button
+                                                                onClick={() => handleDownload(selectedItem)}
+                                                                bg={kbColors.buttonBg}
+                                                                color={colors.textColor}
+                                                                _hover={{ bg: kbColors.buttonHoverBg }}
+                                                            // leftIcon={<Icon as={FaDownload} />}
+                                                            >
+                                                                {t("download_html")}
+                                                            </Button>
+                                                        </Flex>
+                                                    </Box>
+                                                </Box>
+                                            ) : (
+                                                <Box fontFamily="mono" fontSize="sm" whiteSpace="pre-wrap">
+                                                    <Code width="100%" p={4} overflowX="auto" bg={codeColors.codeBg} borderColor={codeColors.codeBorder}>
+                                                        {typeof fileContent === 'string'
+                                                            ? fileContent
+                                                            : fileContent && typeof fileContent === 'object'
+                                                                ? (fileContent as any).content
+                                                                : ''}
+                                                    </Code>
+                                                </Box>
+                                            )
                                         ) : (
-                                            <Box fontFamily="mono" fontSize="sm" whiteSpace="pre-wrap">
-                                                <Code width="100%" p={4} overflowX="auto" bg={codeColors.codeBg} borderColor={codeColors.codeBorder}>
-                                                    {typeof fileContent === 'string'
-                                                        ? fileContent
-                                                        : fileContent && typeof fileContent === 'object'
-                                                            ? (fileContent as any).content
-                                                            : ''}
-                                                </Code>
-                                            </Box>
+                                            <Center height="200px">
+                                                <Text color={colors.textColor}>
+                                                    {t("file_preview_not_available")}
+                                                </Text>
+                                            </Center>
                                         )
                                     ) : (
                                         <Center height="200px">

@@ -211,12 +211,16 @@
     "log_type_performing_skill": "スキル実行中",
     "log_type_skill_started": "スキル開始",
     "log_type_plan_terminated": "プラン終了",
+    "log_type_plan_approved": "プラン承認済み",
+    "log_type_plan_denied": "プラン拒否済み",
     "plan_was_created": "プランが作成されました",
     "add_standard_ai_assistant": "標準AIアシスタントを追加",
     "add_deepseek_ai_assistant": "DeepseekAIアシスタントを追加",
     "add_ai_assistants": "AIアシスタントを追加",
     "skills": "スキル",
-    "trust_mode": "トラストモード"
+    "trust_mode": "トラストモード",
+    "log_type_plan_completed": "プラン完了",
+    "log_content": "ログ内容"
   },
   "Plans": {
     "plans": "プラン",

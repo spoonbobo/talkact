@@ -156,85 +156,86 @@ class MCPClient:
                 logger.error(f"Error fetching messages: {e}")
                 messages = []
         
-        query = plan_request.query
-        query = query.replace("@agent", "")
-        query = [{"role": "user", "content": query}]
+            query = plan_request.query
+            query = query.replace("@agent", "")
+            query = [{"role": "user", "content": query}]
 
-        conversations = [
-            {
-                "role": "assistant" if msg["sender"] == "agent" else "user",
-                "content": msg["content"],
-                "created_at": msg.get("created_at", "")
-            }
-            for msg in messages
-        ] + query
-        
-        additional_context = f"""
-        Current datetime: {datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat()}
-        """
-        
-        response = self.openai_client.chat.completions.create(
-            model="deepseek-chat",
-            messages=[
+            conversations = [
                 {
-                    "role": "system", 
-                    "content": PLAN_SYSTEM_PROMPT
-                },
-                {
-                    "role": "user", 
-                    "content": PLAN_CREATE_PROMPT.format(
-                        conversations=format_conversation(conversations),
-                        additional_context=additional_context,
-                        assistants=self.server_names,
-                        assistant_descriptions=self.server_descriptions
-                    )
+                    "role": "assistant" if msg["sender"] == "agent" else "user",
+                    "content": msg["content"],
+                    "created_at": msg.get("created_at", "")
                 }
-            ],
-            temperature=0.7
-        )
-        
-        # Extract and parse the JSON plan from the response
-        plan_json = extract_json_from_response(response)
-        if plan_json:
-            # First, create a plan record in the database
-            plan_overview = plan_json.get("plan_overview", "No plan overview provided")
-            plan_name = plan_json.get("plan_name", "No plan name provided")
-            try:
-                # Create a context object that includes both the plan and conversations
-                context = {
-                    "plan": plan_json,
-                    "conversations": conversations,
-                    "query": query
-                }
-                
-                # Check if this plan requires any tools
-                no_tools_needed = False
-                if "plan" not in plan_json or not plan_json["plan"] or plan_json.get("no_skills_needed", False):
-                    no_tools_needed = True
-                elif plan_json.get("plan_name", "").lower() == "null_plan":
-                    no_tools_needed = True
-                
-                # Generate plan_id (client-side ID)
-                plan_id = str(uuid4())
-                
-                # Use timezone-aware datetime
-                current_time = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat()
-                
-                # Create the plan via API
-                async with httpx.AsyncClient() as client:
+                for msg in messages
+            ] + query
+            
+            additional_context = f"""
+            Current datetime: {datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat()}
+            """
+            
+            response = self.openai_client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
+                    {
+                        "role": "system", 
+                        "content": PLAN_SYSTEM_PROMPT
+                    },
+                    {
+                        "role": "user", 
+                        "content": PLAN_CREATE_PROMPT.format(
+                            conversations=format_conversation(conversations),
+                            additional_context=additional_context,
+                            assistants=self.server_names,
+                            assistant_descriptions=self.server_descriptions
+                        )
+                    }
+                ],
+                temperature=0.7
+            )
+            
+            # Extract and parse the JSON plan from the response
+            plan_json = extract_json_from_response(response)
+            if plan_json:
+                # First, create a plan record in the database
+                plan_overview = plan_json.get("plan_overview", "No plan overview provided")
+                plan_name = plan_json.get("plan_name", "No plan name provided")
+                try:
+                    # Create a context object that includes both the plan and conversations
+                    context = {
+                        "plan": plan_json,
+                        "conversations": conversations,
+                        "query": query
+                    }
+                    
+                    # Check if this plan requires any tools
+                    no_tools_needed = False
+                    if "plan" not in plan_json or not plan_json["plan"] or plan_json.get("no_skills_needed", False):
+                        no_tools_needed = True
+                    elif plan_json.get("plan_name", "").lower() == "null_plan":
+                        no_tools_needed = True
+                    
+                    # Generate plan_id (client-side ID)
+                    plan_id = str(uuid4())
+                    
+                    # Use timezone-aware datetime
+                    current_time = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat()
+                    
+                    # Create the plan via API
+                    # Define plan_payload outside the try block
+                    plan_payload = {
+                        "id": plan_id,
+                        "plan_name": plan_name,
+                        "plan_overview": plan_overview,
+                        "room_id": plan_request.room_id,
+                        "context": context,
+                        "assigner": plan_request.assigner,
+                        "assignee": plan_request.assignee,
+                        "reviewer": getattr(plan_request, 'reviewer', None),
+                        "no_skills_needed": no_tools_needed
+                    }
+                    
                     # Add better error handling and logging for debugging
                     try:
-                        plan_payload = {
-                            "id": plan_id,
-                            "plan_name": plan_name,
-                            "plan_overview": plan_overview,
-                            "room_id": plan_request.room_id,
-                            "context": context,
-                            "assigner": plan_request.assigner,
-                            "assignee": plan_request.assignee,
-                            "reviewer": getattr(plan_request, 'reviewer', None),
-                            "no_skills_needed": no_tools_needed
-                        }
                         logger.info(f"Sending plan creation request with payload: {json.dumps(plan_payload, default=str)[:500]}...")
                         
                         plan_response = await client.post(
@@ -250,6 +251,9 @@ class MCPClient:
                         if isinstance(e, httpx.HTTPStatusError):
                             logger.error(f"Response status: {e.response.status_code}")
                             logger.error(f"Response content: {e.response.text}")
+                        # Add more detailed error information
+                        logger.error(f"Plan payload that caused the error: {json.dumps(plan_payload, default=str)}")
+                        # Re-raise the exception to be caught by the outer try-except block
                         raise
                     
                     # Create plan_created log using the create_plan_log API
@@ -305,7 +309,7 @@ class MCPClient:
                             "mentions": []
                         }
                     )
-                                        
+                                            
                     # Then create tasks associated with this plan
                     tasks = await self.create_tasks(
                         plan_json, 
@@ -336,11 +340,15 @@ class MCPClient:
                             },
                             headers={"Content-Type": "application/json"}
                         )
-                    
-            except Exception as e:
-                logger.error(f"Error creating plan or tasks in database: {e}")
-        else:
-            logger.error("Failed to extract valid JSON plan from response")
+                
+                except Exception as e:
+                    # Improve the outer exception handler with more details
+                    logger.error(f"Error creating plan or tasks in database: {e}")
+                    logger.error(f"Exception type: {type(e).__name__}")
+                    logger.error(f"Exception traceback: ", exc_info=True)
+                    # You might want to return a specific error response here
+            else:
+                logger.error("Failed to extract valid JSON plan from response")
 
 
     async def create_tasks(self, data, plan_id: str) -> List[dict]:

@@ -14,7 +14,8 @@ import {
     Card,
     Stack,
     Progress,
-    Badge
+    Badge,
+    Table
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaComments } from "react-icons/fa";
@@ -640,9 +641,9 @@ const SimplifiedPlanSection = ({
                                         collection={plansCollection}
                                         size="sm"
                                         width="100%"
-                                        onValueChange={obj => {
-                                            const value = obj?.value;
-                                            setSelectedPlans(Array.isArray(value) ? value : value ? [value] : []);
+                                        onValueChange={(details) => {
+                                            const selectedValues = details?.value || [];
+                                            setSelectedPlans(Array.isArray(selectedValues) ? selectedValues : []);
                                         }}
                                         value={selectedPlans}
                                     >

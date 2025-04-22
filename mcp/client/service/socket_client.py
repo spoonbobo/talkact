@@ -275,9 +275,15 @@ class SocketClient:
                         if eio_state != 'connected':
                             is_bad_state = True
                             logger.warning(f"Socket.io engine in bad state: {eio_state}")
+                        
+                        # Also check if queue exists and is valid
+                        if not hasattr(self.sio.eio, 'queue') or not self.sio.eio.queue:
+                            is_bad_state = True
+                            logger.warning("Socket.io engine missing queue")
                     else:
                         is_bad_state = True
-                except Exception:
+                except Exception as e:
+                    logger.warning(f"Error checking socket.io state: {e}")
                     is_bad_state = True
                 
                 # Recreate the client if it's been closed or is in a bad state
@@ -362,6 +368,23 @@ class SocketClient:
                 self.pending_messages.append(message_data)
             raise ConnectionError("Not connected to socket server")
         
+        # Check if the socket.io client is in a valid state before sending
+        if not hasattr(self.sio, 'eio') or not self.sio.eio or not hasattr(self.sio.eio, 'queue') or not self.sio.eio.queue:
+            logger.warning("Socket.io client is in an invalid state (missing queue). Recreating client...")
+            # Store the message for later delivery
+            if not any(m.get('id') == message_id for m in self.pending_messages if message_id and m.get('id')):
+                self.pending_messages.append(message_data)
+            
+            # Force recreation of the socket.io client
+            self.sio = socketio.AsyncClient(
+                reconnection=True, reconnection_attempts=0, logger=True)
+            self._setup_event_handlers()
+            self.connected = False
+            
+            # Trigger reconnection
+            await self.check_connection()
+            raise ConnectionError("Socket.io client was in an invalid state (missing queue)")
+        
         # Check connection health with a ping before sending the actual message
         try:
             # Send a lightweight ping to check if the connection is healthy
@@ -412,8 +435,8 @@ class SocketClient:
             
         except Exception as e:
             logger.error(f"Error sending message: {e}")
-            if "packet queue is empty" in str(e):
-                logger.warning("Packet queue empty error detected. Attempting to reconnect...")
+            if "packet queue is empty" in str(e) or "queue" in str(e).lower():
+                logger.warning("Packet queue empty error detected. Recreating socket client...")
                 self.connected = False
                 
                 # Store the message for later delivery if not already there
@@ -425,7 +448,7 @@ class SocketClient:
                 self._setup_event_handlers()
                 
                 await self.check_connection()
-                raise ConnectionError("Socket connection was in an invalid state")
+                raise ConnectionError("Socket connection was in an invalid state (packet queue empty)")
             raise
     
     @with_retry_and_reconnect(max_retries=3, retry_delay=1)
