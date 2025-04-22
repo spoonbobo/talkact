@@ -940,16 +940,16 @@ class MCPClient:
                 logger.info(f"Plan data: {plan_data}")
                 room_id = plan_data.get("room_id")
                 logger.info(f"Room id: {room_id}")
+                
+                plan_logs_response = await client.get(
+                    f"{client_url}/api/plan/get_plan_log?planId={plan_id}",
+                    headers={"Content-Type": "application/json"}
+                )
+                plan_logs_response.raise_for_status()
+                plan_logs = plan_logs_response.json()
+                formatted_plan_logs = self._format_plan_logs(plan_logs)
     
                 if progress == 100:
-                    # summarize the plan
-                    plan_logs_response = await client.get(
-                        f"{client_url}/api/plan/get_plan_log?planId={plan_id}",
-                        headers={"Content-Type": "application/json"}
-                    )
-                    plan_logs_response.raise_for_status()
-                    plan_logs = plan_logs_response.json()
-                    formatted_plan_logs = self._format_plan_logs(plan_logs)
                     
                     user_prompt = SUMMARIZATION_PLAN_USER_PROMPT.format(
                         plan_overview=plan_data.get("plan_overview"),
@@ -1014,11 +1014,10 @@ class MCPClient:
                 )
 
                 # TODO: Refine it later.
-                background_information = prepare_background_information_from_dict(plan_data, next_task.get("step_number"))
                 user_prompt = MCP_REQUEST_PROMPT.format(
                     plan_name=plan_data.get("plan_name"),
                     plan_overview=plan_data.get("plan_overview"),
-                    background_information=background_information,
+                    background_information=formatted_plan_logs,
                     task=next_task.get("task_name"),
                     reason=next_task.get("task_explanation"),
                     expectation=next_task.get("expected_result")

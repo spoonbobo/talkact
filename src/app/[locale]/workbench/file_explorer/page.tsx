@@ -76,10 +76,16 @@ const fetchFileStructure = async (path = ''): Promise<FileNode> => {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to fetch files');
+            toaster.create({
+                title: "Error",
+                description: "Failed to load files",
+                duration: 5000,
+            });
+            throw new Error(errorData.message || "Failed to load files");
         }
 
-        return await response.json();
+        const data = await response.json();
+        return data;
     } catch (error) {
         console.error('Error fetching file structure:', error);
         throw error;
@@ -87,16 +93,25 @@ const fetchFileStructure = async (path = ''): Promise<FileNode> => {
 };
 
 // Function to fetch file content
-const fetchFileContent = async (path: string): Promise<FileContentResponse> => {
+const fetchFileContent = async (path: string): Promise<FileContentResponse | null> => {
     try {
         const response = await fetch(`/api/agent_home/file_content?path=${encodeURIComponent(path)}`);
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to fetch file content');
+            toaster.create({
+                title: "Error",
+                description: "Failed to fetch file content",
+                duration: 5000,
+            });
+            return null;
         }
 
-        return await response.json();
+        else {
+            const data = await response.json();
+            return data;
+        }
+
     } catch (error) {
         console.error('Error fetching file content:', error);
         throw error;
@@ -416,7 +431,11 @@ export default function FileExplorer() {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to upload file');
+                toaster.create({
+                    title: t("error"),
+                    description: errorData.error || 'Failed to upload file',
+                    duration: 5000,
+                });
             }
 
             // Refresh the current directory
@@ -765,7 +784,7 @@ export default function FileExplorer() {
                                                         </Table.Header>
                                                         <Table.Body>
                                                             {Array.isArray(fileContent.content) &&
-                                                                fileContent.content.slice(1, 100).map((row, idx) => (
+                                                                fileContent.content.slice(1, 11).map((row, idx) => (
                                                                     <Table.Row key={idx} _hover={{ bg: colors.hoverBg }}>
                                                                         {row.map((cell, cellIdx) => (
                                                                             <Table.Cell key={cellIdx} color={colors.textColor} fontFamily="'Calibri', sans-serif">
@@ -777,9 +796,9 @@ export default function FileExplorer() {
                                                         </Table.Body>
                                                     </Table.Root>
 
-                                                    {Array.isArray(fileContent.content) && fileContent.content.length > 100 && (
+                                                    {Array.isArray(fileContent.content) && fileContent.content.length > 11 && (
                                                         <Text mt={2} fontStyle="italic" color={colors.textColorMuted}>
-                                                            {t("showing_first_rows", { count: 100, total: fileContent.content.length })}
+                                                            {t("showing_first_rows", { count: 10, total: fileContent.content.length - 1 })}
                                                         </Text>
                                                     )}
                                                 </Box>

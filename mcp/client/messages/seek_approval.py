@@ -14,7 +14,7 @@ def seek_approval_message(skill, log_id=None):
     
     # Add title with the action name
     action_name = skill.name.replace('_', ' ')
-    message_parts.append(f"🔔 **I'd like to {action_name}. May I proceed?**\n")
+    message_parts.append(f"🔔 I'd like to **{action_name}**.?\n")
     
     # Arguments section - first show descriptions in a table
     if skill.args:
@@ -72,7 +72,7 @@ def seek_task_approval_message(task, skills=None, skill_ids=None, log_id=None):
     message_parts = []
     
     # Add title with the task name
-    message_parts.append(f"🔔 **I'd like to perform {task['task_name']}. May I proceed?**\n")
+    message_parts.append(f"🔔 I'd like to perform **{task['task_name']}**.\n")
     
     # Task details section
     message_parts.append("**Task Details:**")
@@ -97,7 +97,7 @@ def seek_task_approval_message(task, skills=None, skill_ids=None, log_id=None):
     
     # Add a polite closing message
     message_parts.append("\nPlease review and let me know if I can proceed with this task.")
-    message_parts.append(f"\n*If you trust me, you can enable `TRUST MODE` for automatic approvals!* 💫\n")
+    message_parts.append(f"\n*A kind note: you can enable `TRUST MODE` for automatic approvals!* 💫\n")
     
     # Join all parts with appropriate spacing
     return "\n".join(message_parts) 

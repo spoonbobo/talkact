@@ -577,6 +577,12 @@
     "file_upload_failed": "ファイルのアップロードに失敗しました",
     "file_upload_cancelled": "ファイルのアップロードがキャンセルされました",
     "file_preview_not_available": "ファイルプレビューは利用できません",
+    "powerpoint_file": "PowerPointファイル",
+    "download_to_view": "表示するにはダウンロードしてください",
+    "word_document_preview": "Word文書プレビュー",
+    "download_for_full_view": "完全に表示するにはダウンロードしてください",
+    "excel_file_with_sheets": "シートを含むExcelファイル",
+    "showing_first_rows": "最初の数行を表示しています",
     
     "welcome_to_workbench": "ワークベンチへようこそ",
     "workbench_description": "ワークベンチは様々なタスクを管理・実行するための強力なツールです",

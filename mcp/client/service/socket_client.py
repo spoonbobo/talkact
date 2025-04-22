@@ -2,13 +2,14 @@ import os
 import asyncio
 import traceback
 import functools
-from dotenv import load_dotenv
+from typing import Dict, Any, Optional, List, Callable
 
+from dotenv import load_dotenv
+import time
 load_dotenv()
 import socketio
 import requests
 from loguru import logger
-from typing import Dict, Any, Optional, List, Callable
 
 def with_retry_and_reconnect(max_retries=3, retry_delay=1):
     """
@@ -483,11 +484,10 @@ class SocketClient:
         """
         self.notification_handlers.append(handler)
 
-    async def start_heartbeat(self, interval=30):
+    async def start_heartbeat(self, interval=15):
         """
         Periodically send a ping to the server to check connection health.
         """
-        import time
         while self.connected and not self._shutdown_requested:
             try:
                 await self.sio.emit("ping", {"timestamp": time.time()})

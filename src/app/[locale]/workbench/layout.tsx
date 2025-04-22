@@ -11,7 +11,7 @@ import {
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaDiagramProject, FaFolderTree } from "react-icons/fa6";
-import { FaTools } from "react-icons/fa";
+import { FaBookOpen, FaTools } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
@@ -77,6 +77,11 @@ export default function WorkbenchLayout({
         //     label: t("workflow"),
         //     path: "/workbench/workflow",
         // },
+        {
+            icon: FaBookOpen,
+            label: t("learn"),
+            path: "/workbench/learn",
+        },
     ];
 
     // Handle sidebar resize start

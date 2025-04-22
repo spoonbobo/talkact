@@ -7,10 +7,17 @@ import * as XLSX from 'xlsx';
 
 // List of text-based file extensions
 const textFileExtensions = [
-    '.txt', '.md', '.js', '.jsx', '.ts', '.tsx', '.html', '.css',
+    '.txt', '.md', '.js', '.jsx', '.ts', '.tsx', '.css',
     '.json', '.yml', '.yaml', '.xml', '.csv', '.py', '.java',
     '.c', '.cpp', '.h', '.php', '.rb', '.sh', '.bat', '.log'
 ];
+
+// Add HTML as a separate category for special handling
+const htmlFileExtensions = ['.html', '.htm'];
+
+// Remove .html from textFileExtensions if it's there
+const textFileExtensionsFiltered = textFileExtensions.filter(ext =>
+    !htmlFileExtensions.includes(ext));
 
 // List of supported image file extensions
 const imageFileExtensions = [
@@ -70,8 +77,28 @@ export async function GET(req: NextRequest) {
         // Get file extension
         const ext = path.extname(fullPath).toLowerCase();
 
-        // Check if it's a text file or an image file
-        if (textFileExtensions.includes(ext)) {
+        // Check if it's an HTML file
+        if (htmlFileExtensions.includes(ext)) {
+            // Read file content (with size limit for safety)
+            const MAX_SIZE = 1024 * 1024; // 1MB limit
+            if (stats.size > MAX_SIZE) {
+                return NextResponse.json({
+                    error: 'File too large',
+                    message: 'HTML file is too large to preview'
+                }, { status: 400 });
+            }
+
+            const content = fs.readFileSync(fullPath, 'utf8');
+
+            return NextResponse.json({
+                content,
+                name: path.basename(fullPath),
+                extension: ext.slice(1), // Remove the dot
+                size: stats.size,
+                lastModified: stats.mtime,
+                type: 'html'
+            });
+        } else if (textFileExtensionsFiltered.includes(ext)) {
             // Read file content (with size limit for safety)
             const MAX_SIZE = 1024 * 1024; // 1MB limit
             if (stats.size > MAX_SIZE) {

@@ -9,8 +9,8 @@ import { RootState } from "@/store/store";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Box, Heading, Icon, Container, Center, Text, VStack, SimpleGrid, Button, Flex } from "@chakra-ui/react";
-import { FaHome, FaTools, FaFolder, FaCode, FaRocket } from "react-icons/fa";
+import { Box, Heading, Icon, Container, Center, Text, VStack, SimpleGrid, Button, Flex, HStack } from "@chakra-ui/react";
+import { FaHome, FaTools, FaFolder, FaCode, FaRocket, FaBookOpen } from "react-icons/fa";
 import { FaNetworkWired } from "react-icons/fa6";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import { useSettingsColors } from "@/utils/colors";
@@ -81,6 +81,7 @@ export default function DashboardPage() {
 
   // Navigation handlers
   const navigateToFileExplorer = () => router.push('/workbench/file_explorer');
+  const navigateToLearn = () => router.push('/workbench/learn');
 
   // Removed workflow navigation since it's not available yet
 
@@ -176,11 +177,14 @@ export default function DashboardPage() {
             {t("available_tools")}
           </Heading>
 
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={8} mb={12}>
+          <HStack gap={1} mb={12} flexWrap="wrap" alignItems="stretch">
             <MotionFlex
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.5 }}
+              flex="1"
+              minW={{ base: "100%", md: "280px" }}
+              maxW={{ base: "100%", md: "400px" }}
             >
               <FeatureCard
                 icon={FaFolder}
@@ -190,19 +194,23 @@ export default function DashboardPage() {
               />
             </MotionFlex>
 
-            {/* Commented out unavailable features
             <MotionFlex
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.5 }}
+              flex="1"
+              minW={{ base: "100%", md: "280px" }}
+              maxW={{ base: "100%", md: "400px" }}
             >
               <FeatureCard
-                icon={FaNetworkWired}
-                title={`${t("workflow")} (${t("coming_soon")})`}
-                description={t("workflow_description")}
+                icon={FaBookOpen}
+                title={t("learn")}
+                description={t("learn_description")}
+                onClick={navigateToLearn}
               />
             </MotionFlex>
 
+            {/* Commented out unavailable features
             <MotionFlex
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -215,7 +223,7 @@ export default function DashboardPage() {
               />
             </MotionFlex>
             */}
-          </SimpleGrid>
+          </HStack>
 
           {/* Development note */}
           <MotionBox

@@ -96,6 +96,9 @@ export default function PlanLogModal({
     const focusRingColor = plansColors.focusRingColor;
     const codeBackgroundColor = useColorModeValue('gray.100', 'gray.700');
 
+    // Add these new color values at the top level
+    const jsonItemBg = useColorModeValue('gray.50', 'gray.700');
+
     // For gradient backgrounds in CSS
     const gradientStartColor = useColorModeValue('rgba(66, 153, 225, 0.1)', 'rgba(66, 153, 225, 0.05)');
     const inputPlaceholderColor = useColorModeValue("gray.500", "gray.400");
@@ -626,7 +629,7 @@ export default function PlanLogModal({
         }
     };
 
-    // Add this function to render JSON content in a structured way
+    // Update the renderJsonContent function to use the pre-defined color values
     const renderJsonContent = (jsonData: any) => {
         if (!jsonData) return null;
 
@@ -638,7 +641,7 @@ export default function PlanLogModal({
                             key={index}
                             p={3}
                             borderRadius="md"
-                            bg={useColorModeValue('gray.50', 'gray.700')}
+                            bg={jsonItemBg} // Use the pre-defined color value
                             borderWidth="1px"
                             borderColor={borderColor}
                         >

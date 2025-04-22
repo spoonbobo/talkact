@@ -282,15 +282,6 @@ const MenuLinks = ({ isMobile, isExpanded }: { isMobile?: boolean; isExpanded?: 
             />
 
             <NavIconButton
-              to="/learn"
-              icon={FaBook}
-              label="Learn"
-              tooltipContent={t("learn")}
-              isMobile={isMobile}
-              isExpanded={isExpanded}
-            />
-
-            <NavIconButton
               to="/admin/panel"
               icon={FaUserCog}
               label="admin_panel"

@@ -207,7 +207,7 @@ export default function HomePage() {
       description: t("learn_description"),
       icon: FiBook,
       color: "blue.500",
-      path: "/learn",
+      path: "/workbench/learn",
     },
     {
       id: "ai-assistant",
