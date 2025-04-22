@@ -74,9 +74,11 @@ export default function DashboardPage() {
 
   // Use useEffect for navigation instead of doing it during render
   useEffect(() => {
-    if (currentUser && !isOwner) {
-      router.push('/redirect/no_access?reason=Not available for UAT');
-    }
+    // Removing the access restriction that redirects non-owner users
+    // Previously had:
+    // if (currentUser && !isOwner) {
+    //   router.push('/redirect/no_access?reason=Not available for UAT');
+    // }
   }, [currentUser, isOwner, router]);
 
   // Navigation handlers
@@ -93,11 +95,6 @@ export default function DashboardPage() {
   // Redirect if not authenticated
   if (!isAuthenticated && !session) {
     return <Loading />; // Show loading instead of direct navigation
-  }
-
-  // Add a check to not render the dashboard content if not owner
-  if (!isOwner) {
-    return <Loading />;
   }
 
   return (

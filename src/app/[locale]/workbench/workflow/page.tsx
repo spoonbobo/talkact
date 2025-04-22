@@ -44,9 +44,11 @@ export default function WorkflowPage() {
 
     // Use useEffect for navigation instead of doing it during render
     useEffect(() => {
-        if (currentUser && !isOwner) {
-            router.push('/redirect/no_access?reason=Not available for UAT');
-        }
+        // Removing the access restriction that redirects non-owner users
+        // Previously had:
+        // if (currentUser && !isOwner) {
+        //     router.push('/redirect/no_access?reason=Not available for UAT');
+        // }
     }, [currentUser, isOwner, router]);
 
     // Sample workflow data
