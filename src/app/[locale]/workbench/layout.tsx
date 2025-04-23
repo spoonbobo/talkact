@@ -136,9 +136,9 @@ export default function WorkbenchLayout({
 
     // Use useEffect for navigation instead of doing it during render
     useEffect(() => {
-        if (!isLoading && !isOwner) {
-            router.push('/redirect/no_access?reason=Not available for UAT');
-        }
+        // if (!isLoading && !isOwner) {
+        //     router.push('/redirect/no_access?reason=Not available for UAT');
+        // }
     }, [isLoading, isOwner, router]);
 
     // Show loading state while checking authentication
