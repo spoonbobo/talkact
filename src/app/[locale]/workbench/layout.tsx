@@ -151,10 +151,6 @@ export default function WorkbenchLayout({
         return <Loading />; // Show loading instead of direct navigation
     }
 
-    // Add a check to not render the dashboard content if not owner
-    if (!isOwner) {
-        return <Loading />;
-    }
 
     return (
         <>

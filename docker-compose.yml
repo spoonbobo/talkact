@@ -282,6 +282,19 @@ services:
       - onlysaid-network
     restart: always
 
+  onlysaid-docs:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.docs
+    container_name: onlysaid-docs
+    ports:
+      - "43000:43000"
+    volumes:
+      - ./docs:/app/docs
+    networks:
+      - onlysaid-network
+    restart: always
+
 volumes:
   postgres_data:
   qdrant_data:
