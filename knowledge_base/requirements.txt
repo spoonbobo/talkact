@@ -20,4 +20,9 @@ llama-index-embeddings-ollama
 llama-index-llms-ollama
 llama-index-llms-deepseek
 redis>=5.0.0
-# https://cloud.llamaindex.ai/login
+
+# for pptx reader
+# torch
+# transformers
+# python-pptx
+# Pillow

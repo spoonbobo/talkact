@@ -12,7 +12,7 @@ Onlysaid aims to provide an easy-to-use integrated platform where you and your t
 
 ## 🌟 Features
 
-- 🗣️ Complete any tasks with your team with only natural language without setting up complicated environments
+- 🗣️ Complete any tasks with your team and agents using only natural language in unified chatrooms
 - 🔌 Ready-to-use A2A/MCP agentic stack with highly configurable and extensible client & servers
 - 🧠 Intelligent planning and execution system with full natural-langugage support
 - 🛠️ Workbench interface for file management, workflow management, and learning skills

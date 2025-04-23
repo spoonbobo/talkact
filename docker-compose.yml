@@ -226,6 +226,30 @@ services:
       - onlysaid-network
     restart: always
 
+  onlysaid-n8n:
+    image: docker.n8n.io/n8nio/n8n
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=${PGHOST}
+      - DB_POSTGRESDB_PORT=${PGPORT}
+      - DB_POSTGRESDB_DATABASE=${PGDATABASE}
+      - DB_POSTGRESDB_USER=${PGUSER}
+      - DB_POSTGRESDB_PASSWORD=${PGPASSWORD}
+      - N8N_PATH=/n8n
+      - WEBHOOK_URL=http://onlysaid-dev.com/n8n/
+      - N8N_EDITOR_BASE_URL=http://onlysaid-dev.com/n8n/
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_storage:/home/node/.n8n
+    links:
+      - onlysaid-psqldb
+    networks:
+      - onlysaid-network
+    depends_on:
+      - onlysaid-psqldb
+    restart: always
+
   # supporting services
   onlysaid-nginx:
     image: nginx:latest
@@ -263,6 +287,7 @@ volumes:
   qdrant_data:
   ollama_data:
   pgadmin_data:
+  n8n_storage:
   redis-cluster_data-0:
     driver: local
   redis-cluster_data-1:

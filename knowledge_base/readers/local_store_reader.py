@@ -43,6 +43,12 @@ class LocalStoreReader(BaseReader):
                 file_path = metadata.get('file_path', '')
                 file_name = metadata.get('file_name', '')
                 
+                # Skip unsupported file types like PPTX
+                file_ext = os.path.splitext(file_name)[1].lower()
+                if file_ext in ['.pptx', '.ppt']:
+                    logger.info(f"Skipping unsupported file type: {file_name}")
+                    continue
+                
                 # Extract folder structure from file path
                 relative_path = os.path.relpath(file_path, self.local_path)
                 folder_path = os.path.dirname(relative_path)
