@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { useDispatch, useSelector } from "react-redux";
 import {
     selectIsVisible,

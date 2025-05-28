@@ -12,7 +12,7 @@ import {
 } from '../features/chatSlice';
 import { IMessage } from '@/types/chat';
 import { INotification } from '@/types/notification';
-import { toaster } from '@/renderer/components/ui/toaster';
+import { toaster } from '@/components/ui/toaster';
 import { v4 as uuidv4 } from 'uuid';
 import { addNotification } from '../features/notificationSlice';
 

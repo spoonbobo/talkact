@@ -12,8 +12,8 @@ import {
 import { FiInfo } from "react-icons/fi";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
-import { toaster } from "@/renderer/components/ui/toaster";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { toaster } from "@/components/ui/toaster";
+import { useColorModeValue } from "@/components/ui/color-mode";
 
 interface DangerZoneProps {
     isOwner: boolean;

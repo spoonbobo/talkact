@@ -11,7 +11,7 @@ import {
 } from "@chakra-ui/react";
 import { useTranslations } from "next-intl";
 import { createListCollection } from "@chakra-ui/react";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { FiServer } from "react-icons/fi";
 
 interface MCPSettingsProps {

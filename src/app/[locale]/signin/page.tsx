@@ -14,8 +14,8 @@ import {
 import { redirect, useParams, useSearchParams } from "next/navigation";
 import { FaGithub, FaGoogle, FaSignInAlt } from "react-icons/fa";
 import { signIn } from "next-auth/react";
-import { toaster } from "@/renderer/components/ui/toaster";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { toaster } from "@/components/ui/toaster";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";

@@ -11,12 +11,12 @@ import {
   // Tooltip,
   VStack,
 } from "@chakra-ui/react";
-import { Tooltip } from "@/renderer/components/ui/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useTranslations } from "next-intl";
-import { useColorMode } from "@/renderer/components/ui/color-mode";
+import { useColorMode } from "@/components/ui/color-mode";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import Announcement from "@/renderer/components/announcement";
+import Announcement from "@/components/announcement";
 
 const Footer: React.FC = () => {
   const t = useTranslations("Footer");

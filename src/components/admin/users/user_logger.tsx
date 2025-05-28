@@ -15,9 +15,9 @@ import {
 } from "@chakra-ui/react";
 import { FaClock, FaUser, FaSignInAlt, FaSignOutAlt, FaEdit, FaTrash, FaPlus, FaUserPlus } from "react-icons/fa";
 import { FiRefreshCw } from "react-icons/fi";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { motion } from "framer-motion";
-import { toaster } from "@/renderer/components/ui/toaster";
+import { toaster } from "@/components/ui/toaster";
 
 // Define the UserLog interface
 interface UserLog {

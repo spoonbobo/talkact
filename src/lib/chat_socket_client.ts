@@ -3,7 +3,7 @@
 import io from "socket.io-client";
 import { User } from "@/types/user";
 import { IMessage } from "@/types/chat";
-import { toaster } from '@/renderer/components/ui/toaster';
+import { toaster } from '@/components/ui/toaster';
 import { INotification } from "@/types/notification";
 
 class ChatSocketClient {

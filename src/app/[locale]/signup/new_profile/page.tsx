@@ -12,7 +12,7 @@ import {
     Separator,
     IconButton
 } from "@chakra-ui/react";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { motion } from "framer-motion";
 import { FaUpload, FaUserCircle } from "react-icons/fa";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
@@ -23,7 +23,7 @@ import axios from "axios";
 import { useDispatch } from "react-redux";
 import { setUser } from "@/store/features/userSlice";
 import { ProfileFormData, ProfileFormErrors } from "@/types/signup";
-import { toaster } from "@/renderer/components/ui/toaster";
+import { toaster } from "@/components/ui/toaster";
 
 // Create motion components
 const MotionBox = motion.create(Box);

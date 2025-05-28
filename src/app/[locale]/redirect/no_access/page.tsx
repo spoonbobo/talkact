@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Box, Heading, Icon, Container, Center, Text, VStack, Button, IconButton } from "@chakra-ui/react";
 import { FaExclamationTriangle, FaHome } from "react-icons/fa";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 

@@ -15,9 +15,9 @@ import {
     FiClock, FiInfo, FiExternalLink, FiDatabase, FiCloud,
     FiChevronRight, FiFolderPlus, FiChevronDown, FiRefreshCw
 } from "react-icons/fi";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { useTranslations } from 'next-intl';
-import { toaster } from "@/renderer/components/ui/toaster";
+import { toaster } from "@/components/ui/toaster";
 import { DataSource, Folder, Document } from "@/types/kb";
 import { KnowledgeModal } from "./knowledge_modal";
 import { useKnowledgeBaseColors } from "@/utils/colors";

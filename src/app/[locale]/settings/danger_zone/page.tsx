@@ -11,8 +11,8 @@ import {
 import { useTranslations } from "next-intl";
 import { useSelector } from 'react-redux';
 import { RootState } from "@/store/store";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
-import DangerZone from "@/renderer/components/settings/danger_zone";
+import { useColorModeValue } from "@/components/ui/color-mode";
+import DangerZone from "@/components/settings/danger_zone";
 
 export default function DangerZonePage() {
     const t = useTranslations("Settings");

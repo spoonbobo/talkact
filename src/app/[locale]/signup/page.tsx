@@ -2,9 +2,9 @@
 
 import { useTranslations } from "next-intl";
 import { Box, Text, VStack, Container, Heading, Link } from "@chakra-ui/react";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { motion } from "framer-motion";
-import SignupForm from "@/renderer/components/signup";
+import SignupForm from "@/components/signup";
 
 export default function SignupPage() {
   const t = useTranslations("Signup");

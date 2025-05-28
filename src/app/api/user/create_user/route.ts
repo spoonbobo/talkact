@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db'; // knex
 import { User } from '@/types/user';
-import { toaster } from '@/renderer/components/ui/toaster';
+import { toaster } from '@/components/ui/toaster';
 
 export async function POST(request: Request) {
     try {

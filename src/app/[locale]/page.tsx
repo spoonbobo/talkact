@@ -8,14 +8,14 @@ import { FaComments, FaComment, FaTools } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
-import Loading from "@/renderer/components/loading";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import Loading from "@/components/loading";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/store";
 // @ts-ignore
 import { debounce } from 'lodash';
-import { toaster } from "@/renderer/components/ui/toaster";
-import { GuestHomePage } from "@/renderer/components/home";
+import { toaster } from "@/components/ui/toaster";
+import { GuestHomePage } from "@/components/home";
 import { GitHubIssue } from '@/types/github';
 import { Team } from "@/types/teams";
 import { setLastOpenedTeam, updateOwner, resetOwner, resetCurrentTeam } from "@/store/features/userSlice";

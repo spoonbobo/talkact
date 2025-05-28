@@ -15,9 +15,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from "@/store/store";
 import { useRouter, useParams } from "next/navigation";
 import { setUserSettings } from '@/store/features/userSlice';
-import { toaster } from "@/renderer/components/ui/toaster";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
-import GeneralSettings from "@/renderer/components/settings/general";
+import { toaster } from "@/components/ui/toaster";
+import { useColorModeValue } from "@/components/ui/color-mode";
+import GeneralSettings from "@/components/settings/general";
 
 export default function SettingsPage() {
   const t = useTranslations("Settings");

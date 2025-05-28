@@ -3,12 +3,12 @@
 import { useTranslations } from "next-intl";
 import { Box, Text, Flex, IconButton, Grid, GridItem, Icon } from "@chakra-ui/react";
 import { FaArrowLeft, FaArrowRight, FaCalendarAlt, FaColumns } from "react-icons/fa";
-import { Tooltip } from "@/renderer/components/ui/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import { usePlansColors } from "@/utils/colors";
 import Link from "next/link";
 import { IPlan } from "@/types/plan";
 import { useState, useEffect } from "react";
-import StatusBadge from "@/renderer/components/ui/StatusBadge";
+import StatusBadge from "@/components/ui/StatusBadge";
 
 interface PlanCalendarProps {
     plans: any[];

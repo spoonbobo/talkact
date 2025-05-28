@@ -14,7 +14,7 @@ import {
 import { FiLock } from "react-icons/fi";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
-import { useColorMode, useColorModeValue, ColorModeButton } from "@/renderer/components/ui/color-mode";
+import { useColorMode, useColorModeValue, ColorModeButton } from "@/components/ui/color-mode";
 import { createListCollection } from "@chakra-ui/react";
 
 interface GeneralSettingsProps {

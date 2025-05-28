@@ -18,7 +18,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from "@/store/store";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode";
 // Create motion components
 const MotionBox = motion.create(Box);
 const MotionFlex = motion.create(Flex);

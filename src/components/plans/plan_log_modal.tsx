@@ -26,9 +26,9 @@ import {
 import { useParams } from "next/navigation";
 import NextLink from "next/link";
 import SkillInfo from './skill_info';
-import { toaster } from "@/renderer/components/ui/toaster"
+import { toaster } from "@/components/ui/toaster"
 import { FaTools } from "react-icons/fa";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { FiChevronUp, FiChevronDown } from "react-icons/fi";
 import { usePlansColors } from "@/utils/colors";
 import { PlanLog } from "@/types/plan";

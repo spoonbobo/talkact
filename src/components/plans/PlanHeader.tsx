@@ -16,12 +16,12 @@ import {
 } from '@chakra-ui/react';
 import { useTranslations } from "next-intl";
 import { IPlan, PlanStatus } from "@/types/plan";
-import StatusBadge, { getStatusColorScheme } from "@/renderer/components/ui/StatusBadge";
+import StatusBadge, { getStatusColorScheme } from "@/components/ui/StatusBadge";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { FaCheck, FaStop, FaNetworkWired } from 'react-icons/fa';
 import { FiRefreshCw } from 'react-icons/fi';
-import { Tooltip } from "@/renderer/components/ui/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import Link from 'next/link';
 
 // Format date for display

@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
-import Loading from "@/renderer/components/loading";
-import { toaster } from "@/renderer/components/ui/toaster";
+import Loading from "@/components/loading";
+import { toaster } from "@/components/ui/toaster";
 
 export default function SignOutPage() {
     const router = useRouter();

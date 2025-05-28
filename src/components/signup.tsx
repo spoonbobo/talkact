@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Input, Button, VStack, Checkbox, Text, Stack } from "@chakra-ui/react";
 import { SignupErrors, type SignupForm } from "@/types/signup";
 import { useRouter } from "next/navigation";
-import { toaster } from "@/renderer/components/ui/toaster";
+import { toaster } from "@/components/ui/toaster";
 
 export default function SignupForm() {
   const t = useTranslations("Signup");

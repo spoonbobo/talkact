@@ -1,5 +1,5 @@
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
-import { useColorMode } from "@/renderer/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode";
+import { useColorMode } from "@/components/ui/color-mode";
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 // Chat room list colors

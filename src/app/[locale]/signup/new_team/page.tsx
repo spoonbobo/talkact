@@ -12,14 +12,14 @@ import {
     Separator,
     IconButton
 } from "@chakra-ui/react";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { motion } from "framer-motion";
 import { FaUpload, FaUserCircle } from "react-icons/fa";
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import axios from "axios";
 import { useDispatch } from "react-redux";
-import { toaster } from "@/renderer/components/ui/toaster";
+import { toaster } from "@/components/ui/toaster";
 import { Team } from "@/types/teams";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";

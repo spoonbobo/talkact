@@ -6,7 +6,7 @@ import { Box, Text, VStack, Flex, Badge, useToken, Button, Icon } from "@chakra-
 import { usePlansColors } from "@/utils/colors";
 import Link from "next/link";
 import { IPlan, PlanStatus, TaskStatus, ITask } from "@/types/plan";
-import StatusBadge, { getStatusColorScheme } from "@/renderer/components/ui/StatusBadge";
+import StatusBadge, { getStatusColorScheme } from "@/components/ui/StatusBadge";
 import { updatePlanStatus, updatePlanOrders, updateTaskStatus } from "@/store/features/planSlice";
 import { AppDispatch } from "@/store/store";
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
@@ -37,9 +37,9 @@ import {
 } from '@dnd-kit/sortable';
 import { restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
-import { toaster } from "@/renderer/components/ui/toaster";
+import { toaster } from "@/components/ui/toaster";
 import { FaTasks } from "react-icons/fa";
-import { TaskInfoModal } from "@/renderer/components/plans/task_info_modal";
+import { TaskInfoModal } from "@/components/plans/task_info_modal";
 
 // Format date for display
 const formatDate = (date: Date | null): string => {

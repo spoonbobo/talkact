@@ -15,7 +15,7 @@ import {
   FaUserCog,
   FaTools,
 } from "react-icons/fa";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { useParams } from "next/navigation";
 import { RootState } from "@/store/store";
 

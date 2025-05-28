@@ -2,8 +2,8 @@
 
 import React from "react";
 import { Box, Container, Flex, useBreakpointValue } from "@chakra-ui/react";
-import Navbar from "@/renderer/components/navbar";
-import Footer from "@/renderer/components/footer";
+import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
 
 export default function AppLayout({
     children

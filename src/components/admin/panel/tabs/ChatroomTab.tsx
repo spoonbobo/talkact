@@ -5,7 +5,7 @@ import { Box, Flex, Heading, Icon, Separator, Tabs, Text, VStack, Input, Badge, 
 import { FaSearch, FaSync, FaUsers, FaUserEdit, FaCommentDots } from "react-icons/fa";
 import { motion } from "framer-motion";
 import ResizableContainer from "../layout/ResizableContainer";
-import { toaster } from "@/renderer/components/ui/toaster";
+import { toaster } from "@/components/ui/toaster";
 import { RootState } from "@/store/store";
 import { useSelector } from "react-redux";
 

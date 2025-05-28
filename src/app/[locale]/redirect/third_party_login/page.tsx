@@ -10,8 +10,8 @@ import { useDispatch } from 'react-redux';
 import { setUser, setLastOpenedTeam } from '@/store/features/userSlice'; // Adjust import path as needed
 import { useTranslations } from 'next-intl'; // If you're using next-intl for translations
 import { useParams } from 'next/navigation';
-import { toaster } from '@/renderer/components/ui/toaster';
-import Loading from '@/renderer/components/loading';
+import { toaster } from '@/components/ui/toaster';
+import Loading from '@/components/loading';
 
 export default function ThirdPartyLoginRedirect() {
     const router = useRouter();

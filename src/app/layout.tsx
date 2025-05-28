@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Roboto, Space_Mono } from "next/font/google";
 import "./globals.css";
-import Providers from "@/renderer/providers/providers";
+import Providers from "@/providers/providers";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import localFont from 'next/font/local'
 

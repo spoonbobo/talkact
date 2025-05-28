@@ -3,7 +3,7 @@
 import React from "react";
 import { Box, Flex, Text, Portal, Popover } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode";
 
 const MotionBox = motion.create(Box);
 

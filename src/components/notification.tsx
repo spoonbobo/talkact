@@ -15,7 +15,7 @@ import {
     HStack,
 } from "@chakra-ui/react";
 import { FaBell } from "react-icons/fa"
-import { useColorModeValue } from "@/renderer/components/ui/color-mode"
+import { useColorModeValue } from "@/components/ui/color-mode"
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { markAsRead, updatePosition, markAllAsRead, clearAllNotifications } from '@/store/features/notificationSlice';

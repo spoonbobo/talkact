@@ -4,7 +4,7 @@ import NextLink from "next/link";
 import { useParams } from "next/navigation";
 import SkillInfo from './skill_info';
 import { usePlansColors } from "@/utils/colors";
-import { useColorMode } from "@/renderer/components/ui/color-mode";
+import { useColorMode } from "@/components/ui/color-mode";
 
 interface PlanLogSectionProps {
     planId?: string; // Add planId prop to fetch logs for a specific plan

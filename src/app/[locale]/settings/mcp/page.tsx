@@ -31,8 +31,8 @@ import { useTranslations } from "next-intl";
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from "@/store/store";
 import { setUserSettings } from '@/store/features/userSlice';
-import { toaster } from "@/renderer/components/ui/toaster";
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { toaster } from "@/components/ui/toaster";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { useSettingsColors } from "@/utils/colors";
 
 // Define the Server and Tool types (can be moved to a types file)

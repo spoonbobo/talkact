@@ -16,13 +16,13 @@ import {
     Input,
     IconButton,
 } from '@chakra-ui/react';
-import { Tooltip } from "@/renderer/components/ui/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSearch, FiServer, FiTool, FiInfo, FiCopy, FiExternalLink, FiRefreshCw } from 'react-icons/fi';
 // import axios from 'axios';
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { useTranslations } from 'next-intl';
-import { toaster } from "@/renderer/components/ui/toaster";
+import { toaster } from "@/components/ui/toaster";
 
 const MotionBox = motion.create(Box);
 const MotionFlex = motion.create(Flex);

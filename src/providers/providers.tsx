@@ -4,19 +4,19 @@
 import React, { useEffect } from "react";
 import { Provider as ReduxProvider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
-import { Provider as ChakraProvider } from "@/renderer/components/ui/provider";
+import { Provider as ChakraProvider } from "@/components/ui/provider";
 import { store, persistor } from "@/store/store";
-import { AuthProvider } from "@/renderer/providers/auth_provider";
-import SocketProvider from "@/renderer/providers/socket_provider";
-import { Toaster } from "@/renderer/components/ui/toaster";
+import { AuthProvider } from "@/providers/auth_provider";
+import SocketProvider from "@/providers/socket_provider";
+import { Toaster } from "@/components/ui/toaster";
 import { defaultSystem } from "@chakra-ui/react"
-import { ColorModeProvider } from "@/renderer/components/ui/color-mode"
+import { ColorModeProvider } from "@/components/ui/color-mode"
 import { usePathname } from 'next/navigation';
 import { setCurrentRoute } from '@/store/features/assistantSlice';
 import { useDispatch } from "react-redux";
 import { checkSessionExpiration } from "@/store/features/userSlice";
-import ActivityTracker from '@/renderer/components/ActivityTracker';
-import AppLayout from "@/renderer/components/app_layout"
+import ActivityTracker from '@/components/ActivityTracker';
+import AppLayout from "@/components/app_layout"
 
 // Session expiration checker component
 function SessionExpirationChecker() {

@@ -13,8 +13,8 @@ import {
     Box,
 } from '@chakra-ui/react';
 import { v4 as uuidv4 } from 'uuid';
-import { toaster } from "@/renderer/components/ui/toaster"
-import { useColorModeValue } from "@/renderer/components/ui/color-mode";
+import { toaster } from "@/components/ui/toaster"
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { useTranslations } from "next-intl";
 
 interface CreateUserModalProps {
