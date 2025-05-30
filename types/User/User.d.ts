@@ -95,3 +95,13 @@ export interface IUserUpdateArgs {
   token: string;
   user: IUser;
 }
+
+export interface IUserSearch {
+  token: string;
+  email: string;
+  limit?: number;
+}
+
+export interface IUserSearchResponse {
+  data: IUser[];
+}
