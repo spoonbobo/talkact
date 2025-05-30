@@ -33,6 +33,7 @@ export interface IChatMessage {
     gif?: string;
     text: string;
     sent_at: string;
+    updated_at?: string;
     status: string;
     sender_object?: IUser;
     tool_calls?: IChatMessageToolCall[];
