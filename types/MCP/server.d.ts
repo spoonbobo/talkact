@@ -200,6 +200,22 @@ export interface IMS365Config {
     readOnly?: boolean;
 }
 
+export interface ILaraConfig {
+    accessKeyId: string;
+    accessKeySecret: string;
+}
+
+export interface IOTRSConfig {
+    baseUrl: string;
+    username: string;
+    password: string;
+    verifySSL: boolean;
+    defaultQueue: string;
+    defaultState: string;
+    defaultPriority: string;
+    defaultType: string;
+}
+
 // Server State Interfaces (for backward compatibility)
 export interface ITavilyState {
     tavilyEnabled: boolean;
@@ -267,6 +283,18 @@ export interface IMS365State {
     ms365AutoApproved?: boolean;
 }
 
+export interface ILaraState {
+    laraEnabled: boolean;
+    laraConfig: ILaraConfig;
+    laraAutoApproved?: boolean;
+}
+
+export interface IOTRSState {
+    otrsEnabled: boolean;
+    otrsConfig: IOTRSConfig;
+    otrsAutoApproved?: boolean;
+}
+
 // Added MS Teams Config and State
 export interface IMSTeamsConfig {
     appId: string;
@@ -292,4 +320,14 @@ export interface IGoogleCalendarState {
     googleCalendarEnabled?: boolean;
     googleCalendarConfig?: IGoogleCalendarConfig;
     googleCalendarAutoApproved?: boolean;
+}
+
+export interface IChessConfig {
+    // Chess server doesn't require any configuration
+}
+
+export interface IChessState {
+    chessEnabled: boolean;
+    chessConfig: IChessConfig;
+    chessAutoApproved?: boolean;
 }

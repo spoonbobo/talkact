@@ -151,7 +151,6 @@ services:
     volumes:
       - .:/app
       - ./storage:/storage
-      - onlysaid-storage:/storage
     restart: always
     depends_on:
       - onlysaid-socket_server
@@ -333,7 +332,7 @@ volumes:
     driver: local
   redis-cluster_data-5:
     driver: local
-  onlysaid-storage:
+  # ./storage:
 
 networks:
   onlysaid-network:
