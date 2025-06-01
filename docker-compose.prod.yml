@@ -149,7 +149,7 @@ services:
       - AGENT_HOME_PATH=${AGENT_HOME_PATH}
       - NEXT_PUBLIC_AGENT_HOME_PATH=${AGENT_HOME_PATH}
     volumes:
-      - ./storage:/storage
+      - ./storage:/app/storage
     restart: always
     command: sh -c "npm run build && npm start"
     depends_on:
