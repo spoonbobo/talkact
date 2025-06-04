@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Box, Flex, Text, Avatar, Icon } from "@chakra-ui/react";
+import { Box, Typography, Stack, Avatar } from "@mui/material";
 import { motion } from "framer-motion";
 import { FaQuoteLeft } from "react-icons/fa";
 
@@ -38,64 +38,72 @@ export function TestimonialCard({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 * (index + 1), duration: 0.3 }}
-            bg={bgColor}
-            p={5}
-            borderRadius="lg"
-            boxShadow="sm"
-            border="1px solid"
-            borderColor={borderColor}
-            minWidth={{ base: "100%", md: "300px" }}
-            maxWidth={{ base: "100%", md: "350px" }}
-            flex="1"
-            position="relative"
-            _hover={{
-                transform: "translateY(-3px)",
-                boxShadow: "md",
-                transition: "all 0.2s ease"
+            sx={{
+                backgroundColor: bgColor,
+                p: 2.5,
+                borderRadius: 2,
+                boxShadow: 1,
+                border: `1px solid ${borderColor}`,
+                minWidth: { xs: '100%', md: 300 },
+                maxWidth: { xs: '100%', md: 350 },
+                flex: 1,
+                position: 'relative',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                    transform: 'translateY(-3px)',
+                    boxShadow: 4,
+                }
             }}
         >
-            <Icon
-                as={FaQuoteLeft}
-                position="absolute"
-                top={3}
-                right={3}
-                color="gray.200"
-                fontSize="xl"
-            />
+            <Box
+                sx={{
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    color: 'grey.200'
+                }}
+            >
+                <FaQuoteLeft size={20} />
+            </Box>
 
-            <Text
-                color={textColor}
-                fontSize="md"
-                fontStyle="italic"
-                mb={4}
-                lineHeight="1.6"
+            <Typography
+                variant="body1"
+                sx={{
+                    color: textColor,
+                    fontStyle: 'italic',
+                    mb: 2,
+                    lineHeight: 1.6
+                }}
             >
                 "{testimonial.content}"
-            </Text>
+            </Typography>
 
-            <Flex align="center">
-                {/* <Avatar
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+                <Avatar
                     src={testimonial.avatar}
-                    name={testimonial.name}
-                    size="sm"
-                    mr={3}
-                /> */}
+                    alt={testimonial.name}
+                    sx={{ width: 32, height: 32 }}
+                />
                 <Box>
-                    <Text
-                        color={textColor}
-                        fontWeight="medium"
-                        fontSize="sm"
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: textColor,
+                            fontWeight: 'medium'
+                        }}
                     >
                         {testimonial.name}
-                    </Text>
-                    <Text
-                        color={textColorSecondary}
-                        fontSize="xs"
+                    </Typography>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: textColorSecondary
+                        }}
                     >
                         {testimonial.role}, {testimonial.company}
-                    </Text>
+                    </Typography>
                 </Box>
-            </Flex>
+            </Stack>
         </MotionBox>
     );
 } 

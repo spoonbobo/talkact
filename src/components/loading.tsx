@@ -1,5 +1,6 @@
 "use client";
-import { Spinner, Center, Heading, Box, Text, VStack } from "@chakra-ui/react";
+
+import { Box, Typography, Stack, CircularProgress } from "@mui/material";
 import { useTranslations } from "next-intl";
 
 interface LoadingProps {
@@ -16,24 +17,41 @@ export default function Loading({
   const t = useTranslations("Loading");
 
   return (
-    <Box height={fullHeight ? "100vh" : "100%"} position="relative">
-      <Spinner
-        size="xl"
-        color="blue.500"
-        position="absolute"
-        top={4}
-        left={4}
+    <Box
+      sx={{
+        height: fullHeight ? "100vh" : "100%",
+        position: "relative"
+      }}
+    >
+      <CircularProgress
+        size={40}
+        sx={{
+          position: "absolute",
+          top: 16,
+          left: 16,
+          color: "primary.main"
+        }}
       />
-      <Center height="100%" flexDirection="column">
-        <VStack>
-          <Heading size="lg" mt={4} color="gray.700">
+
+      <Box
+        sx={{
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}
+      >
+        <Stack spacing={2} alignItems="center" textAlign="center">
+          <Typography variant="h5" sx={{ mt: 2, color: "text.primary" }}>
             {message || t("load")}
-          </Heading>
+          </Typography>
           {description && (
-            <Text color="gray.600">{description}</Text>
+            <Typography color="text.secondary">
+              {description}
+            </Typography>
           )}
-        </VStack>
-      </Center>
+        </Stack>
+      </Box>
     </Box>
   );
 }

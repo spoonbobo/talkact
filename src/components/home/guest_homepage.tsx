@@ -1,17 +1,28 @@
 "use client";
 
 import React from "react";
-import { Box, Container, Flex, Heading, Icon, Text, SimpleGrid, Image, Avatar } from "@chakra-ui/react";
+import {
+    Box,
+    Container,
+    Typography,
+    Stack,
+    Button,
+    useTheme,
+    Paper
+} from "@mui/material";
 import { motion } from "framer-motion";
-import { FiMessageSquare } from "react-icons/fi";
-import { FaBook, FaTasks, FaQuoteLeft, FaTools as FaToolsIcon } from "react-icons/fa";
+import {
+    ChatBubble as MessageSquareIcon,
+    Book as BookIcon,
+    Task as TasksIcon,
+    Build as ToolsIcon
+} from "@mui/icons-material";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
-const MotionBox = motion(Box);
-const MotionFlex = motion(Flex);
-const MotionHeading = motion(Heading);
-const MotionText = motion(Text);
+const MotionBox = motion.create(Box);
+const MotionPaper = motion.create(Paper);
+const MotionTypography = motion.create(Typography);
 
 interface GuestHomePageProps {
     textColor: string;
@@ -38,34 +49,30 @@ export function GuestHomePage({
 }: GuestHomePageProps) {
     const t = useTranslations("Home");
     const router = useRouter();
+    const theme = useTheme();
 
     const featureCards = [
         {
             id: "chatroom",
             title: t("chatroom_title") || "Chatroom",
             description: t("chatroom_description") || "Chat with your team and AI agents to create executable plans",
-            icon: FiMessageSquare,
-            color: "pink.500",
+            icon: MessageSquareIcon,
+            color: theme.palette.secondary.main,
         },
         {
             id: "plans",
             title: t("plans_title") || "Plans",
             description: t("plans_description") || "Organizing and tracking tasks efficiently",
-            icon: FaTasks,
-            color: "green.500",
+            icon: TasksIcon,
+            color: theme.palette.success.main,
         },
         {
             id: "workbench",
             title: t("workbench_title") || "Workbench",
             description: t("workbench_description") || "Access tools and resources to enhance your productivity",
-            icon: FaToolsIcon,
-            color: "orange.500",
+            icon: ToolsIcon,
+            color: theme.palette.warning.main,
         },
-    ];
-
-    // @ts-ignore
-    const testimonials = [
-        // do not add anything yet
     ];
 
     // Animation variants for consistent effects
@@ -83,298 +90,326 @@ export function GuestHomePage({
     };
 
     return (
-        <Box width="100%" overflowX="hidden" overflowY="visible">
+        <Box sx={{ width: '100%', overflowX: 'hidden', overflowY: 'visible' }}>
             <Container
-                maxWidth="1400px"
-                paddingX={{ base: 4, md: 6 }}
-                paddingY={6}
-                position="relative"
+                maxWidth="xl"
+                sx={{
+                    px: { xs: 2, md: 3 },
+                    py: 3,
+                    position: 'relative'
+                }}
             >
                 <MotionBox
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6 }}
-                    width="100%"
+                    sx={{ width: '100%' }}
                 >
-                    {/* Hero Section with Enhanced Visual Design */}
-                    <MotionBox
+                    {/* Hero Section */}
+                    <MotionPaper
                         initial={{ opacity: 0, y: 0 }}
                         animate={{ opacity: 1, y: 0 }}
-                        position="relative"
-                        borderRadius="2xl"
-                        overflow="hidden"
-                        mb={12}
-                        p={{ base: 8, md: 12 }}
-                        bg="white"
-                        minHeight={{ base: "auto", md: "400px" }}
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                        boxShadow="none"
-                        _before={{
-                            content: '""',
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            borderRadius: "2xl",
-                            padding: "2px",
-                            background: "linear-gradient(45deg, rgba(138,43,226,0.5), rgba(0,191,255,0.5), rgba(138,43,226,0))",
-                            mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-                            maskComposite: "exclude",
-                            pointerEvents: "none"
+                        elevation={0}
+                        sx={{
+                            position: 'relative',
+                            borderRadius: 4,
+                            overflow: 'hidden',
+                            mb: 6,
+                            p: { xs: 4, md: 6 },
+                            backgroundColor: 'white',
+                            minHeight: { xs: 'auto', md: 400 },
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '100%',
+                            border: `2px solid transparent`,
+                            backgroundImage: 'linear-gradient(white, white), linear-gradient(45deg, rgba(138,43,226,0.5), rgba(0,191,255,0.5), rgba(138,43,226,0))',
+                            backgroundOrigin: 'border-box',
+                            backgroundClip: 'content-box, border-box'
                         }}
-                        width="100%"
                     >
-                        {/* Subtle pattern background */}
+                        {/* Animated particles */}
                         <Box
-                            position="absolute"
-                            top={0}
-                            left={0}
-                            right={0}
-                            bottom={0}
-                            opacity={0.08}
-                            zIndex={0}
-                            bgImage="url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJwYXR0ZXJuIiB4PSIwIiB5PSIwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiIHBhdHRlcm5UcmFuc2Zvcm09InJvdGF0ZSgzMCkiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgZmlsbD0iIzAwMCIgZmlsbC1vcGFjaXR5PSIwLjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjcGF0dGVybikiLz48L3N2Zz4=')"
-                        />
-
-                        {/* Animated particles with harmonized colors */}
-                        <Box
-                            position="absolute"
-                            top={0}
-                            left={0}
-                            right={0}
-                            bottom={0}
-                            opacity={0.3}
-                            zIndex={0}
-                            overflow="hidden"
+                            sx={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                opacity: 0.3,
+                                zIndex: 0,
+                                overflow: 'hidden'
+                            }}
                         >
                             {[...Array(15)].map((_, i) => (
                                 <Box
                                     key={i}
-                                    position="absolute"
-                                    borderRadius="full"
-                                    bg={i % 3 === 0 ? "purple.100" : i % 3 === 1 ? "blue.100" : "cyan.100"}
-                                    width={`${Math.random() * 8 + 4}px`}
-                                    height={`${Math.random() * 8 + 4}px`}
-                                    left={`${Math.random() * 100}%`}
-                                    top={`${Math.random() * 100}%`}
-                                    as={motion.div}
+                                    component={motion.div}
+                                    animate={{
+                                        y: [0, -20, 0],
+                                        x: [0, Math.random() * 20 - 10, 0],
+                                        opacity: [0.5, 1, 0.5]
+                                    }}
                                     transition={{
                                         duration: Math.random() * 5 + 3,
                                         repeat: Infinity,
                                         repeatType: "loop",
                                         delay: Math.random() * 2
-                                    } as any}
+                                    }}
+                                    sx={{
+                                        position: 'absolute',
+                                        borderRadius: '50%',
+                                        backgroundColor: i % 3 === 0 ? 'purple.light' : i % 3 === 1 ? 'primary.light' : 'info.light',
+                                        width: `${Math.random() * 8 + 4}px`,
+                                        height: `${Math.random() * 8 + 4}px`,
+                                        left: `${Math.random() * 100}%`,
+                                        top: `${Math.random() * 100}%`
+                                    }}
                                 />
                             ))}
                         </Box>
 
-                        <MotionFlex
+                        <Stack
                             direction="column"
-                            align="center"
-                            position="relative"
-                            zIndex={1}
-                            maxWidth="800px"
+                            alignItems="center"
+                            sx={{
+                                position: 'relative',
+                                zIndex: 1,
+                                maxWidth: 800
+                            }}
                         >
-                            <MotionHeading
-                                as="h1"
-                                size={{ base: "lg", md: "xl", lg: "2xl" }}
-                                color="black"
-                                textAlign="center"
-                                mb={4}
+                            <Typography
+                                component={motion.h1}
+                                variant="h2"
                                 initial={{ opacity: 0, y: -20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{
-                                    duration: 0.5,
-                                    ease: "easeOut"
-                                } as any}
-                                letterSpacing="tight"
-                                fontWeight="extrabold"
-                                lineHeight="1.2"
+                                transition={{ duration: 0.5, ease: "easeOut" }}
+                                sx={{
+                                    color: 'black',
+                                    textAlign: 'center',
+                                    mb: 2,
+                                    letterSpacing: 'tight',
+                                    fontWeight: 'bold',
+                                    lineHeight: 1.2,
+                                    fontSize: { xs: '2rem', md: '3rem', lg: '4rem' }
+                                }}
                             >
-                                {t("guest_welcome") || "Welcome to MCP Platform"}
-                            </MotionHeading>
+                                {t("guest_welcome") || "Welcome to Onlysaid"}
+                            </Typography>
 
-                            <MotionText
-                                color="gray.700"
-                                fontSize={{ base: "md", md: "lg", lg: "xl" }}
-                                maxWidth="700px"
-                                textAlign="center"
-                                mb={8}
+                            <Typography
+                                component={motion.div}
+                                variant="h5"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                transition={{
-                                    duration: 0.5,
-                                    ease: "easeOut"
-                                } as any}
-                                fontWeight="medium"
-                                letterSpacing="wide"
-                                lineHeight="1.6"
+                                transition={{ duration: 0.5, ease: "easeOut" }}
+                                sx={{
+                                    color: 'grey.700',
+                                    fontSize: { xs: '1rem', md: '1.25rem', lg: '1.5rem' },
+                                    maxWidth: 700,
+                                    textAlign: 'center',
+                                    mb: 4,
+                                    fontWeight: 'medium',
+                                    letterSpacing: 'wide',
+                                    lineHeight: 1.6
+                                }}
                             >
-                                {t("guest_welcome_message") || "The open protocol that standardizes how applications provide context to LLMs"}
-                            </MotionText>
+                                {t("guest_welcome_message") || "Intelligent team collaboration powered by AI agents and modern workflow tools"}
+                            </Typography>
 
-                            {/* Button group with improved visibility */}
-                            <Flex
-                                gap={4}
-                                flexDirection={{ base: "column", sm: "row" }}
-                                as={motion.div}
-                                transition={{
-                                    duration: 0.5,
-                                    ease: "easeOut"
-                                } as any}
+                            {/* Button group */}
+                            <Stack
+                                direction={{ xs: 'column', sm: 'row' }}
+                                spacing={2}
+                                component={motion.div}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
                             >
-                                <MotionBox
-                                    as="button"
-                                    paddingX={8}
-                                    paddingY={4}
-                                    borderRadius="full"
-                                    bg="purple.600"
-                                    color="white"
-                                    fontWeight="bold"
-                                    fontSize="lg"
-                                    boxShadow="0 4px 10px rgba(0,0,0,0.1)"
-                                    _hover={{
-                                        transform: "translateY(-2px)",
-                                        bg: "purple.700",
-                                        boxShadow: "0 6px 15px rgba(0,0,0,0.15)"
-                                    }}
+                                <Button
+                                    variant="contained"
+                                    size="large"
                                     onClick={() => router.push("/signin")}
+                                    component={motion.button}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    transition={{ duration: 0.2 }}
+                                    sx={{
+                                        px: 4,
+                                        py: 1.5,
+                                        borderRadius: 8,
+                                        backgroundColor: 'primary.main',
+                                        color: 'white',
+                                        fontWeight: 'bold',
+                                        fontSize: '1.125rem',
+                                        boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                                        '&:hover': {
+                                            backgroundColor: 'primary.dark',
+                                            boxShadow: '0 6px 15px rgba(0,0,0,0.15)'
+                                        }
+                                    }}
                                 >
                                     {t("get_started") || "Get Started Now"}
-                                </MotionBox>
+                                </Button>
 
-                                <MotionBox
-                                    as="button"
-                                    paddingX={8}
-                                    paddingY={4}
-                                    borderRadius="full"
-                                    bg="transparent"
-                                    color="gray.700"
-                                    fontWeight="bold"
-                                    fontSize="lg"
-                                    border="1px solid"
-                                    borderColor="gray.300"
-                                    _hover={{
-                                        bg: "gray.50",
-                                        transform: "translateY(-2px)",
-                                        borderColor: "gray.400"
-                                    }}
-                                    // onClick={() => router.push("/learn-more")}
+                                <Button
+                                    variant="outlined"
+                                    size="large"
+                                    component={motion.button}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    transition={{ duration: 0.2 }}
+                                    sx={{
+                                        px: 4,
+                                        py: 1.5,
+                                        borderRadius: 8,
+                                        backgroundColor: 'transparent',
+                                        color: 'grey.700',
+                                        fontWeight: 'bold',
+                                        fontSize: '1.125rem',
+                                        border: '1px solid',
+                                        borderColor: 'grey.300',
+                                        '&:hover': {
+                                            backgroundColor: 'grey.50',
+                                            borderColor: 'grey.400'
+                                        }
+                                    }}
                                 >
                                     {t("learn_more") || "Learn More"}
-                                </MotionBox>
-                            </Flex>
-                        </MotionFlex>
-                    </MotionBox>
+                                </Button>
+                            </Stack>
+                        </Stack>
+                    </MotionPaper>
 
-                    {/* Feature Cards with Harmonized Design */}
-                    <Box marginBottom={16}>
-                        <MotionHeading
-                            as="h2"
-                            size={{ base: "lg", md: "xl" }}
-                            marginBottom={8}
-                            color="black"
-                            textAlign="center"
+                    {/* Feature Cards */}
+                    <Box sx={{ mb: 8 }}>
+                        <Typography
+                            component={motion.h2}
+                            variant="h3"
                             custom={2}
                             variants={fadeInUp}
                             initial="hidden"
                             animate="visible"
-                            fontWeight="bold"
+                            sx={{
+                                mb: 4,
+                                color: 'black',
+                                textAlign: 'center',
+                                fontWeight: 'bold',
+                                fontSize: { xs: '1.875rem', md: '2.25rem' }
+                            }}
                         >
-                            {t("guest_features_title") || "Why Choose MCP?"}
-                        </MotionHeading>
+                            {t("guest_features_title") || "Why Choose Onlysaid?"}
+                        </Typography>
 
-                        <SimpleGrid columns={{ base: 1, md: 3 }} gap={{ base: "28px", md: "36px" }} maxWidth="1200px" mx="auto">
-                            {featureCards.map((card, index) => (
-                                <MotionBox
-                                    key={card.id}
-                                    bg={cardBgColor}
-                                    padding={8}
-                                    borderRadius="xl"
-                                    boxShadow="lg"
-                                    border="1px solid"
-                                    borderColor={cardBorderColor}
-                                    height="100%"
-                                    custom={index + 4}
-                                    variants={fadeInUp}
-                                    initial="hidden"
-                                    animate="visible"
-                                    whileHover={{
-                                        y: -10,
-                                        boxShadow: "2xl",
-                                        borderColor: card.color,
-                                        transition: { duration: 0.3 }
-                                    }}
-                                    position="relative"
-                                    overflow="hidden"
-                                >
-                                    {/* Subtle background gradient */}
-                                    <Box
-                                        position="absolute"
-                                        top={0}
-                                        left={0}
-                                        right={0}
-                                        bottom={0}
-                                        bgGradient={`linear(to-br, ${card.color}15, transparent)`}
-                                        opacity={0.8}
-                                        borderRadius="xl"
-                                    />
+                        <Box
+                            sx={{
+                                display: 'grid',
+                                gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+                                gap: { xs: 3.5, md: 4.5 },
+                                maxWidth: 1200,
+                                mx: 'auto'
+                            }}
+                        >
+                            {featureCards.map((card, index) => {
+                                const IconComponent = card.icon;
+                                return (
+                                    <MotionBox
+                                        key={card.id}
+                                        custom={index + 4}
+                                        variants={fadeInUp}
+                                        initial="hidden"
+                                        animate="visible"
+                                        whileHover={{
+                                            y: -10,
+                                            transition: { duration: 0.3 }
+                                        }}
+                                        sx={{
+                                            backgroundColor: cardBgColor,
+                                            p: 4,
+                                            borderRadius: 3,
+                                            boxShadow: 3,
+                                            border: `1px solid ${cardBorderColor}`,
+                                            height: '100%',
+                                            position: 'relative',
+                                            overflow: 'hidden',
+                                            '&:hover': {
+                                                borderColor: card.color,
+                                                boxShadow: 6
+                                            }
+                                        }}
+                                    >
+                                        {/* Subtle background gradient */}
+                                        <Box
+                                            sx={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 0,
+                                                background: `linear-gradient(to bottom right, ${card.color}15, transparent)`,
+                                                opacity: 0.8,
+                                                borderRadius: 3
+                                            }}
+                                        />
 
-                                    <Flex direction="column" height="100%" position="relative">
-                                        <Flex align="center" marginBottom={5}>
-                                            <Box
-                                                padding={4}
-                                                borderRadius="full"
-                                                bg={`${card.color}20`}
-                                                color={card.color}
-                                                marginRight={4}
-                                                display="flex"
-                                                alignItems="center"
-                                                justifyContent="center"
-                                                boxShadow="0 4px 12px rgba(0,0,0,0.1)"
+                                        <Stack direction="column" sx={{ height: '100%', position: 'relative' }}>
+                                            <Stack direction="row" alignItems="center" sx={{ mb: 2.5 }}>
+                                                <Box
+                                                    sx={{
+                                                        p: 2,
+                                                        borderRadius: '50%',
+                                                        backgroundColor: `${card.color}20`,
+                                                        color: card.color,
+                                                        mr: 2,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                                    }}
+                                                >
+                                                    <IconComponent sx={{ fontSize: '2rem' }} />
+                                                </Box>
+                                                <Typography variant="h6" sx={{ color: textColor, fontWeight: 'bold' }}>
+                                                    {card.title}
+                                                </Typography>
+                                            </Stack>
+                                            <Typography
+                                                variant="body1"
+                                                sx={{
+                                                    color: textColorSecondary,
+                                                    flex: 1
+                                                }}
                                             >
-                                                <Icon as={card.icon} fontSize="2xl" />
-                                            </Box>
-                                            <Heading size="md" color={textColor} fontWeight="bold">{card.title}</Heading>
-                                        </Flex>
-                                        <Text color={textColorSecondary} fontSize="md" flex="1">
-                                            {card.description}
-                                        </Text>
-                                    </Flex>
-                                </MotionBox>
-                            ))}
-                        </SimpleGrid>
+                                                {card.description}
+                                            </Typography>
+                                        </Stack>
+                                    </MotionBox>
+                                );
+                            })}
+                        </Box>
                     </Box>
 
-                    {/* Footer info with animation - Made more compact */}
-                    <MotionFlex
+                    {/* Footer info */}
+                    <Stack
                         direction="column"
-                        align="center"
+                        alignItems="center"
+                        component={motion.div}
                         custom={13}
                         variants={fadeInUp}
                         initial="hidden"
                         animate="visible"
-                        mb={4}
+                        sx={{ mb: 2 }}
                     >
-                        <Text
-                            textAlign="center"
-                            fontSize="md"
-                            color="gray.700"
-                            marginTop={4}
-                            fontWeight="medium"
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                textAlign: 'center',
+                                color: 'grey.700',
+                                mt: 2,
+                                fontWeight: 'medium'
+                            }}
                         >
-                            {t("guest_footer") || "Making AI context standardization simple and powerful"}
-                        </Text>
-                    </MotionFlex>
+                            {t("guest_footer") || "Making team collaboration intelligent and efficient"}
+                        </Typography>
+                    </Stack>
                 </MotionBox>
             </Container>
         </Box>

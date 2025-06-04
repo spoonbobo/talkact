@@ -4,19 +4,42 @@
 import React, { useEffect } from "react";
 import { Provider as ReduxProvider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
+
+// MUI Imports
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
+
+// Chakra UI Imports (keeping for gradual migration)
 import { Provider as ChakraProvider } from "@/components/ui/provider";
+import { defaultSystem } from "@chakra-ui/react"
+import { ColorModeProvider } from "@/components/ui/color-mode"
+
 import { store, persistor } from "@/store/store";
 import { AuthProvider } from "@/providers/auth_provider";
 import SocketProvider from "@/providers/socket_provider";
+import { AppThemeProvider, useAppTheme } from "@/providers/theme_provider";
 import { Toaster } from "@/components/ui/toaster";
-import { defaultSystem } from "@chakra-ui/react"
-import { ColorModeProvider } from "@/components/ui/color-mode"
 import { usePathname } from 'next/navigation';
 import { setCurrentRoute } from '@/store/features/assistantSlice';
 import { useDispatch } from "react-redux";
 import { checkSessionExpiration } from "@/store/features/userSlice";
 import ActivityTracker from '@/components/ActivityTracker';
-import AppLayout from "@/components/app_layout"
+import { createMuiTheme } from "@/theme/mui-theme";
+
+// MUI Theme Provider Component that has access to theme context
+function MuiThemeProvider({ children }: { children: React.ReactNode }) {
+  const { isDark } = useAppTheme();
+  const muiTheme = createMuiTheme(isDark);
+
+  return (
+    <ThemeProvider theme={muiTheme}>
+      <CssBaseline />
+      {children}
+    </ThemeProvider>
+  );
+}
 
 // Session expiration checker component
 function SessionExpirationChecker() {
@@ -60,15 +83,21 @@ export default function Providers({
           <SessionExpirationChecker />
           <ActivityTracker />
           <SocketProvider>
-            <ChakraProvider>
-              {/* @ts-ignore */}
-              <ColorModeProvider value={defaultSystem}>
-                <Toaster />
-                <AppLayout>
-                  {children}
-                </AppLayout>
-              </ColorModeProvider>
-            </ChakraProvider>
+            <NextThemesProvider attribute="class" defaultTheme="system">
+              <AppThemeProvider>
+                <AppRouterCacheProvider>
+                  <MuiThemeProvider>
+                    <ChakraProvider>
+                      {/* @ts-ignore */}
+                      <ColorModeProvider value={defaultSystem}>
+                        <Toaster />
+                        {children}
+                      </ColorModeProvider>
+                    </ChakraProvider>
+                  </MuiThemeProvider>
+                </AppRouterCacheProvider>
+              </AppThemeProvider>
+            </NextThemesProvider>
           </SocketProvider>
         </PersistGate>
       </ReduxProvider>

@@ -3,137 +3,294 @@
 import React, { useState, useEffect } from "react";
 import {
   Box,
-  HStack,
-  Image,
+  Container,
+  Typography,
   Link,
-  Text,
-  Spinner,
-  // Tooltip,
-  VStack,
-} from "@chakra-ui/react";
-import { Tooltip } from "@/components/ui/tooltip";
+  Stack,
+  IconButton,
+  Select,
+  MenuItem,
+  FormControl
+} from "@mui/material";
+import {
+  GitHub,
+  Language as LanguageIcon,
+  LightMode,
+  DarkMode
+} from "@mui/icons-material";
 import { useTranslations } from "next-intl";
-import { useColorMode } from "@/components/ui/color-mode";
-import { useSelector } from "react-redux";
+import { useParams, useRouter, usePathname } from "next/navigation";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/store";
-import Announcement from "@/components/announcement";
+import { setUserSettings } from '@/store/features/userSlice';
+import { toaster } from "@/components/ui/toaster";
 
 const Footer: React.FC = () => {
   const t = useTranslations("Footer");
-  const { colorMode } = useColorMode();
-  const [timeRemaining, setTimeRemaining] = useState<string>("--:--");
-  const [githubStats, setGithubStats] = useState<{ stars: number } | null>(null);
+  const params = useParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const dispatch = useDispatch();
+  const { currentUser, isAuthenticated } = useSelector((state: RootState) => state.user);
+  const userSettings = useSelector((state: RootState) => state.user.currentUser?.settings);
 
-  // Get the expiration timestamp from Redux state
-  const expiresAt = useSelector((state: RootState) => state.user.expiresAt);
-  const isAuthenticated = useSelector((state: RootState) => state.user.isAuthenticated);
+  const currentLocale = params.locale as string;
+  const [selectedLanguage, setSelectedLanguage] = useState(currentLocale || 'en');
+  const [currentTheme, setCurrentTheme] = useState('light');
 
+  // Initialize theme
   useEffect(() => {
-    // Fetch GitHub stats from our API endpoint
-    const fetchGitHubStats = async () => {
-      try {
-        const response = await fetch('/api/github/stats');
-        if (response.ok) {
-          const data = await response.json();
-          setGithubStats(data);
-        } else {
-          console.error('Failed to fetch GitHub stats');
-        }
-      } catch (error) {
-        console.error('Error fetching GitHub stats:', error);
+    const storedTheme = localStorage.getItem("chakra-ui-color-mode") ||
+      userSettings?.general?.theme ||
+      'light';
+    setCurrentTheme(storedTheme);
+  }, [userSettings]);
+
+  // Language options with correct locale codes
+  const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'zh-HK', name: '中文' },
+    { code: 'ja', name: '日本語' },
+    { code: 'ko', name: '한국어' }
+  ];
+
+  const handleLanguageChange = async (newLocale: string) => {
+    setSelectedLanguage(newLocale);
+
+    try {
+      // Update user settings if authenticated
+      if (isAuthenticated && currentUser) {
+        const updatedUserSettings = {
+          ...userSettings,
+          general: {
+            ...userSettings?.general,
+            language: newLocale,
+            theme: userSettings?.general?.theme || 'light',
+          }
+        };
+
+        // Save to database
+        await fetch('/api/user/update_user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ settings: updatedUserSettings }),
+        });
+
+        // Update Redux store
+        dispatch(setUserSettings(updatedUserSettings));
       }
-    };
 
-    fetchGitHubStats();
+      // Get current path and replace locale
+      const pathParts = pathname.split('/');
+      pathParts[1] = newLocale;
+      const newPath = pathParts.join('/');
 
-    // Refresh GitHub stats every hour
-    const statsInterval = setInterval(fetchGitHubStats, 3600000);
-
-    return () => clearInterval(statsInterval);
-  }, []);
-
-  useEffect(() => {
-    // Only run the timer if user is authenticated and expiration exists
-    if (!isAuthenticated || !expiresAt) {
-      setTimeRemaining("--:--");
-      return;
+      // Navigate to new locale
+      window.location.href = newPath;
+    } catch (error) {
+      console.error("Error saving language settings:", error);
+      toaster.create({
+        title: "Error",
+        description: "Failed to save language preference",
+        type: "error"
+      });
     }
+  };
 
-    const updateTimer = () => {
-      const now = Date.now();
-      const remaining = expiresAt - now;
+  const handleThemeToggle = async () => {
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    setCurrentTheme(newTheme);
 
-      if (remaining <= 0) {
-        setTimeRemaining("00:00");
-        return;
+    try {
+      // Save to localStorage
+      localStorage.setItem("chakra-ui-color-mode", newTheme);
+
+      // Update user settings if authenticated
+      if (isAuthenticated && currentUser) {
+        const updatedUserSettings = {
+          ...userSettings,
+          general: {
+            ...userSettings?.general,
+            language: userSettings?.general?.language || 'en',
+            theme: newTheme,
+          }
+        };
+
+        // Save to database
+        await fetch('/api/user/update_user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ settings: updatedUserSettings }),
+        });
+
+        // Update Redux store
+        dispatch(setUserSettings(updatedUserSettings));
       }
 
-      // Convert to minutes and seconds
-      const minutes = Math.floor(remaining / 60000);
-      const seconds = Math.floor((remaining % 60000) / 1000);
+      // Apply theme change to document
+      document.documentElement.setAttribute('data-theme', newTheme);
 
-      // Format as MM:SS
-      setTimeRemaining(
-        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-      );
-    };
-
-    // Update immediately
-    updateTimer();
-
-    // Set interval to update every second
-    const interval = setInterval(updateTimer, 1000);
-
-    return () => clearInterval(interval);
-  }, [expiresAt, isAuthenticated]);
+      toaster.create({
+        title: "Theme Updated",
+        description: `Switched to ${newTheme} mode`,
+        type: "success"
+      });
+    } catch (error) {
+      console.error("Error saving theme settings:", error);
+      toaster.create({
+        title: "Error",
+        description: "Failed to save theme preference",
+        type: "error"
+      });
+    }
+  };
 
   return (
     <Box
-      position="fixed"
-      bottom="20px"
-      right="20px"
-      zIndex="10"
+      component="footer"
+      sx={{
+        py: 6,
+        px: { xs: 2, sm: 3, md: 6 },
+        mt: 'auto',
+        borderTop: '1px solid',
+        borderColor: 'divider'
+      }}
     >
-      <VStack align="flex-end" gap={2}>
-        <Box maxWidth="300px">
-          <Announcement inFooter={true} />
+      <Container maxWidth="lg">
+        <Box sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 4,
+          justifyContent: 'space-between'
+        }}>
+          {/* Contact Section */}
+          <Box sx={{ minWidth: '200px', flex: '1 1 auto' }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              spoonbobo@onlysaid.com ↗
+            </Typography>
+            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+              <IconButton size="small" color="inherit" href="https://github.com/spoonbobo/onlysaid" target="_blank">
+                <GitHub fontSize="small" />
+              </IconButton>
+            </Stack>
+          </Box>
+
+          {/* Resources Section */}
+          <Box sx={{ minWidth: '120px' }}>
+            <Typography variant="h6" gutterBottom>Resources</Typography>
+            <Stack spacing={1}>
+              <Link href="https://onlysaid.com/docs/#/" color="text.secondary" underline="none" target="_blank">
+                <Typography variant="body2">Documentation</Typography>
+              </Link>
+              <Link href="https://github.com/spoonbobo/onlysaid" color="text.secondary" underline="none" target="_blank">
+                <Typography variant="body2">GitHub</Typography>
+              </Link>
+              <Link href="https://github.com/spoonbobo/onlysaid/issues" color="text.secondary" underline="none" target="_blank">
+                <Typography variant="body2">Issues</Typography>
+              </Link>
+              <Link href="https://github.com/spoonbobo/onlysaid/releases" color="text.secondary" underline="none" target="_blank">
+                <Typography variant="body2">Releases</Typography>
+              </Link>
+            </Stack>
+          </Box>
+
+          {/* Community Section */}
+          <Box sx={{ minWidth: '120px' }}>
+            <Typography variant="h6" gutterBottom>Community</Typography>
+            <Stack spacing={1}>
+              <Link href="https://github.com/spoonbobo/onlysaid/discussions" color="text.secondary" underline="none" target="_blank">
+                <Typography variant="body2">Discussions</Typography>
+              </Link>
+              <Link href="https://github.com/spoonbobo/onlysaid/blob/main/README.md" color="text.secondary" underline="none" target="_blank">
+                <Typography variant="body2">Contributing</Typography>
+              </Link>
+            </Stack>
+          </Box>
+
+          {/* Legal Section */}
+          <Box sx={{ minWidth: '120px' }}>
+            <Typography variant="h6" gutterBottom>Legal</Typography>
+            <Stack spacing={1}>
+              <Link href="https://github.com/spoonbobo/onlysaid/blob/main/LICENSE" color="text.secondary" underline="none" target="_blank">
+                <Typography variant="body2">Apache-2.0 License</Typography>
+              </Link>
+            </Stack>
+          </Box>
         </Box>
-        <HStack gap={4}>
-          <Link href="https://github.com/spoonbobo/onlysaid" target="_blank">
-            <HStack gap={1}>
-              <Image
-                src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
-                alt="GitHub"
-                boxSize="20px"
-                filter={colorMode === 'dark' ? 'invert(1)' : 'none'}
-              />
-              {githubStats ? (
-                <Text fontSize="sm" color="gray.500">
-                  {githubStats.stars}
-                </Text>
-              ) : (
-                <Spinner size="xs" color="gray.500" />
-              )}
-            </HStack>
-          </Link>
-          <Text fontSize="sm" color="gray.500">
-            {t("version")} {process.env.NEXT_PUBLIC_VERSION}
-          </Text>
-          <Tooltip
-            content={
-              <VStack align="start">
-                <Text>Auth: {isAuthenticated ? "Yes" : "No"}</Text>
-                <Text>Expires: {expiresAt ? new Date(expiresAt).toLocaleTimeString() : "Not set"}</Text>
-                <Text>Now: {new Date().toLocaleTimeString()}</Text>
-              </VStack>
-            }
-          >
-            <Text fontSize="sm" color={timeRemaining === "00:00" ? "red.500" : "gray.500"}>
-              TTL: {timeRemaining}
-            </Text>
-          </Tooltip>
-        </HStack>
-      </VStack>
+
+        {/* Bottom Section */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mt: 4,
+            pt: 2,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            flexWrap: 'wrap',
+            gap: 2
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            © 2025 Made by spoonbobo • Onlysaid
+          </Typography>
+
+          {/* Language and Theme Controls */}
+          <Stack direction="row" spacing={2} alignItems="center">
+            {/* Language Switcher */}
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <LanguageIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
+              <FormControl size="small">
+                <Select
+                  value={selectedLanguage}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
+                  variant="outlined"
+                  sx={{
+                    minWidth: 100,
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      border: 'none'
+                    },
+                    '& .MuiSelect-select': {
+                      py: 0.5,
+                      fontSize: '0.875rem',
+                      color: 'text.secondary'
+                    }
+                  }}
+                >
+                  {languages.map((lang) => (
+                    <MenuItem key={lang.code} value={lang.code}>
+                      {lang.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+
+            {/* Theme Toggle */}
+            <IconButton
+              onClick={handleThemeToggle}
+              size="small"
+              sx={{
+                color: 'text.secondary',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1
+              }}
+            >
+              {currentTheme === 'dark' ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
+            </IconButton>
+
+            <Typography variant="body2" color="text.secondary">
+              ⭐ 37 stars on GitHub
+            </Typography>
+          </Stack>
+        </Box>
+      </Container>
     </Box>
   );
 };

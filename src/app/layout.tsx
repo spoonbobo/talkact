@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "@/providers/providers";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import localFont from 'next/font/local'
+import AppLayout from "@/components/app_layout";
 
 const roboto = Roboto({
   weight: '400',
@@ -29,7 +30,11 @@ export default function RootLayout({
         className={`antialiased ${roboto.className}`}
       >
         <NextIntlClientProvider>
-          <Providers session={session}>{children}</Providers>
+          <Providers session={session}>
+            <AppLayout>
+              {children}
+            </AppLayout>
+          </Providers>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { Box, Flex, Heading, Icon, Text } from "@chakra-ui/react";
+import { Box, Typography, Stack } from "@mui/material";
 import { motion } from "framer-motion";
 import { IconType } from "react-icons";
 
-const MotionFlex = motion.create(Flex);
+const MotionBox = motion.create(Box);
 
 interface NavigationCardProps {
     card: {
@@ -35,46 +35,60 @@ export function NavigationCard({
     textColor,
     textColorSecondary
 }: NavigationCardProps) {
+    const IconComponent = card.icon;
+
     return (
-        <MotionFlex
-            direction="column"
-            bg={bgColor}
-            p={6}
-            borderRadius="xl"
-            boxShadow="sm"
-            border="1px solid"
-            borderColor={borderColor}
-            cursor="pointer"
-            height="100%"
-            onClick={onClick}
+        <MotionBox
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 * (index + 1), duration: 0.3 }}
-            _hover={{
-                transform: "translateY(-3px)",
-                boxShadow: "md",
-                borderColor: hoverBorderColor,
-                transition: "all 0.2s ease"
+            onClick={onClick}
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: bgColor,
+                p: 3,
+                borderRadius: 3,
+                boxShadow: 1,
+                border: `1px solid ${borderColor}`,
+                cursor: 'pointer',
+                height: '100%',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                    transform: 'translateY(-3px)',
+                    boxShadow: 4,
+                    borderColor: hoverBorderColor,
+                }
             }}
         >
-            <Flex align="flex-start" mb={4}>
+            <Stack direction="row" alignItems="flex-start" spacing={1.5} sx={{ mb: 2 }}>
                 <Box
-                    p={3}
-                    borderRadius="lg"
-                    bg={`${card.color}15`}
-                    color={card.color}
-                    mr={3}
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
+                    sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        backgroundColor: `${card.color}15`,
+                        color: card.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
                 >
-                    <Icon as={card.icon} fontSize="xl" />
+                    <IconComponent size={24} />
                 </Box>
-                <Heading size="md" color={textColor}>{card.title}</Heading>
-            </Flex>
-            <Text color={textColorSecondary} fontSize="sm" flex="1">
+                <Typography variant="h6" sx={{ color: textColor, fontWeight: 'medium' }}>
+                    {card.title}
+                </Typography>
+            </Stack>
+            <Typography
+                variant="body2"
+                sx={{
+                    color: textColorSecondary,
+                    fontSize: '0.875rem',
+                    flex: 1
+                }}
+            >
                 {card.description}
-            </Text>
-        </MotionFlex>
+            </Typography>
+        </MotionBox>
     );
 } 

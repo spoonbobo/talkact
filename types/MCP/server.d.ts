@@ -1,5 +1,5 @@
 // Import Field type from MCPDialog
-import { Field } from "@/renderer/components/Dialog/MCPDialog";
+import { Field } from "@/renderer/components/Dialog/MCP/MCPDialog";
 import { ReactNode } from "react";
 
 export interface IBaseServerConfig {
@@ -46,7 +46,17 @@ export interface IServerMetadata {
     icon?: string; // Icon name or component
     sourceUrl?: string;
     platforms?: ('windows' | 'macos' | 'linux')[];
-    category?: 'communication' | 'weather' | 'location' | 'research' | 'productivity' | 'delivery' | 'development' | 'accommodation' | 'other';
+    category?:
+    | 'communication'
+    | 'weather'
+    | 'location'
+    | 'research'
+    | 'productivity'
+    | 'delivery'
+    | 'development'
+    | 'accommodation'
+    | 'learning'
+    | 'other';
 }
 
 // Enhanced server module interface
@@ -216,6 +226,13 @@ export interface IOTRSConfig {
     defaultType: string;
 }
 
+// Added Moodle Config
+export interface IMoodleConfig {
+    apiUrl: string;
+    apiToken: string;
+    courseId: string;
+}
+
 // Server State Interfaces (for backward compatibility)
 export interface ITavilyState {
     tavilyEnabled: boolean;
@@ -293,6 +310,13 @@ export interface IOTRSState {
     otrsEnabled: boolean;
     otrsConfig: IOTRSConfig;
     otrsAutoApproved?: boolean;
+}
+
+// Added Moodle State
+export interface IMoodleState {
+    moodleEnabled: boolean;
+    moodleConfig: IMoodleConfig;
+    moodleAutoApproved?: boolean;
 }
 
 // Added MS Teams Config and State

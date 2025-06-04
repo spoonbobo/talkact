@@ -12,6 +12,8 @@ import { useTranslations } from 'next-intl'; // If you're using next-intl for tr
 import { useParams } from 'next/navigation';
 import { toaster } from '@/components/ui/toaster';
 import Loading from '@/components/loading';
+import { Box, Typography, Button, Stack } from '@mui/material';
+import { Error as ErrorIcon } from '@mui/icons-material';
 
 export default function ThirdPartyLoginRedirect() {
     const router = useRouter();
@@ -111,19 +113,34 @@ export default function ThirdPartyLoginRedirect() {
     // Error state
     if (error) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <div className="text-center">
-                    <div className="error-icon mb-4">❌</div>
-                    <h2 className="text-xl font-bold mb-2">{t('authentication_error')}</h2>
-                    <p className="text-red-500">{error}</p>
-                    <button
-                        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    minHeight: '100vh'
+                }}
+            >
+                <Stack spacing={2} alignItems="center" textAlign="center">
+                    <ErrorIcon sx={{ fontSize: 48, color: 'error.main' }} />
+
+                    <Typography variant="h5" fontWeight="bold">
+                        {t('authentication_error')}
+                    </Typography>
+
+                    <Typography color="error" sx={{ mb: 2 }}>
+                        {error}
+                    </Typography>
+
+                    <Button
+                        variant="contained"
                         onClick={() => router.push(`/${locale}/signin`)}
+                        sx={{ mt: 2 }}
                     >
                         {t('back_to_signin')}
-                    </button>
-                </div>
-            </div>
+                    </Button>
+                </Stack>
+            </Box>
         );
     }
 

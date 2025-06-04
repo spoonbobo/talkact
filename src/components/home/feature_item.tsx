@@ -1,9 +1,8 @@
 "use client";
 
-import React from "react";
-import { Box, Flex, Text, Portal, Popover } from "@chakra-ui/react";
+import React, { useState } from "react";
+import { Box, Typography, Popover, useTheme } from "@mui/material";
 import { motion } from "framer-motion";
-import { useColorModeValue } from "@/components/ui/color-mode";
 
 const MotionBox = motion.create(Box);
 
@@ -24,7 +23,18 @@ export function FeatureItem({
     textColorSecondary,
     cardBorderColor
 }: FeatureItemProps) {
-    const dialogBgColor = useColorModeValue("white", "gray.800");
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+    const theme = useTheme();
+
+    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
+    const open = Boolean(anchorEl);
 
     return (
         <MotionBox
@@ -32,28 +42,55 @@ export function FeatureItem({
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3 }}
         >
-            <Popover.Root>
-                <Popover.Trigger asChild>
-                    <Flex align="center" cursor="pointer" _hover={{ opacity: 0.8 }}>
-                        <Box w="10px" h="10px" borderRadius="full" bg={color} mr={2}></Box>
-                        <Text fontSize="sm" color={textColor}>
-                            {title}
-                        </Text>
-                    </Flex>
-                </Popover.Trigger>
-                <Portal>
-                    <Popover.Positioner>
-                        <Popover.Content bg={dialogBgColor} borderColor={cardBorderColor} maxW="250px">
-                            <Popover.Arrow />
-                            <Popover.Body p={2}>
-                                <Text color={textColorSecondary} fontSize="xs">
-                                    {description}
-                                </Text>
-                            </Popover.Body>
-                        </Popover.Content>
-                    </Popover.Positioner>
-                </Portal>
-            </Popover.Root>
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    '&:hover': { opacity: 0.8 }
+                }}
+                onClick={handleClick}
+            >
+                <Box
+                    sx={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
+                        backgroundColor: color,
+                        marginRight: 1
+                    }}
+                />
+                <Typography variant="body2" sx={{ color: textColor, fontSize: '0.875rem' }}>
+                    {title}
+                </Typography>
+            </Box>
+            <Popover
+                open={open}
+                anchorEl={anchorEl}
+                onClose={handleClose}
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                }}
+                transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'left',
+                }}
+                slotProps={{
+                    paper: {
+                        sx: {
+                            maxWidth: 250,
+                            p: 1,
+                            border: `1px solid ${cardBorderColor}`,
+                            backgroundColor: theme.palette.mode === 'dark' ? 'grey.800' : 'white'
+                        }
+                    }
+                }}
+            >
+                <Typography variant="caption" sx={{ color: textColorSecondary, fontSize: '0.75rem' }}>
+                    {description}
+                </Typography>
+            </Popover>
         </MotionBox>
     );
 } 
