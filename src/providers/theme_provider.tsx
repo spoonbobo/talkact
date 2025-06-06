@@ -29,13 +29,12 @@ export const AppThemeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, []);
 
     const currentTheme = theme === 'system' ? systemTheme : theme;
-    const isDark = mounted ? currentTheme === 'dark' : false; // Default to light theme during SSR
+    const isDark = mounted ? currentTheme === 'dark' : false;
 
     const toggleTheme = () => {
         setTheme(isDark ? 'light' : 'dark');
     };
 
-    // Always provide the context, even during SSR/hydration
     return (
         <ThemeContext.Provider value={{ isDark, toggleTheme, theme, setTheme }}>
             {children}

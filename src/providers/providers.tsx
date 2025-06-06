@@ -11,16 +11,11 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 
-// Chakra UI Imports (keeping for gradual migration)
-import { Provider as ChakraProvider } from "@/components/ui/provider";
-import { defaultSystem } from "@chakra-ui/react"
-import { ColorModeProvider } from "@/components/ui/color-mode"
-
 import { store, persistor } from "@/store/store";
 import { AuthProvider } from "@/providers/auth_provider";
 import SocketProvider from "@/providers/socket_provider";
 import { AppThemeProvider, useAppTheme } from "@/providers/theme_provider";
-import { Toaster } from "@/components/ui/toaster";
+import { ToastProvider } from "@/components/ui/mui-toaster";
 import { usePathname } from 'next/navigation';
 import { setCurrentRoute } from '@/store/features/assistantSlice';
 import { useDispatch } from "react-redux";
@@ -87,13 +82,9 @@ export default function Providers({
               <AppThemeProvider>
                 <AppRouterCacheProvider>
                   <MuiThemeProvider>
-                    <ChakraProvider>
-                      {/* @ts-ignore */}
-                      <ColorModeProvider value={defaultSystem}>
-                        <Toaster />
-                        {children}
-                      </ColorModeProvider>
-                    </ChakraProvider>
+                    <ToastProvider>
+                      {children}
+                    </ToastProvider>
                   </MuiThemeProvider>
                 </AppRouterCacheProvider>
               </AppThemeProvider>

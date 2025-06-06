@@ -158,40 +158,6 @@ services:
     networks:
       - onlysaid-network
 
-  # mcp
-  onlysaid-mcp_client:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.mcp.client
-    container_name: onlysaid-mcp_client
-    depends_on:
-      - onlysaid-socket_server
-      - onlysaid-psqldb
-      - onlysaid-app
-      - onlysaid-ollama
-    ports:
-      - "34430:34430"
-    volumes:
-      - ./mcp/client:/app
-      - ./mcp/servers:/servers
-      - ./storage:/storage
-      - ./mcp/client/utils:/servers/utils
-      - ./mcp/client/schemas:/servers/schemas
-      - ./mcp/client/prompts:/servers/prompts
-      - ./mcp/client/messages:/servers/messages
-      - .env:/servers/.env
-    environment:
-      - MCP_SERVERS_JSON=/app/mcp_server.json
-      - SOCKET_SERVER_URL=${SOCKET_SERVER_URL}
-      - CLIENT_URL=${CLIENT_URL}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_API_BASE_URL=${OPENAI_API_BASE_URL}
-      - EMBED_MODEL=nomic-embed-text:latest
-      - TAVILY_API_KEY=${TAVILY_API_KEY}
-    networks:
-      - onlysaid-network
-    restart: always
-
   onlysaid-kb:
     build:
       context: .

@@ -7,7 +7,7 @@ Map 3rd party login to App Login.
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useDispatch } from 'react-redux';
-import { setUser, setLastOpenedTeam } from '@/store/features/userSlice'; // Adjust import path as needed
+import { setUser } from '@/store/features/userSlice'; // Adjust import path as needed
 import { useTranslations } from 'next-intl'; // If you're using next-intl for translations
 import { useParams } from 'next/navigation';
 import { toaster } from '@/components/ui/toaster';
@@ -42,7 +42,38 @@ export default function ThirdPartyLoginRedirect() {
 
                 if (!response.ok) {
                     if (response.status === 404) {
-                        router.push(`/${locale}/signup/new_profile?email=${encodeURIComponent(email)}`);
+                        // Create new user if doesn't exist, then redirect to dashboard
+                        const createResponse = await fetch('/api/user/create_user', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                email,
+                                avatarUrl,
+                                settings: {
+                                    general: {
+                                        language: locale,
+                                        theme: 'light'
+                                    }
+                                }
+                            }),
+                        });
+
+                        if (!createResponse.ok) {
+                            throw new Error('Failed to create user account');
+                        }
+
+                        const newUserData = await createResponse.json();
+                        dispatch(setUser(newUserData.user));
+
+                        toaster.create({
+                            title: t('signin_success'),
+                            description: t('signin_success_description'),
+                            type: "info"
+                        });
+
+                        router.push(`/${locale}/dashboard`);
                         return;
                     }
                     // Other errors
@@ -61,31 +92,41 @@ export default function ThirdPartyLoginRedirect() {
                         type: "info"
                     });
 
-                    let teamId = null;
-                    // Redirect users to join/ create a team
-                    // user cannot login without a team
-                    console.log("data.user", data.user);
-                    const teams = data.user.teams || [];
-                    if (!teams || teams.length === 0) {
-                        router.push(`/${locale}/signup/new_team`);
-                        return;
-                    } else {
-                        // Check if user has a lastOpenedTeam and it's in their teams list
-                        if (data.user.lastOpenedTeam && teams.includes(data.user.lastOpenedTeam)) {
-                            teamId = data.user.lastOpenedTeam;
-                        } else {
-                            // Otherwise use the first team
-                            teamId = teams[0];
-                        }
+                    // Redirect straight to dashboard
+                    router.push(`/${user_locale || locale}/dashboard`);
+                } else {
+                    // Create new user and redirect to dashboard
+                    const createResponse = await fetch('/api/user/create_user', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            email,
+                            avatarUrl,
+                            settings: {
+                                general: {
+                                    language: locale,
+                                    theme: 'light'
+                                }
+                            }
+                        }),
+                    });
 
-                        // Store the selected teamId in Redux
-                        dispatch(setLastOpenedTeam(teamId));
+                    if (!createResponse.ok) {
+                        throw new Error('Failed to create user account');
                     }
 
-                    // Redirect to dashboard or home with locale
-                    router.push(`/${user_locale || locale}/${teamId}`);
-                } else {
-                    router.push(`/${locale}/signup/new_profile?email=${encodeURIComponent(email)}&avatarUrl=${avatarUrl}`);
+                    const newUserData = await createResponse.json();
+                    dispatch(setUser(newUserData.user));
+
+                    toaster.create({
+                        title: t('signin_success'),
+                        description: t('signin_success_description'),
+                        type: "info"
+                    });
+
+                    router.push(`/${locale}/dashboard`);
                 }
             } catch (err) {
                 setError((err as Error).message);

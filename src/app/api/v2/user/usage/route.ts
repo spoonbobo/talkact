@@ -12,58 +12,52 @@ export async function GET(request: Request) {
     const days = parseInt(searchParams.get('days') || '30');
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    // Get usage summary
+    // Get usage summary (removed total_cost)
     const usageSummary = await db('usage_logs')
         .where('user_id', authenticated.user.id)
         .where('date', '>=', startDate)
         .select(
             db.raw('COUNT(*) as total_requests'),
-            db.raw('SUM(cost_requests) as total_cost'),
             db.raw('COUNT(DISTINCT model) as models_used')
         )
         .first();
 
-    // Get daily breakdown
+    // Get daily breakdown (removed cost)
     const dailyUsage = await db('usage_logs')
         .where('user_id', authenticated.user.id)
         .where('date', '>=', startDate)
         .select(
             db.raw('DATE(date) as day'),
-            db.raw('COUNT(*) as requests'),
-            db.raw('SUM(cost_requests) as cost')
+            db.raw('COUNT(*) as requests')
         )
         .groupBy('day')
         .orderBy('day', 'desc');
 
-    // Get model breakdown
+    // Get model breakdown (removed cost)
     const modelUsage = await db('usage_logs')
         .where('user_id', authenticated.user.id)
         .where('date', '>=', startDate)
         .select(
             'model',
-            db.raw('COUNT(*) as requests'),
-            db.raw('SUM(cost_requests) as cost')
+            db.raw('COUNT(*) as requests')
         )
         .groupBy('model')
         .orderBy('requests', 'desc');
 
-    // Ensure numeric values are properly converted
+    // Ensure numeric values are properly converted (removed total_cost)
     const summary = {
         total_requests: parseInt(usageSummary?.total_requests || '0'),
-        total_cost: parseFloat(usageSummary?.total_cost || '0'),
         models_used: parseInt(usageSummary?.models_used || '0')
     };
 
     const daily = dailyUsage.map(item => ({
         day: item.day,
-        requests: parseInt(item.requests || '0'),
-        cost: parseFloat(item.cost || '0')
+        requests: parseInt(item.requests || '0')
     }));
 
     const models = modelUsage.map(item => ({
         model: item.model,
-        requests: parseInt(item.requests || '0'),
-        cost: parseFloat(item.cost || '0')
+        requests: parseInt(item.requests || '0')
     }));
 
     return NextResponse.json(

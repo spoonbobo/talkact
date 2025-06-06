@@ -17,7 +17,8 @@
     "admin_panel": "團隊管理",
     "workbench": "工作台",
     "plans": "計劃",
-    "trust_mode": "信任模式"
+    "trust_mode": "信任模式",
+    "download": "下載"
   },
   "Home": {
     "welcome": "歡迎",
@@ -74,7 +75,25 @@
     "create_new_team": "創建新團隊",
     "join_team_to_use": "請加入團隊",
     "failed_to_load": "加載失敗",
-    "retry": "重試"
+    "retry": "重試",
+    "hero_subtitle": "只需自然語言即可完成任何協作任務",
+    "view_on_github": "在GitHub上查看",
+    "apache_license": "Apache-2.0 授權",
+    "stars_count": "37 星標",
+    "features": "功能",
+    "natural_language_collaboration": "自然語言協作",
+    "natural_language_collaboration_description": "在工作空間中，只需使用自然語言即可與您的團隊和代理完成任何任務",
+    "agentic_stack": "代理化技術棧",
+    "agentic_stack_description": "開箱即用的代理化技術棧，具有高度可配置和可擴展的客戶端和服務器",
+    "intelligent_planning": "智能規劃",
+    "intelligent_planning_description": "具有完整自然語言支持的智能規劃和執行系統",
+    "privacy_preserved": "隱私保護",
+    "privacy_preserved_description": "所有訊息和個人憑證均在本地存儲，確保最大程度的隱私保護",
+    "ready_to_get_started": "準備開始了嗎？",
+    "experience_seamless_collaboration": "體驗無縫的自然語言協作",
+    "start_now": "立即開始",
+    "download": "下載",
+    "docs": "文檔"
   },
   "Signup": {
     "signup": "註冊",
@@ -137,7 +156,21 @@
     "privacy_policy": "私隱政策",
     "terms_of_service": "使用條款",
     "contact_us": "聯絡我們",
-    "version": "版本"
+    "version": "版本",
+    "resources": "資源",
+    "documentation": "文檔",
+    "issues": "問題",
+    "releases": "發佈",
+    "community": "社群",
+    "discussions": "討論",
+    "contributing": "貢獻",
+    "legal": "法律",
+    "apache_license": "Apache-2.0 授權",
+    "failed_to_save_language": "無法保存語言設定",
+    "failed_to_save_theme": "無法保存主題設定",
+    "theme_switched": "已切換到{mode}",
+    "dark_mode": "深色模式",
+    "light_mode": "淺色模式"
   },
   "Notification": {
     "notifications": "通知",
@@ -644,7 +677,10 @@
     "kb_added": "知識庫已添加",
     "save_to_apply_changes": "保存以應用更改",
     "settings_saved": "設定已保存",
-    "settings_saved_description": "您的設定已成功保存"
+    "settings_saved_description": "您的設定已成功保存",
+    "payment": "付款",
+    "subscription": "訂閱",
+    "overview": "總覽"
   },
   "Loading": {
     "loading": "加載中...",
@@ -670,5 +706,27 @@
     "redirecting_in": "將在",
     "seconds": "秒",
     "to_home": "返回主頁"
+  },
+  "Payment": {
+    "signInRequired": "需要登入才能查看此頁面",
+    "errorLoadingData": "載入資料時發生錯誤",
+    "retry": "重試",
+    "currentPlan": "目前方案",
+    "month": "月",
+    "requestsUsed": "已使用請求數",
+    "nearLimit": "您的使用量接近限制",
+    "manageSubscription": "管理訂閱",
+    "upgradePlan": "升級方案",
+    "usageStatistics": "使用統計",
+    "totalRequests": "總請求數",
+    "modelsUsed": "已使用模型數",
+    "usageLogs": "使用記錄",
+    "date": "日期",
+    "model": "模型",
+    "kind": "類型",
+    "maxMode": "最大模式",
+    "yes": "是",
+    "no": "否",
+    "noUsageData": "暫無使用記錄"
   }
 }

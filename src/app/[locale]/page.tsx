@@ -8,7 +8,6 @@ import {
   Button,
   Stack,
   Paper,
-  Chip,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import {
@@ -16,9 +15,9 @@ import {
   Language as LanguageIcon,
   Security as SecurityIcon,
   Extension as ExtensionIcon,
-  GitHub as GitHubIcon,
-  Launch as LaunchIcon,
-} from "@mui/icons-material";
+  Download as DownloadIcon,
+  MenuBook as DocsIcon,
+} from "@mui/material/icons";
 import { useTranslations } from "next-intl";
 
 const MotionBox = motion.create(Box);
@@ -30,23 +29,23 @@ export default function HomePage() {
   const features = [
     {
       icon: ChatIcon,
-      title: "Natural Language Collaboration",
-      description: "Complete any tasks with your team and agents using only natural language in your workspaces"
+      title: t("natural_language_collaboration"),
+      description: t("natural_language_collaboration_description")
     },
     {
       icon: ExtensionIcon,
-      title: "Agentic Stack",
-      description: "Ready-to-use agentic stack with highly configurable and extensible client & servers"
+      title: t("agentic_stack"),
+      description: t("agentic_stack_description")
     },
     {
       icon: LanguageIcon,
-      title: "Intelligent Planning",
-      description: "Intelligent planning and execution system with full natural-language support"
+      title: t("intelligent_planning"),
+      description: t("intelligent_planning_description")
     },
     {
       icon: SecurityIcon,
-      title: "Privacy Preserved",
-      description: "All messages and personal credentials are stored purely local for maximum privacy"
+      title: t("privacy_preserved"),
+      description: t("privacy_preserved_description")
     }
   ];
 
@@ -86,42 +85,34 @@ export default function HomePage() {
             color="text.secondary"
             sx={{ mb: 4, maxWidth: "800px", mx: "auto", lineHeight: 1.5 }}
           >
-            Collaborate any tasks with only natural language
+            {t("hero_subtitle")}
           </Typography>
 
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={2}
             justifyContent="center"
-            sx={{ mb: 4 }}
           >
             <Button
               variant="contained"
               size="large"
-              href="https://onlysaid.com/docs/#/"
+              href="https://github.com/spoonbobo/onlysaid/releases"
               target="_blank"
-              startIcon={<LaunchIcon />}
+              startIcon={<DownloadIcon />}
               sx={{ px: 4, py: 1.5 }}
             >
-              Get Started
+              {t("download")}
             </Button>
             <Button
               variant="outlined"
               size="large"
-              href="https://github.com/spoonbobo/onlysaid"
+              href="https://onlysaid.com/docs/#/"
               target="_blank"
-              startIcon={<GitHubIcon />}
+              startIcon={<DocsIcon />}
               sx={{ px: 4, py: 1.5 }}
             >
-              View on GitHub
+              {t("docs")}
             </Button>
-          </Stack>
-
-          <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap">
-            <Chip label="Apache-2.0 License" variant="outlined" />
-            <Chip label="37 Stars" variant="outlined" />
-            <Chip label="TypeScript" variant="outlined" />
-            <Chip label="Python" variant="outlined" />
           </Stack>
         </MotionBox>
 
@@ -137,7 +128,7 @@ export default function HomePage() {
             textAlign="center"
             sx={{ mb: 6, fontWeight: "bold" }}
           >
-            Features
+            {t("features")}
           </Typography>
 
           <Box
@@ -187,39 +178,6 @@ export default function HomePage() {
               </MotionPaper>
             ))}
           </Box>
-        </MotionBox>
-
-        {/* Call to Action */}
-        <MotionBox
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          textAlign="center"
-        >
-          <Paper
-            elevation={3}
-            sx={{
-              p: 6,
-              borderRadius: 3,
-              background: "linear-gradient(135deg, rgba(138,43,226,0.1) 0%, rgba(0,191,255,0.1) 100%)"
-            }}
-          >
-            <Typography variant="h4" fontWeight="bold" sx={{ mb: 2 }}>
-              Ready to get started?
-            </Typography>
-            <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-              Experience seamless collaboration with natural language
-            </Typography>
-            <Button
-              variant="contained"
-              size="large"
-              href="https://onlysaid.com/docs/#/"
-              target="_blank"
-              sx={{ px: 6, py: 2 }}
-            >
-              Start Now
-            </Button>
-          </Paper>
         </MotionBox>
       </Container>
     </Box>

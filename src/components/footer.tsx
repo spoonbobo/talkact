@@ -23,7 +23,8 @@ import { useParams, useRouter, usePathname } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/store";
 import { setUserSettings } from '@/store/features/userSlice';
-import { toaster } from "@/components/ui/toaster";
+import { useToast } from "@/components/ui/mui-toaster";
+import { useAppTheme } from "@/providers/theme_provider";
 
 const Footer: React.FC = () => {
   const t = useTranslations("Footer");
@@ -33,18 +34,11 @@ const Footer: React.FC = () => {
   const dispatch = useDispatch();
   const { currentUser, isAuthenticated } = useSelector((state: RootState) => state.user);
   const userSettings = useSelector((state: RootState) => state.user.currentUser?.settings);
+  const { isDark, setTheme } = useAppTheme();
+  const { success, error } = useToast();
 
   const currentLocale = params.locale as string;
   const [selectedLanguage, setSelectedLanguage] = useState(currentLocale || 'en');
-  const [currentTheme, setCurrentTheme] = useState('light');
-
-  // Initialize theme
-  useEffect(() => {
-    const storedTheme = localStorage.getItem("chakra-ui-color-mode") ||
-      userSettings?.general?.theme ||
-      'light';
-    setCurrentTheme(storedTheme);
-  }, [userSettings]);
 
   // Language options with correct locale codes
   const languages = [
@@ -89,23 +83,18 @@ const Footer: React.FC = () => {
 
       // Navigate to new locale
       window.location.href = newPath;
-    } catch (error) {
-      console.error("Error saving language settings:", error);
-      toaster.create({
-        title: "Error",
-        description: "Failed to save language preference",
-        type: "error"
-      });
+    } catch (err) {
+      console.error("Error saving language settings:", err);
+      error(t("failed_to_save_language"));
     }
   };
 
   const handleThemeToggle = async () => {
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    setCurrentTheme(newTheme);
+    const newTheme = isDark ? 'light' : 'dark';
 
     try {
-      // Save to localStorage
-      localStorage.setItem("chakra-ui-color-mode", newTheme);
+      // Update theme using next-themes
+      setTheme(newTheme);
 
       // Update user settings if authenticated
       if (isAuthenticated && currentUser) {
@@ -131,21 +120,10 @@ const Footer: React.FC = () => {
         dispatch(setUserSettings(updatedUserSettings));
       }
 
-      // Apply theme change to document
-      document.documentElement.setAttribute('data-theme', newTheme);
-
-      toaster.create({
-        title: "Theme Updated",
-        description: `Switched to ${newTheme} mode`,
-        type: "success"
-      });
-    } catch (error) {
-      console.error("Error saving theme settings:", error);
-      toaster.create({
-        title: "Error",
-        description: "Failed to save theme preference",
-        type: "error"
-      });
+      success(t("theme_switched", { mode: newTheme === 'dark' ? t("dark_mode") : t("light_mode") }));
+    } catch (err) {
+      console.error("Error saving theme settings:", err);
+      error(t("failed_to_save_theme"));
     }
   };
 
@@ -167,12 +145,9 @@ const Footer: React.FC = () => {
           gap: 4,
           justifyContent: 'space-between'
         }}>
-          {/* Contact Section */}
+          {/* Contact Section - Now just GitHub */}
           <Box sx={{ minWidth: '200px', flex: '1 1 auto' }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              spoonbobo@onlysaid.com ↗
-            </Typography>
-            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+            <Stack direction="row" spacing={1}>
               <IconButton size="small" color="inherit" href="https://github.com/spoonbobo/onlysaid" target="_blank">
                 <GitHub fontSize="small" />
               </IconButton>
@@ -181,42 +156,42 @@ const Footer: React.FC = () => {
 
           {/* Resources Section */}
           <Box sx={{ minWidth: '120px' }}>
-            <Typography variant="h6" gutterBottom>Resources</Typography>
+            <Typography variant="h6" gutterBottom>{t("resources")}</Typography>
             <Stack spacing={1}>
               <Link href="https://onlysaid.com/docs/#/" color="text.secondary" underline="none" target="_blank">
-                <Typography variant="body2">Documentation</Typography>
+                <Typography variant="body2">{t("documentation")}</Typography>
               </Link>
               <Link href="https://github.com/spoonbobo/onlysaid" color="text.secondary" underline="none" target="_blank">
                 <Typography variant="body2">GitHub</Typography>
               </Link>
               <Link href="https://github.com/spoonbobo/onlysaid/issues" color="text.secondary" underline="none" target="_blank">
-                <Typography variant="body2">Issues</Typography>
+                <Typography variant="body2">{t("issues")}</Typography>
               </Link>
               <Link href="https://github.com/spoonbobo/onlysaid/releases" color="text.secondary" underline="none" target="_blank">
-                <Typography variant="body2">Releases</Typography>
+                <Typography variant="body2">{t("releases")}</Typography>
               </Link>
             </Stack>
           </Box>
 
           {/* Community Section */}
           <Box sx={{ minWidth: '120px' }}>
-            <Typography variant="h6" gutterBottom>Community</Typography>
+            <Typography variant="h6" gutterBottom>{t("community")}</Typography>
             <Stack spacing={1}>
               <Link href="https://github.com/spoonbobo/onlysaid/discussions" color="text.secondary" underline="none" target="_blank">
-                <Typography variant="body2">Discussions</Typography>
+                <Typography variant="body2">{t("discussions")}</Typography>
               </Link>
               <Link href="https://github.com/spoonbobo/onlysaid/blob/main/README.md" color="text.secondary" underline="none" target="_blank">
-                <Typography variant="body2">Contributing</Typography>
+                <Typography variant="body2">{t("contributing")}</Typography>
               </Link>
             </Stack>
           </Box>
 
           {/* Legal Section */}
           <Box sx={{ minWidth: '120px' }}>
-            <Typography variant="h6" gutterBottom>Legal</Typography>
+            <Typography variant="h6" gutterBottom>{t("legal")}</Typography>
             <Stack spacing={1}>
               <Link href="https://github.com/spoonbobo/onlysaid/blob/main/LICENSE" color="text.secondary" underline="none" target="_blank">
-                <Typography variant="body2">Apache-2.0 License</Typography>
+                <Typography variant="body2">{t("apache_license")}</Typography>
               </Link>
             </Stack>
           </Box>
@@ -226,20 +201,14 @@ const Footer: React.FC = () => {
         <Box
           sx={{
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             alignItems: 'center',
             mt: 4,
             pt: 2,
             borderTop: '1px solid',
-            borderColor: 'divider',
-            flexWrap: 'wrap',
-            gap: 2
+            borderColor: 'divider'
           }}
         >
-          <Typography variant="body2" color="text.secondary">
-            © 2025 Made by spoonbobo • Onlysaid
-          </Typography>
-
           {/* Language and Theme Controls */}
           <Stack direction="row" spacing={2} alignItems="center">
             {/* Language Switcher */}
@@ -282,12 +251,8 @@ const Footer: React.FC = () => {
                 borderRadius: 1
               }}
             >
-              {currentTheme === 'dark' ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
+              {isDark ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
             </IconButton>
-
-            <Typography variant="body2" color="text.secondary">
-              ⭐ 37 stars on GitHub
-            </Typography>
           </Stack>
         </Box>
       </Container>

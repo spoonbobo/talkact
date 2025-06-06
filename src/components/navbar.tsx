@@ -60,13 +60,7 @@ const NavBar = () => {
 
           {/* Right side - Action buttons */}
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Button
-              color="inherit"
-              href={isLoggedIn ? "/signout" : "/signin"}
-              sx={{ textTransform: 'none' }}
-            >
-              {isLoggedIn ? t("signout") : t("signin")}
-            </Button>
+            {/* Download button - moved to the left */}
             <Button
               color="inherit"
               onClick={() => {
@@ -75,8 +69,28 @@ const NavBar = () => {
               }}
               sx={{ textTransform: 'none' }}
             >
-              Download
+              {t("download")}
             </Button>
+
+            {/* Login/Logout button */}
+            <Button
+              color="inherit"
+              href={isLoggedIn ? "/signout" : "/signin"}
+              sx={{ textTransform: 'none' }}
+            >
+              {isLoggedIn ? t("signout") : t("signin")}
+            </Button>
+
+            {/* Dashboard button - only shown when logged in */}
+            {isLoggedIn && (
+              <Button
+                color="inherit"
+                href={`/${locale}/dashboard`}
+                sx={{ textTransform: 'none' }}
+              >
+                {t("dashboard")}
+              </Button>
+            )}
           </Box>
         </Toolbar>
       </Container>
