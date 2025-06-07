@@ -247,7 +247,6 @@ services:
     depends_on:
       - onlysaid-app
       - onlysaid-socket_server
-      - onlysaid-mcp_client
     networks:
       - onlysaid-network
     restart: always
@@ -281,12 +280,37 @@ services:
       - onlysaid-network
     restart: always
 
+  onlysaid-stt:
+    build:
+      context: stt/WhisperLiveKit
+      dockerfile: Dockerfile
+    container_name: onlysaid-stt
+    ports:
+      - "34430:34430"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - ./storage:/app/storage
+      - whisper_cache:/root/.cache/huggingface/hub
+    networks:
+      - onlysaid-network
+    restart: always
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: ["--port", "34430", "--model", "base.en"]
+
 volumes:
   postgres_data:
   qdrant_data:
   ollama_data:
   pgadmin_data:
   n8n_storage:
+  whisper_cache:
   redis-cluster_data-0:
     driver: local
   redis-cluster_data-1:

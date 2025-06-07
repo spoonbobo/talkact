@@ -131,14 +131,16 @@ export default function DashboardPage() {
   }, []);
 
   // Prepare chart data
-  const chartData = analytics?.daily?.map(item => ({
-    date: new Date(item.day).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    }),
-    requests: item.requests,
-    fullDate: item.day
-  })) || [];
+  const chartData = analytics?.daily
+    ?.sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime())
+    ?.map(item => ({
+      date: new Date(item.day).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+      }),
+      requests: item.requests,
+      fullDate: item.day
+    })) || [];
 
   // Custom tooltip for the chart
   const CustomTooltip = ({ active, payload, label }: any) => {

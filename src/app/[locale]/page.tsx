@@ -17,7 +17,7 @@ import {
   Extension as ExtensionIcon,
   Download as DownloadIcon,
   MenuBook as DocsIcon,
-} from "@mui/material/icons";
+} from "@mui/icons-material";
 import { useTranslations } from "next-intl";
 
 const MotionBox = motion.create(Box);
