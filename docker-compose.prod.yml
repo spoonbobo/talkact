@@ -282,27 +282,38 @@ services:
 
   onlysaid-stt:
     build:
-      context: stt/WhisperLiveKit
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./docker/Dockerfile.stt
     container_name: onlysaid-stt
     ports:
       - "34430:34430"
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
+      - PYTHONUNBUFFERED=1
+      - PULSE_RUNTIME_PATH=/run/user/1000/pulse
     volumes:
-      - ./storage:/app/storage
+      - ./storage:/storage
       - whisper_cache:/root/.cache/huggingface/hub
+      # Add audio device access
+      - /dev/snd:/dev/snd:rw
+      - /run/user/1000/pulse:/run/user/1000/pulse:rw
+    devices:
+      - /dev/snd:/dev/snd
     networks:
       - onlysaid-network
     restart: always
     deploy:
       resources:
+        limits:
+          memory: 4G
         reservations:
           devices:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-    command: ["--port", "34430", "--model", "base.en"]
+    shm_size: 1gb
+    # Add privileged mode for audio access
+    privileged: true
 
 volumes:
   postgres_data:
