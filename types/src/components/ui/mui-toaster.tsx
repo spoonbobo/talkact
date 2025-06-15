@@ -116,13 +116,13 @@ export const toaster = {
 };
 
 // Global toast handler for the toaster.create interface
+let globalToastHandler: ((message: string, type: AlertColor, duration?: number) => void) | null = null;
+
+export const setGlobalToastHandler = (handler: (message: string, type: AlertColor, duration?: number) => void) => {
+    globalToastHandler = handler;
+};
+
 if (typeof window !== 'undefined') {
-    let globalToastHandler: ((message: string, type: AlertColor, duration?: number) => void) | null = null;
-
-    export const setGlobalToastHandler = (handler: (message: string, type: AlertColor, duration?: number) => void) => {
-        globalToastHandler = handler;
-    };
-
     window.addEventListener('mui-toast', (event: any) => {
         if (globalToastHandler) {
             const { message, type, duration } = event.detail;
