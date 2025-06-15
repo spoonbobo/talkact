@@ -105,8 +105,8 @@ services:
   # # main application services
   onlysaid-socket_server:
     build:
-      context: socket_server
-      dockerfile: Dockerfile.socket_server
+      context: ./socket_server
+      dockerfile: ./Dockerfile.socket_server
     container_name: onlysaid-socket_server
     ports:
       - "3001:3001"
@@ -150,6 +150,7 @@ services:
       - NEXT_PUBLIC_AGENT_HOME_PATH=${AGENT_HOME_PATH}
     volumes:
       - .:/app
+      - /app/node_modules
       - ./storage:/storage
     restart: always
     depends_on:
@@ -185,7 +186,7 @@ services:
   onlysaid-stt:
     build:
       context: .
-      dockerfile: docker/Dockerfile.stt
+      dockerfile: ./docker/Dockerfile.stt
     container_name: onlysaid-stt
     ports:
       - "34430:34430"

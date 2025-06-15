@@ -355,3 +355,69 @@ export interface IChessState {
     chessConfig: IChessConfig;
     chessAutoApproved?: boolean;
 }
+
+// Added Google Gmail Config and State (Auto-Auth version)
+export interface IGoogleGmailConfig {
+    // No configuration required for auto-auth Gmail server
+}
+
+export interface IGoogleGmailState {
+    googleGmailEnabled?: boolean;
+    googleGmailConfig?: IGoogleGmailConfig;
+    googleGmailAutoApproved?: boolean;
+}
+
+// Added N8n Config
+export interface IN8nConfig {
+    apiUrl: string;
+    apiKey: string;
+    webhookUsername?: string;
+    webhookPassword?: string;
+}
+
+// Added N8n State
+export interface IN8nState {
+    n8nEnabled: boolean;
+    n8nConfig: IN8nConfig;
+    n8nAutoApproved?: boolean;
+}
+
+// Added Playwright Config
+export interface IPlaywrightConfig {
+    // Playwright MCP server doesn't require any configuration
+}
+
+// Added Playwright State
+export interface IPlaywrightState {
+    playwrightEnabled: boolean;
+    playwrightConfig: IPlaywrightConfig;
+    playwrightAutoApproved?: boolean;
+}
+
+// Added Atlassian Config
+export interface IAtlassianConfig {
+    jiraUrl: string;
+    confluenceUrl: string;
+    authType: 'cloud' | 'server';
+    // For Cloud (OAuth 2.0)
+    oauthClientId?: string;
+    oauthClientSecret?: string;
+    oauthRedirectUri?: string;
+    oauthScope?: string;
+    cloudId?: string;
+    // For Server/Data Center (PAT or Basic Auth)
+    username?: string;
+    apiToken?: string;
+    personalAccessToken?: string;
+    // Optional settings
+    sslVerify?: boolean;
+    readOnlyMode?: boolean;
+    enabledTools?: string;
+}
+
+// Added Atlassian State
+export interface IAtlassianState {
+    atlassianEnabled: boolean;
+    atlassianConfig: IAtlassianConfig;
+    atlassianAutoApproved?: boolean;
+}

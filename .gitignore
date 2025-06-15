@@ -1,9 +1,9 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+mcp
 storage/*
 mcp/servers/*
 stt/results/*
-stt/*
 *.PNG
 
 # Python cache files
