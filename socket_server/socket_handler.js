@@ -177,6 +177,7 @@ function setupSocketIO(io, client) {
 
       // Message handling with device awareness
       socket.on("message", async (data) => {
+        console.log("👤 Message received:", data);
         const workspaceId = data.workspaceId;
         try {
           const usersInWorkspace = await client.smembers(`workspace:${workspaceId}:users`);
