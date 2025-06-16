@@ -12,7 +12,8 @@ export const DBTABLES = {
     WORKSPACE_JOIN: 'workspace_join',
     WORKSPACE_INVITATIONS: 'workspace_invitations',
     KNOWLEDGE_BASES: 'knowledge_bases',
-    FILES: 'files'
+    FILES: 'files',
+    USER_DEVICES: 'user_devices'
 }
 
 const db = knex({

@@ -1,11 +1,19 @@
-const MAX_CONNECTIONS_PER_USER = 5;
-const CONNECTION_TIMEOUT = 12 * 60 * 60 * 1000;
 const connectionTimestamps = new Map();
 
 function setupSocketIO(io, client) {
+  console.log('🚀 Socket.IO server initialized and waiting for connections...');
+  
   io.on("connection", async (socket) => {
+    console.log('🔗 NEW CONNECTION ATTEMPT:', {
+      socketId: socket.id,
+      auth: socket.handshake.auth,
+      query: socket.handshake.query,
+      headers: socket.handshake.headers
+    });
+    
     try {
       const user = socket.handshake.auth.user;
+      const deviceId = socket.handshake.auth.deviceId;
       const serviceAuth = socket.handshake.auth.service;
       
       // Handle Electron main process connections
@@ -90,215 +98,138 @@ function setupSocketIO(io, client) {
         return; // Early return for service connections
       }
 
-      // Handle regular user connections (existing code)
-      const userId = user?.id || 'backend-service';
-      console.log(`Connection accepted for ${userId} with socket ${socket.id}`);
+      // Handle user device connections
+      if (!user || !deviceId) {
+        console.error('Connection rejected: missing user or device ID');
+        socket.disconnect(true);
+        return;
+      }
 
-      socket.emit("connection_established", { socketId: socket.id });
+      const userId = user.id;
+      
+      console.log(`👤 User ${user.username} (${userId}) connected from device ${deviceId} with socket ${socket.id}`);
 
+      socket.emit("connection_established", { socketId: socket.id, deviceId: deviceId });
       connectionTimestamps.set(socket.id, Date.now());
 
-      const userSockets = await client.smembers(`user:${userId}:sockets`);
-
-      if (userSockets.length > 0) {
-        for (const existingSocketId of userSockets) {
-          const connectedSocket = io.sockets.sockets.get(existingSocketId);
-          
-          if (!connectedSocket) {
-            await client.srem(`user:${userId}:sockets`, existingSocketId);
-          } else {
-            const timestamp = connectionTimestamps.get(existingSocketId);
-            if (timestamp && (Date.now() - timestamp > CONNECTION_TIMEOUT)) {
-              console.log(`Disconnecting expired socket ${existingSocketId} for user ${userId}`);
-              connectedSocket.disconnect(true);
-              await client.srem(`user:${userId}:sockets`, existingSocketId);
-              connectionTimestamps.delete(existingSocketId);
-            }
-          }
-        }
-      }
-
-      const updatedUserSockets = await client.smembers(`user:${userId}:sockets`);
-      
-      if (updatedUserSockets.length >= MAX_CONNECTIONS_PER_USER) {
-        console.log(`User ${userId} has too many connections (${updatedUserSockets.length}), cleaning up oldest`);
-        
-        const socketTimestamps = updatedUserSockets
-          .map(sid => ({ 
-            socketId: sid, 
-            timestamp: connectionTimestamps.get(sid) || Infinity 
-          }))
-          .sort((a, b) => a.timestamp - b.timestamp);
-        
-        const socketsToRemove = socketTimestamps.slice(0, socketTimestamps.length - MAX_CONNECTIONS_PER_USER + 1);
-        
-        for (const { socketId } of socketsToRemove) {
-          const oldSocket = io.sockets.sockets.get(socketId);
-          if (oldSocket) {
-            console.log(`Disconnecting excess socket ${socketId} for user ${userId}`);
-            oldSocket.disconnect(true);
-          }
-          await client.srem(`user:${userId}:sockets`, socketId);
-          connectionTimestamps.delete(socketId);
-        }
-      }
-
+      // Store simple device-socket mapping
+      await client.set(`socket:${socket.id}:user`, userId);
+      await client.set(`socket:${socket.id}:device`, deviceId);
+      await client.set(`user:${userId}:device:${deviceId}:socket`, socket.id);
+      await client.sadd(`user:${userId}:devices:active`, deviceId);
       await client.sadd(`user:${userId}:sockets`, socket.id);
 
-      socket.on("ping", (data) => {
+      // Update device last seen timestamp
+      await client.set(`device:${deviceId}:lastSeen`, new Date().toISOString());
+
+      // Check for device conflicts (same device connected elsewhere)
+      const existingSocket = await client.get(`user:${userId}:device:${deviceId}:socket`);
+      if (existingSocket && existingSocket !== socket.id) {
+        const conflictSocket = io.sockets.sockets.get(existingSocket);
+        if (conflictSocket) {
+          console.log(`⚠️ Device conflict detected for ${deviceId}, disconnecting old connection`);
+          conflictSocket.emit('device_conflict', { 
+            deviceId: deviceId, 
+            message: 'This device has been connected from another location' 
+          });
+          conflictSocket.disconnect(true);
+        }
+      }
+
+      // Auto-join user's workspaces when device connects
+      const userWorkspaces = await getUserWorkspacesFromDB(userId);
+      for (const workspaceId of userWorkspaces) {
+        await client.sadd(`workspace:${workspaceId}:users`, userId);
+        console.log(`📍 Auto-joined user ${userId} to workspace ${workspaceId} from device ${deviceId}`);
+      }
+
+      // Send unread messages for this device
+      await sendUnreadMessagesForDevice(socket, client, userId, deviceId);
+
+      socket.emit('device_registered', { 
+        deviceId: deviceId, 
+        message: `Device ${deviceId} registered successfully` 
+      });
+
+      // Socket event handlers
+      socket.on("ping", async (data) => {
         connectionTimestamps.set(socket.id, Date.now());
-        socket.emit("pong", { timestamp: Date.now() });
+        await client.set(`device:${deviceId}:lastSeen`, new Date().toISOString());
+        socket.emit("pong", { timestamp: Date.now(), deviceId: deviceId });
       });
 
       socket.on("disconnect", async () => {
-        console.log(`User ${userId} disconnected socket ${socket.id}`);
+        console.log(`👤 User ${userId} disconnected device ${deviceId} socket ${socket.id}`);
         
+        // Clean up device-specific data
+        await client.del(`socket:${socket.id}:user`);
+        await client.del(`socket:${socket.id}:device`);
+        await client.del(`user:${userId}:device:${deviceId}:socket`);
+        await client.srem(`user:${userId}:devices:active`, deviceId);
         await client.srem(`user:${userId}:sockets`, socket.id);
+        await client.set(`device:${deviceId}:lastSeen`, new Date().toISOString());
         connectionTimestamps.delete(socket.id);
-        
-        const remainingSockets = await client.smembers(`user:${userId}:sockets`);
-        if (remainingSockets.length === 0) {
-          console.log(`User ${userId} has no remaining connections`);
-        }
       });
 
-      client
-        .smembers(`user:${userId}:workspaces`)
-        .then(async (workspaces) => {
-          for (const workspaceId of workspaces) {
-            try {
-              const unreadMessages = await client.lrange(
-                `workspace:${workspaceId}:unread:${userId}`,
-                0,
-                -1
-              );
-
-              unreadMessages.forEach((msg) => {
-                try {
-                  const parsedMsg = JSON.parse(msg);
-                  socket.emit("message", parsedMsg);
-                } catch (e) {
-                  console.error("Error parsing message:", e);
-                }
-              });
-
-              await client.del(`workspace:${workspaceId}:unread:${userId}`);
-            } catch (err) {
-              console.error(
-                `Error processing unread messages for workspace ${workspaceId}:`,
-                err
-              );
-            }
-          }
-        })
-        .catch((err) => {
-          console.error("Error retrieving user workspaces:", err);
-        });
-
-      socket.on("join_workspace", (workspaceId) => {
-        console.log("SocketServer: Joining workspace", workspaceId, userId);
-        if (userId) {
-          client.sadd(`workspace:${workspaceId}:users`, userId)
-            .then(() => client.sadd(`user:${userId}:workspaces`, workspaceId))
-            .catch(err => {
-              console.error(`Error adding user ${userId} to workspace ${workspaceId}:`, err);
-            });
-        }
-      });
-
-      socket.on("invite_to_workspace", (data) => {
-        const { workspaceId, userIds } = data;
-        for (const invitedUserId of userIds) {
-          client.sadd(`workspace:${workspaceId}:users`, invitedUserId);
-          client.sadd(`user:${invitedUserId}:workspaces`, workspaceId);
-        }
-      });
-
-      socket.on("quit_workspace", (workspaceId) => {
-        if (userId) {
-          client.srem(`workspace:${workspaceId}:users`, userId);
-          client.srem(`user:${userId}:workspaces`, workspaceId);
-        }
-      });
-
+      // Message handling with device awareness
       socket.on("message", async (data) => {
-        console.log("SocketServer: Received message", data);
         const workspaceId = data.workspaceId;
-
         try {
           const usersInWorkspace = await client.smembers(`workspace:${workspaceId}:users`);
-          console.log("SocketServer: Users in workspace", workspaceId, usersInWorkspace);
           for (const targetUserId of usersInWorkspace) {
-            const socketIds = await client.smembers(`user:${targetUserId}:sockets`);
-            console.log("SocketServer: Sending message to", socketIds, "for workspace", workspaceId);
-            if (socketIds.length > 0) {
-              socketIds.forEach(socketId => {
-                io.to(socketId).emit("message", data);
-              });
-            } else {
-              await client.lpush(
-                `workspace:${workspaceId}:unread:${targetUserId}`,
-                JSON.stringify(data)
-              );
-            }
+            await deliverMessageToUser(client, io, targetUserId, data);
           }
         } catch (error) {
           console.error("Error processing message event:", error.message);
         }
       });
 
-      socket.on("delete_message", async (data) => {
-        const workspaceId = data.workspaceId;
+      // NEW: User-level workspace joining (called from client when user joins workspace)
+      socket.on("user_join_workspace", async (workspaceId) => {
+        console.log(`👤 User ${userId} joining workspace ${workspaceId}`);
         
-        try {
-          const usersInWorkspace = await client.smembers(`workspace:${workspaceId}:users`);
-          for (const targetUserId of usersInWorkspace) {
-            const socketIds = await client.smembers(`user:${targetUserId}:sockets`);
-            if (socketIds.length > 0) {
-              socketIds.forEach(socketId => {
-                io.to(socketId).emit("message_deleted", data);
-              });
+        // Add user to workspace
+        await client.sadd(`workspace:${workspaceId}:users`, userId);
+        await client.sadd(`user:${userId}:workspaces`, workspaceId);
+        
+        // Notify all user's devices about the workspace join
+        const userDevices = await client.smembers(`user:${userId}:devices:active`);
+        for (const userDeviceId of userDevices) {
+          const socketId = await client.get(`user:${userId}:device:${userDeviceId}:socket`);
+          if (socketId) {
+            const deviceSocket = io.sockets.sockets.get(socketId);
+            if (deviceSocket) {
+              deviceSocket.emit('workspace_joined', { workspaceId, userId });
+              console.log(`📍 Notified device ${userDeviceId} about workspace ${workspaceId} join`);
             }
           }
-        } catch (error) {
-          console.error("Error in delete_message event:", error.message);
         }
       });
 
-      // Enhanced file progress event handling
-      socket.on("file:progress", async (data) => {
-        const { operationId, progress, stage, userId } = data;
-        console.log(`📊 File progress: ${operationId} - ${progress}% for user ${userId}`);
+      // NEW: User-level workspace leaving
+      socket.on("user_leave_workspace", async (workspaceId) => {
+        console.log(`👤 User ${userId} leaving workspace ${workspaceId}`);
         
-        if (userId) {
-          const socketIds = await client.smembers(`user:${userId}:sockets`);
-          socketIds.forEach(socketId => {
-            io.to(socketId).emit("file:progress", { operationId, progress, stage });
-          });
+        // Remove user from workspace
+        await client.srem(`workspace:${workspaceId}:users`, userId);
+        await client.srem(`user:${userId}:workspaces`, workspaceId);
+        
+        // Notify all user's devices about the workspace leave
+        const userDevices = await client.smembers(`user:${userId}:devices:active`);
+        for (const userDeviceId of userDevices) {
+          const socketId = await client.get(`user:${userId}:device:${userDeviceId}:socket`);
+          if (socketId) {
+            const deviceSocket = io.sockets.sockets.get(socketId);
+            if (deviceSocket) {
+              deviceSocket.emit('workspace_left', { workspaceId, userId });
+              console.log(`📍 Notified device ${userDeviceId} about workspace ${workspaceId} leave`);
+            }
+          }
         }
       });
 
-      socket.on("file:completed", async (data) => {
-        const { operationId, result } = data;
-        console.log(`✅ File upload completed: ${operationId}`);
-        
-        const socketIds = await client.smembers(`user:${userId}:sockets`);
-        socketIds.forEach(socketId => {
-          io.to(socketId).emit("file:completed", { operationId, result });
-        });
-      });
-
-      socket.on("file:error", async (data) => {
-        const { operationId, error } = data;
-        console.log(`❌ File upload error: ${operationId} - ${error}`);
-        
-        const socketIds = await client.smembers(`user:${userId}:sockets`);
-        socketIds.forEach(socketId => {
-          io.to(socketId).emit("file:error", { operationId, error });
-        });
-      });
     } catch (error) {
-      console.error("Error in socket connection handler:", error);
+      console.error("❌ Error in socket connection handler:", error);
       socket.disconnect(true);
     }
   });
@@ -326,21 +257,98 @@ function setupSocketIO(io, client) {
   setInterval(cleanupStaleConnections, 12 * 60 * 60 * 1000);
 }
 
-async function sendRecentMessages(socket, client) {
+async function sendUnreadMessagesForDevice(socket, client, userId, deviceId) {
   try {
-    const messages = await client.lrange("dummyQueue", 0, 9);
-    messages.forEach((msg) => {
+    // Get device-specific unread messages
+    const deviceUnreadMessages = await client.lrange(
+      `user:${userId}:device:${deviceId}:unread`,
+      0,
+      -1
+    );
+
+    console.log(`📬 Sending ${deviceUnreadMessages.length} unread messages to device ${deviceId}`);
+
+    deviceUnreadMessages.forEach((msg) => {
       try {
         const parsedMsg = JSON.parse(msg);
-        socket.emit("queueData", parsedMsg);
+        socket.emit("message", parsedMsg);
       } catch (e) {
-        console.error("Error parsing message:", e);
+        console.error("Error parsing unread message:", e);
       }
     });
+
+    // Clear unread messages after delivery
+    await client.del(`user:${userId}:device:${deviceId}:unread`);
+    
   } catch (err) {
-    console.error("Error retrieving messages from Redis:", err);
+    console.error(`Error sending unread messages for device ${deviceId}:`, err);
   }
 }
 
+async function deliverMessageToUser(client, io, targetUserId, messageData) {
+  const activeDevices = await client.smembers(`user:${targetUserId}:devices:active`);
+  let messageDelivered = false;
+
+  // Try to deliver to all active devices for this user
+  for (const deviceId of activeDevices) {
+    const socketId = await client.get(`user:${targetUserId}:device:${deviceId}:socket`);
+    if (socketId) {
+      const socket = io.sockets.sockets.get(socketId);
+      if (socket) {
+        socket.emit("message", messageData);
+        messageDelivered = true;
+        console.log(`📨 Message delivered to user ${targetUserId} device ${deviceId}`);
+      }
+    }
+  }
+
+  // If no devices are online, queue the message for all known devices
+  if (!messageDelivered) {
+    console.log(`📪 Queueing message for offline user ${targetUserId}`);
+    
+    // Get all devices for this user from your database
+    const allUserDevices = await getUserDevicesFromDB(targetUserId);
+    
+    if (allUserDevices.length > 0) {
+      // Queue for each device
+      for (const deviceId of allUserDevices) {
+        await client.lpush(
+          `user:${targetUserId}:device:${deviceId}:unread`,
+          JSON.stringify(messageData)
+        );
+      }
+    }
+  }
+}
+
+async function getUserDevicesFromDB(userId) {
+  // TODO: Implement this to call your user devices API
+  // For now, return empty array
+  try {
+    // This should call your API: GET /api/v2/user/devices
+    // const response = await fetch(`${process.env.CLIENT_URL}/api/v2/user/devices?userId=${userId}`);
+    // const devices = await response.json();
+    // return devices.data.map(device => device.device_id);
+    return [];
+  } catch (error) {
+    console.error('Error fetching user devices:', error);
+    return [];
+  }
+}
+
+async function getUserWorkspacesFromDB(userId) {
+  // TODO: Implement this to call your workspace API
+  // For now, return empty array
+  try {
+    // This should call your API: GET /api/v2/workspace?userId=${userId}
+    // const response = await fetch(`${process.env.CLIENT_URL}/api/v2/workspace?userId=${userId}`);
+    // const workspaces = await response.json();
+    // return workspaces.data.map(workspace => workspace.id);
+    return [];
+  } catch (error) {
+    console.error('Error fetching user workspaces:', error);
+    return [];
+  }
+}
 
 module.exports = { setupSocketIO };

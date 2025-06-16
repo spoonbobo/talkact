@@ -7,4 +7,5 @@ export const DBTABLES = {
     USERS: 'users',
     WORKSPACES: 'workspaces',
     WORKSPACE_USERS: 'workspace_users',
+    USER_DEVICES: 'user_devices'
 }
