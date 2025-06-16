@@ -18,6 +18,13 @@ export interface IChatMessageToolCall {
     execution_time_seconds?: number;
 }
 
+export interface IEncryptedMessage {
+    encryptedContent: string;    // Base64 encrypted message content
+    iv: string;                  // Initialization vector for AES
+    keyVersion: number;          // Which workspace key version was used
+    algorithm: 'AES-GCM-256';    // Encryption algorithm
+}
+
 export interface IChatMessage {
     id: string;
     created_at: string;
@@ -31,7 +38,8 @@ export interface IChatMessage {
     poll?: string;
     contact?: string;
     gif?: string;
-    text: string;
+    text: string;                // Plaintext (for backward compatibility)
+    encrypted_text?: IEncryptedMessage;  // New: encrypted version
     sent_at: string;
     updated_at?: string;
     status: string;
@@ -40,6 +48,7 @@ export interface IChatMessage {
     is_tool_response?: boolean;
     responding_to_tool_call_id?: string;
     tool_function_name?: string;
+    is_encrypted?: boolean;      // Flag to indicate if message is encrypted
 }
 
 export interface IReaction {
@@ -48,5 +57,44 @@ export interface IReaction {
     reaction: string;
     message_id: string;
     user_id: string;
+}
+
+export interface IUserCryptoKeys {
+    userId: string;
+    masterKeySalt: string;       // Stored in DB, used to derive master key
+    masterKey?: string;          // Runtime only, never stored
+}
+
+export interface IWorkspaceKey {
+    workspaceId: string;
+    keyData: string;             // The actual symmetric key (AES-256)
+    keyVersion: number;          // For key rotation
+    createdAt: string;
+    createdBy: string;           // User who created this key version
+}
+
+export interface IUserWorkspaceKey {
+    userId: string;
+    workspaceId: string;
+    encryptedWorkspaceKey: string;  // Workspace key encrypted with user's master key
+    keyVersion: number;
+    hasAccess: boolean;
+    grantedAt: string;
+    grantedBy: string;
+}
+
+export interface ICryptoService {
+    // User master key management
+    deriveMasterKey(password: string, salt: string): Promise<string>;
+    generateKeySalt(): string;
+    
+    // Workspace key management
+    generateWorkspaceKey(): Promise<IWorkspaceKey>;
+    encryptWorkspaceKey(workspaceKey: string, masterKey: string): Promise<string>;
+    decryptWorkspaceKey(encryptedKey: string, masterKey: string): Promise<string>;
+    
+    // Message encryption/decryption
+    encryptMessage(message: string, workspaceKey: string): Promise<IEncryptedMessage>;
+    decryptMessage(encryptedMessage: IEncryptedMessage, workspaceKey: string): Promise<string>;
 }
 

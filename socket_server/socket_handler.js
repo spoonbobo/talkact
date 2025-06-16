@@ -106,6 +106,10 @@ function setupSocketIO(io, client) {
       }
 
       const userId = user.id;
+      const userToken = socket.handshake.auth.token; // Get token from auth
+      
+      // Store token for API calls
+      await client.set(`user:${userId}:token`, userToken);
       
       console.log(`👤 User ${user.username} (${userId}) connected from device ${deviceId} with socket ${socket.id}`);
 
@@ -137,7 +141,7 @@ function setupSocketIO(io, client) {
       }
 
       // Auto-join user's workspaces when device connects
-      const userWorkspaces = await getUserWorkspacesFromDB(userId);
+      const userWorkspaces = await getUserWorkspacesFromDB(userId, client);
       for (const workspaceId of userWorkspaces) {
         await client.sadd(`workspace:${workspaceId}:users`, userId);
         console.log(`📍 Auto-joined user ${userId} to workspace ${workspaceId} from device ${deviceId}`);
@@ -307,7 +311,7 @@ async function deliverMessageToUser(client, io, targetUserId, messageData) {
     console.log(`📪 Queueing message for offline user ${targetUserId}`);
     
     // Get all devices for this user from your database
-    const allUserDevices = await getUserDevicesFromDB(targetUserId);
+    const allUserDevices = await getUserDevicesFromDB(targetUserId, client);
     
     if (allUserDevices.length > 0) {
       // Queue for each device
@@ -321,30 +325,36 @@ async function deliverMessageToUser(client, io, targetUserId, messageData) {
   }
 }
 
-async function getUserDevicesFromDB(userId) {
-  // TODO: Implement this to call your user devices API
-  // For now, return empty array
+async function getUserDevicesFromDB(userId, client) {
   try {
-    // This should call your API: GET /api/v2/user/devices
-    // const response = await fetch(`${process.env.CLIENT_URL}/api/v2/user/devices?userId=${userId}`);
-    // const devices = await response.json();
-    // return devices.data.map(device => device.device_id);
-    return [];
+    const axios = require('axios');
+    const userToken = await client.get(`user:${userId}:token`);
+    
+    const response = await axios.get(`${process.env.CLIENT_URL}/api/v2/user/devices`, {
+      params: { userId },
+      headers: {
+        'Authorization': `Bearer ${userToken}`
+      }
+    });
+    return response.data.data?.map(device => device.device_id) || [];
   } catch (error) {
     console.error('Error fetching user devices:', error);
     return [];
   }
 }
 
-async function getUserWorkspacesFromDB(userId) {
-  // TODO: Implement this to call your workspace API
-  // For now, return empty array
+async function getUserWorkspacesFromDB(userId, client) {
   try {
-    // This should call your API: GET /api/v2/workspace?userId=${userId}
-    // const response = await fetch(`${process.env.CLIENT_URL}/api/v2/workspace?userId=${userId}`);
-    // const workspaces = await response.json();
-    // return workspaces.data.map(workspace => workspace.id);
-    return [];
+    const axios = require('axios');
+    const userToken = await client.get(`user:${userId}:token`);
+    
+    const response = await axios.get(`${process.env.CLIENT_URL}/api/v2/workspace`, {
+      params: { userId },
+      headers: {
+        'Authorization': `Bearer ${userToken}`
+      }
+    });
+    return response.data.data?.map(workspace => workspace.id) || [];
   } catch (error) {
     console.error('Error fetching user workspaces:', error);
     return [];
