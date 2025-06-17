@@ -226,11 +226,11 @@ export interface IOTRSConfig {
     defaultType: string;
 }
 
-// Added Moodle Config
+// Updated Moodle Config
 export interface IMoodleConfig {
-    apiUrl: string;
-    apiToken: string;
-    courseId: string;
+    path: string;
+    baseUrl: string;
+    token: string;
 }
 
 // Server State Interfaces (for backward compatibility)

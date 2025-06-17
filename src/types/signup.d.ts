@@ -20,5 +20,5 @@ export interface ProfileFormData {
 }
 
 export interface ProfileFormErrors {
-    email?: string;
+    email?: string; 
 }
