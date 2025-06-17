@@ -102,6 +102,49 @@ services:
       - onlysaid-network
     restart: always
 
+  # Moodle services
+  onlysaid-mariadb:
+    image: bitnami/mariadb:latest
+    container_name: onlysaid-mariadb
+    environment:
+      - MARIADB_USER=bn_moodle
+      - MARIADB_PASSWORD=bitnami
+      - MARIADB_DATABASE=bitnami_moodle
+      - MARIADB_ROOT_PASSWORD=bitnami123
+    volumes:
+      - mariadb_data:/bitnami/mariadb
+    networks:
+      - onlysaid-network
+    restart: always
+
+  onlysaid-moodle:
+    image: bitnami/moodle:latest
+    container_name: onlysaid-moodle
+    environment:
+      - MOODLE_DATABASE_HOST=onlysaid-mariadb
+      - MOODLE_DATABASE_PORT_NUMBER=3306
+      - MOODLE_DATABASE_USER=bn_moodle
+      - MOODLE_DATABASE_PASSWORD=bitnami
+      - MOODLE_DATABASE_NAME=bitnami_moodle
+      - MOODLE_USERNAME=admin
+      - MOODLE_PASSWORD=admin123
+      - MOODLE_EMAIL=admin@example.com
+      - MOODLE_SITE_NAME=OnlySaid Moodle
+      - MOODLE_ENABLE_WEB_SERVICES=yes
+      - MOODLE_WEB_SERVICES_PROTOCOLS=rest
+      # Use production domain
+      - MOODLE_HOST=moodle.onlysaid.com
+      - MOODLE_REVERSEPROXY_SSL=yes
+      - MOODLE_SSLPROXY=yes
+    volumes:
+      - moodle_data:/bitnami/moodle
+      - moodledata_data:/bitnami/moodledata
+    depends_on:
+      - onlysaid-mariadb
+    networks:
+      - onlysaid-network
+    restart: always
+
   # # main application services
   onlysaid-socket_server:
     build:
@@ -124,6 +167,7 @@ services:
       - redis-node-5
     networks:
       - onlysaid-network
+
   onlysaid-app:
     build:
       context: .
@@ -247,6 +291,7 @@ services:
     depends_on:
       - onlysaid-app
       - onlysaid-socket_server
+      - onlysaid-moodle
     networks:
       - onlysaid-network
     restart: always
@@ -322,6 +367,9 @@ volumes:
   pgadmin_data:
   n8n_storage:
   whisper_cache:
+  mariadb_data:
+  moodle_data:
+  moodledata_data:
   redis-cluster_data-0:
     driver: local
   redis-cluster_data-1:
