@@ -132,10 +132,13 @@ services:
       - MOODLE_SITE_NAME=OnlySaid Moodle
       - MOODLE_ENABLE_WEB_SERVICES=yes
       - MOODLE_WEB_SERVICES_PROTOCOLS=rest
-      # Use production domain
+      # Use production domain with HTTPS
       - MOODLE_HOST=moodle.onlysaid.com
       - MOODLE_REVERSEPROXY_SSL=yes
       - MOODLE_SSLPROXY=yes
+      # Force HTTPS and SSL port
+      - MOODLE_PORT_NUMBER=443
+      - MOODLE_ENABLE_HTTPS=yes
     volumes:
       - moodle_data:/bitnami/moodle
       - moodledata_data:/bitnami/moodledata
