@@ -16,6 +16,7 @@ export interface IChatMessageToolCall {
     status?: 'pending' | 'approved' | 'denied' | 'executed' | 'error' | string;
     result?: string | Record<string, any>;
     execution_time_seconds?: number;
+    osswarm_call?: boolean;
 }
 
 export interface IEncryptedMessage {
@@ -28,27 +29,30 @@ export interface IEncryptedMessage {
 export interface IChatMessage {
     id: string;
     created_at: string;
-    sender: string;
+    updated_at?: string;
+    sent_at?: string;
     chat_id: string;
-    reactions?: IReaction[];
+    sender: string;
+    status?: string;
+    reactions?: string | IReaction[];  // Allow both string and array
     reply_to?: string;
-    mentions?: string[];
-    file_ids?: string; // JSON string of file IDs, not array
-    files?: IFile[]; // Populated when retrieved from DB
+    mentions?: string;
+    file_ids?: string;
     poll?: string;
     contact?: string;
     gif?: string;
-    text: string;                // Plaintext (for backward compatibility)
-    encrypted_text?: IEncryptedMessage;  // New: encrypted version
-    sent_at: string;
-    updated_at?: string;
-    status: string;
+    text?: string;
+    files?: IFile[];
     sender_object?: IUser;
     tool_calls?: IChatMessageToolCall[];
-    is_tool_response?: boolean;
-    responding_to_tool_call_id?: string;
-    tool_function_name?: string;
-    is_encrypted?: boolean;      // Flag to indicate if message is encrypted
+    
+    // Add new field
+    isRead?: boolean;
+    readAt?: string;
+    // Add workspace_id directly to messages
+    workspace_id?: string;
+    is_encrypted?: boolean;
+    encrypted_text?: IEncryptedMessage;
 }
 
 export interface IReaction {

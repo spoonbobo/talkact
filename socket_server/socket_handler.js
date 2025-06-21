@@ -276,7 +276,9 @@ async function sendUnreadMessagesForDevice(socket, client, userId, deviceId) {
     deviceUnreadMessages.forEach((msg) => {
       try {
         const parsedMsg = JSON.parse(msg);
-        socket.emit("message", parsedMsg);
+        // Use different event name for unread messages to avoid notification duplication
+        console.log("unread message received (no notification)", parsedMsg);
+        socket.emit("unread-message", parsedMsg);
       } catch (e) {
         console.error("Error parsing unread message:", e);
       }

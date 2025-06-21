@@ -82,6 +82,8 @@ export interface IUser {
   xp?: number;
   is_human?: boolean;
   agent_id?: string | null;
+  created_at?: string;
+  last_login?: string;
 }
 
 export interface IUserGet {
