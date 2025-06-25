@@ -156,6 +156,40 @@ export interface ILeaveWorkspaceArgs {
     workspaceId: string;
 }
 
+export interface IWorkspaceSettings {
+    id: string;
+    workspace_id: string;
+    moodle_course_id?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface IGetWorkspaceSettingsArgs {
+    token: string;
+    workspaceId: string;
+}
+
+export interface ICreateWorkspaceSettingsArgs {
+    token: string;
+    workspaceId: string;
+    request: {
+        moodle_course_id?: string;
+    };
+}
+
+export interface IUpdateWorkspaceSettingsArgs {
+    token: string;
+    workspaceId: string;
+    request: {
+        moodle_course_id?: string;
+    };
+}
+
+export interface IDeleteWorkspaceSettingsArgs {
+    token: string;
+    workspaceId: string;
+}
+
 export interface IGetUserInvitationsArgs {
     token: string;
     status?: string;

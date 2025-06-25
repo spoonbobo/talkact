@@ -696,7 +696,20 @@
     "signing_out": "登出中...",
     "please_wait_while_we_sign_you_out": "正在登出，如果時間過長，請稍後再試。",
     "loading_authentication": "驗證中...",
-    "please_wait_while_we_verify_your_account": "正在驗證您的帳戶，如果時間過長，請稍後再試。"
+    "please_wait_while_we_verify_your_account": "正在驗證您的帳戶，如果時間過長，請稍後再試。",
+    "authentication_complete": "驗證完成",
+    "authentication_error": "驗證錯誤",
+    "window_will_close_automatically": "此視窗將在",
+    "seconds": "秒後自動關閉",
+    "close_window_now": "關閉此視窗",
+    "close_window": "關閉視窗",
+    "if_window_does_not_close_manually": "請手動關閉此瀏覽器標籤或視窗。",
+    "if_window_does_not_close_manually_with_link_prefix": "請手動關閉此瀏覽器標籤或視窗，或點擊",
+    "this_link": "此連結",
+    "to_open_app": "打開應用。",
+    "back_to_signin": "返回登入頁面",
+    "open_app": "打開應用",
+    "or_click_this_link_directly": "或直接點擊此連結："
   },
   "Errors": {
     "access_denied": "訪問被拒絕",

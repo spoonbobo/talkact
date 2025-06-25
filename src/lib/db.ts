@@ -11,6 +11,7 @@ export const DBTABLES = {
     WORKSPACE_USERS: 'workspace_users',
     WORKSPACE_JOIN: 'workspace_join',
     WORKSPACE_INVITATIONS: 'workspace_invitations',
+    WORKSPACE_SETTINGS: 'workspace_settings',
     KNOWLEDGE_BASES: 'knowledge_bases',
     FILES: 'files',
     USER_DEVICES: 'user_devices'

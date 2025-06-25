@@ -6,8 +6,32 @@ import db from '@/lib/db';
 
 const ELECTRON_PROTOCOL = 'onlysaid-electron';
 
+// Helper function to get the correct base URL
+function getBaseUrl(request: NextRequest): string {
+    // Use the same environment variable that's used elsewhere in the project
+    const envDomain = process.env.NEXT_PUBLIC_DOMAIN;
+    if (envDomain) {
+        return envDomain;
+    }
+    
+    // Fallback to request headers
+    const host = request.headers.get('host');
+    const protocol = request.headers.get('x-forwarded-proto') || 
+                    (host?.includes('localhost') ? 'http' : 'https');
+    
+    if (host) {
+        return `${protocol}://${host}`;
+    }
+    
+    // Last resort fallback
+    return 'http://localhost:3000';
+}
+
 export async function GET(request: NextRequest) {
     console.log('[App Router API /api/electron-flow/generate-deeplink] GET handler started.');
+
+    const baseUrl = getBaseUrl(request);
+    console.log('[App Router API] Using base URL:', baseUrl);
 
     try {
         // Get the session using getServerSession
@@ -61,8 +85,12 @@ export async function GET(request: NextRequest) {
                     });
                 } catch (transactionError) {
                     console.error('[App Router API] Transaction failed for user and agent creation:', transactionError);
-                    // Rethrow or handle appropriately, maybe redirect to an error deeplink
-                    throw transactionError; // This will be caught by the outer catch block
+                    // Redirect to close window page with error
+                    const closeUrl = new URL('/redirect/close_window', baseUrl);
+                    closeUrl.searchParams.set('type', 'error');
+                    closeUrl.searchParams.set('message', 'Failed to create user account. Please try again.');
+                    
+                    return NextResponse.redirect(closeUrl.toString(), 302);
                 }
             }
 
@@ -75,18 +103,34 @@ export async function GET(request: NextRequest) {
 
             // Create a deeplink with the session token
             const deeplinkUrl = `${ELECTRON_PROTOCOL}://auth/callback?token=${encodeURIComponent(sessionCookieValue || '')}&cookieName=${encodeURIComponent(sessionCookieName)}`;
-            console.log(`[App Router API] Redirecting to Electron deeplink: ${deeplinkUrl}`);
+            console.log(`[App Router API] Redirecting to close window with deeplink: ${deeplinkUrl}`);
 
-            return NextResponse.redirect(deeplinkUrl, 302);
+            // ✅ Use the correct base URL with NEXT_PUBLIC_DOMAIN
+            const closeUrl = new URL('/redirect/close_window', baseUrl);
+            closeUrl.searchParams.set('type', 'success');
+            closeUrl.searchParams.set('message', 'Authentication successful! You can now use the app.');
+            closeUrl.searchParams.set('deeplink', deeplinkUrl);
+            
+            return NextResponse.redirect(closeUrl.toString(), 302);
         } else {
             console.error(`[App Router API] No session found. User is not authenticated.`);
-            const errorDeeplinkUrl = `${ELECTRON_PROTOCOL}://auth/error?message=NoSessionFoundInRedirectAtElectron`;
-            return NextResponse.redirect(errorDeeplinkUrl, 302);
+            
+            // Redirect to close window page with error
+            const closeUrl = new URL('/redirect/close_window', baseUrl);
+            closeUrl.searchParams.set('type', 'error');
+            closeUrl.searchParams.set('message', 'Authentication failed. No session found.');
+            
+            return NextResponse.redirect(closeUrl.toString(), 302);
         }
     } catch (error) {
         console.error('[App Router API] CRITICAL ERROR in handler:', error);
         const errorMsg = error instanceof Error ? error.message : String(error);
-        const errorDeeplinkUrl = `${ELECTRON_PROTOCOL}://auth/error?message=DeeplinkGeneratorFailed&error=${encodeURIComponent(errorMsg)}`;
-        return NextResponse.redirect(errorDeeplinkUrl, 302);
+        
+        // Redirect to close window page with error
+        const closeUrl = new URL('/redirect/close_window', baseUrl);
+        closeUrl.searchParams.set('type', 'error');
+        closeUrl.searchParams.set('message', `Authentication failed: ${errorMsg}`);
+        
+        return NextResponse.redirect(closeUrl.toString(), 302);
     }
 }

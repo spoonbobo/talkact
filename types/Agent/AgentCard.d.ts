@@ -141,4 +141,5 @@ export interface AgentCard {
   runtimeId?: string;
   /** Agent role in the swarm */
   role?: string;
+  type?: 'agent' | 'swarm';
 } 
