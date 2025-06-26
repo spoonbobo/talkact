@@ -408,25 +408,34 @@ class KBManager:
     
     def answer_with_context(self, query: QueryRequest):
         """Generate an answer using RAG with synchronous support"""
-        query_text = query.query[-1] if isinstance(query.query, list) else query.query
-        
-        context = self.generate_context(
-            query.workspace_id,
-            query_text, 
-            query.knowledge_bases, 
-            query.top_k
-        )
-        
-        prompt_template = lng_prompt[query.preferred_language]
-        prompt = prompt_template.format(
-            preferred_language=lng_map[query.preferred_language],
-            context=context,
-            conversation_history=query.conversation_history,
-            query=query_text
-        )
-        
-        response = self.llm.complete(prompt)
-        return response.text
+        try:
+            query_text = query.query[-1] if isinstance(query.query, list) else query.query
+            
+            # Validate language
+            if query.preferred_language not in lng_prompt:
+                logger.warning(f"Unsupported language: {query.preferred_language}, defaulting to 'en'")
+                query.preferred_language = "en"
+            
+            context = self.generate_context(
+                query.workspace_id,
+                query_text, 
+                query.knowledge_bases, 
+                query.top_k
+            )
+            
+            prompt_template = lng_prompt[query.preferred_language]
+            prompt = prompt_template.format(
+                preferred_language=lng_map.get(query.preferred_language, "English"),
+                context=context,
+                conversation_history=query.conversation_history or "",
+                query=query_text
+            )
+            
+            response = self.llm.complete(prompt)
+            return response.text
+        except Exception as e:
+            logger.error(f"Error in answer_with_context: {str(e)}")
+            raise  # Re-raise so the route handler can catch it
     
     def store_message(self, message_id: str, message_data: dict):
         """Store message data for potential resumption"""

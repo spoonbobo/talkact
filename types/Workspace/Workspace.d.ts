@@ -160,6 +160,8 @@ export interface IWorkspaceSettings {
     id: string;
     workspace_id: string;
     moodle_course_id?: string;
+    moodle_api_token?: string;
+    selected_assignment_id?: string;
     created_at: string;
     updated_at: string;
 }
@@ -174,6 +176,8 @@ export interface ICreateWorkspaceSettingsArgs {
     workspaceId: string;
     request: {
         moodle_course_id?: string;
+        moodle_api_token?: string;
+        selected_assignment_id?: string;
     };
 }
 
@@ -182,6 +186,8 @@ export interface IUpdateWorkspaceSettingsArgs {
     workspaceId: string;
     request: {
         moodle_course_id?: string;
+        moodle_api_token?: string;
+        selected_assignment_id?: string;
     };
 }
 

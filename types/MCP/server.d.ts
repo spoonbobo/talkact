@@ -421,3 +421,17 @@ export interface IAtlassianState {
     atlassianConfig: IAtlassianConfig;
     atlassianAutoApproved?: boolean;
 }
+
+// Added OnlysaidKB Config
+export interface IOnlysaidKBConfig {
+    baseUrl: string;
+    timeout?: number;
+    path: string;
+}
+
+// Added OnlysaidKB State
+export interface IOnlysaidKBState {
+    onlysaidKBEnabled: boolean;
+    onlysaidKBConfig: IOnlysaidKBConfig;
+    onlysaidKBAutoApproved?: boolean;
+}

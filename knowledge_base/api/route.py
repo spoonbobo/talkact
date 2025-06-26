@@ -157,23 +157,28 @@ async def delete_kb(request: Request, kb_data: dict) -> Dict[str, Any]:
 async def query_knowledge_base(request: Request, query: QueryRequest):
     kb_manager = request.app.state.kb_manager
     logger.info(f"Query received: {query}")
-    if query.streaming:
-        session_id = f"stream_{os.urandom(8).hex()}"
-        
-        kb_manager.store_message(session_id, {
-            "query": query.dict(),
-            "current_content": "",
-            "is_complete": False
-        })
-        
-        return StreamingResponse(
-            stream_tokens(kb_manager, query, session_id),
-            media_type="text/event-stream",
-            background=BackgroundTask(cleanup_session, kb_manager, session_id)
-        )
-    else:
-        answer = kb_manager.answer_with_context(query)
-        return {"status": "success", "results": answer}
+    
+    try:
+        if query.streaming:
+            session_id = f"stream_{os.urandom(8).hex()}"
+            
+            kb_manager.store_message(session_id, {
+                "query": query.dict(),
+                "current_content": "",
+                "is_complete": False
+            })
+            
+            return StreamingResponse(
+                stream_tokens(kb_manager, query, session_id),
+                media_type="text/event-stream",
+                background=BackgroundTask(cleanup_session, kb_manager, session_id)
+            )
+        else:
+            answer = kb_manager.answer_with_context(query)
+            return {"status": "success", "results": answer}
+    except Exception as e:
+        logger.error(f"Error processing query: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 @router.post("/api/retrieve")
 async def retrieve_from_knowledge_base(request: Request, query_data: dict) -> Dict[str, Any]:

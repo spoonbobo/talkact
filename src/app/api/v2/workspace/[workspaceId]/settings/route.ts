@@ -65,7 +65,7 @@ export async function POST(
     }
 
     const { workspaceId } = await params;
-    const { moodle_course_id } = await request.json();
+    const { moodle_course_id, moodle_api_token } = await request.json();
 
     if (!workspaceId) {
         return NextResponse.json({ error: "Workspace ID is required" }, { status: 400 });
@@ -97,7 +97,8 @@ export async function POST(
         const newSettings = await db(DBTABLES.WORKSPACE_SETTINGS)
             .insert({
                 workspace_id: workspaceId,
-                moodle_course_id
+                moodle_course_id,
+                moodle_api_token
             })
             .returning('*');
 
@@ -126,7 +127,7 @@ export async function PUT(
     }
 
     const { workspaceId } = await params;
-    const { moodle_course_id } = await request.json();
+    const { moodle_course_id, moodle_api_token } = await request.json();
 
     if (!workspaceId) {
         return NextResponse.json({ error: "Workspace ID is required" }, { status: 400 });
@@ -149,6 +150,7 @@ export async function PUT(
             .where('workspace_id', workspaceId)
             .update({
                 moodle_course_id,
+                moodle_api_token,
                 updated_at: db.fn.now()
             })
             .returning('*');
@@ -158,7 +160,8 @@ export async function PUT(
             const newSettings = await db(DBTABLES.WORKSPACE_SETTINGS)
                 .insert({
                     workspace_id: workspaceId,
-                    moodle_course_id
+                    moodle_course_id,
+                    moodle_api_token
                 })
                 .returning('*');
 
